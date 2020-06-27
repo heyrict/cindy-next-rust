@@ -45,7 +45,7 @@ async fn index_ws(
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let schema = Schema::build(QueryRoot, MutationRoot, SubscriptionRoot)
-        .data(CindyContext::new())
+        .data(CindyContext::default())
         .finish();
 
     println!("Endpoint: http://localhost:8000/graphql");

@@ -22,6 +22,16 @@ macro_rules! gen_list_query {
 
 #[async_graphql::Object]
 impl QueryRoot {
+    async fn user(&self, ctx: &Context<'_>, id: i32) -> FieldResult<User> {
+        use crate::schema::user;
+
+        let conn = ctx.data::<CindyContext>().get_conn()?;
+
+        let user = user::table.filter(user::id.eq(id)).limit(1).first(&conn)?;
+
+        Ok(user)
+    }
+
     async fn users(
         &self,
         ctx: &Context<'_>,

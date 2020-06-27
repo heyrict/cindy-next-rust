@@ -4,6 +4,7 @@ use diesel::query_dsl::QueryDsl;
 
 use super::generics::*;
 
+/// Available orders for users query
 #[async_graphql::InputObject]
 pub struct UserOrder {
     id: Option<Ordering>,
@@ -12,6 +13,7 @@ pub struct UserOrder {
     last_login: Option<Ordering>,
 }
 
+/// Helper object to apply the order to the query
 pub struct UserOrders(Vec<UserOrder>);
 
 impl Default for UserOrders {
@@ -26,7 +28,7 @@ impl UserOrders {
     }
 
     pub fn apply_order<'a>(
-        &self,
+        self,
         query_dsl: crate::schema::user::BoxedQuery<'a, DB>,
     ) -> crate::schema::user::BoxedQuery<'a, DB> {
         use crate::schema::user::dsl::*;
@@ -34,7 +36,7 @@ impl UserOrders {
         let mut query = query_dsl;
         let mut flag = false;
 
-        for obj in &self.0 {
+        for obj in self.0 {
             gen_order!(obj, id, query, flag);
             gen_order!(obj, nickname, query, flag);
             gen_order!(obj, date_joined, query, flag);
@@ -45,9 +47,49 @@ impl UserOrders {
     }
 }
 
+/// Available filters for users query
 #[async_graphql::InputObject]
-pub struct UserFilter {}
+pub struct UserFilter {
+    username: Option<StringFiltering>,
+    nickname: Option<StringFiltering>,
+}
 
+/// Helper object to apply the filtering to the query
+pub struct UserFilters(Vec<UserFilter>);
+
+impl Default for UserFilters {
+    fn default() -> Self {
+        Self(vec![])
+    }
+}
+
+impl UserFilters {
+    pub fn new(orders: Vec<UserFilter>) -> Self {
+        Self(orders)
+    }
+
+    pub fn apply_filter<'a>(
+        self,
+        query_dsl: crate::schema::user::BoxedQuery<'a, DB>,
+    ) -> crate::schema::user::BoxedQuery<'a, DB> {
+        use crate::schema::user::dsl::*;
+
+        let mut query = query_dsl;
+
+        for (index, obj) in self.0.into_iter().enumerate() {
+            let UserFilter {
+                username: obj_username,
+                nickname: obj_nickname,
+            } = obj;
+            gen_string_filter!(obj_username, username, query, index);
+            gen_string_filter!(obj_nickname, nickname, query, index);
+        }
+
+        query
+    }
+}
+
+/// Object for user table
 #[derive(Queryable)]
 pub struct User {
     pub id: ID,

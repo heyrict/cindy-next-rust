@@ -6,14 +6,21 @@ use crate::db::{establish_connection, DbPool};
 
 pub struct CindyContext {
     pool: DbPool,
+    token: Option<String>,
+}
+
+impl Default for CindyContext {
+    fn default() -> Self {
+        let pool = establish_connection();
+
+        Self { pool, token: None }
+    }
 }
 
 impl CindyContext {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        let pool = establish_connection();
-
-        Self { pool }
+    pub fn with_token(mut self, token: String) -> Self {
+        self.token = Some(token);
+        self
     }
 
     pub fn get_conn(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>> {
