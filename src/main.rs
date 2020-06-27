@@ -15,11 +15,25 @@ pub mod gql_schema;
 pub mod models;
 mod schema;
 
-use context::CindyContext;
+use context::{CindyContext, CindyQueryContext};
 use gql_schema::{CindySchema, MutationRoot, QueryRoot, SubscriptionRoot};
 
-async fn index(schema: web::Data<CindySchema>, req: GQLRequest) -> GQLResponse {
-    req.into_inner().execute(&schema).await.into()
+async fn index(
+    schema: web::Data<CindySchema>,
+    req: HttpRequest,
+    gql_req: GQLRequest,
+) -> GQLResponse {
+    let headers = req.headers();
+    let token = headers
+        .get("Authorization")
+        .and_then(|value| value.to_str().map(|v| v.to_owned()).ok());
+
+    gql_req
+        .into_inner()
+        .data(CindyQueryContext::default().with_token(token))
+        .execute(&schema)
+        .await
+        .into()
 }
 
 /*

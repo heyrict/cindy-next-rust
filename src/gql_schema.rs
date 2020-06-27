@@ -35,16 +35,28 @@ impl QueryRoot {
     async fn users(
         &self,
         ctx: &Context<'_>,
-        limit: i64,
-        offset: i64,
-        order: Vec<UserOrder>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<Vec<UserFilter>>,
+        order: Option<Vec<UserOrder>>,
     ) -> FieldResult<Vec<User>> {
         use crate::schema::user::dsl::*;
 
         let conn = ctx.data::<CindyContext>().get_conn()?;
 
-        let mut query = UserOrders::new(order).apply_order(user.into_boxed());
-        query = query.limit(limit).offset(offset);
+        let mut query = user.into_boxed();
+        if let Some(order) = order {
+            query = UserOrders::new(order).apply_order(query);
+        }
+        if let Some(filter) = filter {
+            query = UserFilters::new(filter).apply_filter(query);
+        }
+        if let Some(limit) = limit {
+            query = query.limit(limit);
+        }
+        if let Some(offset) = offset {
+            query = query.offset(offset);
+        }
 
         let users = query.load::<User>(&conn)?;
 

@@ -6,21 +6,19 @@ use crate::db::{establish_connection, DbPool};
 
 pub struct CindyContext {
     pool: DbPool,
-    token: Option<String>,
 }
 
 impl Default for CindyContext {
     fn default() -> Self {
         let pool = establish_connection();
 
-        Self { pool, token: None }
+        Self { pool }
     }
 }
 
 impl CindyContext {
-    pub fn with_token(mut self, token: String) -> Self {
-        self.token = Some(token);
-        self
+    pub fn new(pool: DbPool) -> Self {
+        Self { pool }
     }
 
     pub fn get_conn(&self) -> Result<PooledConnection<ConnectionManager<PgConnection>>> {
@@ -29,5 +27,22 @@ impl CindyContext {
             .get()
             .context("Error getting connection to the database")?;
         Ok(conn)
+    }
+}
+
+pub struct CindyQueryContext {
+    token: Option<String>,
+}
+
+impl Default for CindyQueryContext {
+    fn default() -> Self {
+        Self { token: None }
+    }
+}
+
+impl CindyQueryContext {
+    pub fn with_token(mut self, token: Option<String>) -> Self {
+        self.token = token;
+        self
     }
 }
