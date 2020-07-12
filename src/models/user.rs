@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Context, Result};
+use chrono::Utc;
 use diesel::prelude::*;
 use diesel::query_dsl::methods::ThenOrderDsl;
 use diesel::query_dsl::QueryDsl;
@@ -6,6 +7,8 @@ use diesel::r2d2::{ConnectionManager, PooledConnection};
 use djangohashers::check_password_tolerant;
 
 use super::generics::*;
+
+use crate::schema::user;
 
 /// Available orders for users query
 #[async_graphql::InputObject]
@@ -93,7 +96,8 @@ impl UserFilters {
 }
 
 /// Object for user table
-#[derive(Queryable)]
+#[derive(Queryable, Identifiable, Insertable)]
+#[table_name = "user"]
 pub struct User {
     pub id: ID,
     pub password: String,
@@ -112,6 +116,15 @@ pub struct User {
     pub hide_bookmark: bool,
     pub last_read_dm_id: Option<i32>,
     pub icon: Option<String>,
+}
+
+impl Default for User {
+    fn default() -> Self {
+        Self {
+            date_joined: Utc::now(),
+            ..Default::default()
+        }
+    }
 }
 
 #[async_graphql::Object]
@@ -166,27 +179,33 @@ impl User {
 }
 
 impl User {
+    /// Authenticate the user.
+    ///
+    /// Returns `Ok(user)` if authentication passed, otherwise `Err(error)`.
     pub async fn local_auth(
         username: &str,
         password: &str,
         conn: PooledConnection<ConnectionManager<PgConnection>>,
     ) -> Result<Self> {
-        use crate::schema::user;
+        use crate::schema::user::last_login;
 
-        let user: Self = user::table
+        let usr: Self = user::table
             .filter(user::username.eq(username))
             .limit(1)
             .first(&conn)
             .context("User does not exist. Please re-check your username and password.")?;
 
-        if !user.is_active {
+        if !usr.is_active {
             return Err(anyhow!("User is not activated by administrator. Contact the administrator for more details."));
         }
 
-        let password_valid = check_password_tolerant(password, &user.password);
+        let password_valid = check_password_tolerant(password, &usr.password);
 
         if password_valid {
-            Ok(user)
+            diesel::update(&usr)
+                .set(last_login.eq(Some(Utc::now())))
+                .execute(&conn)?;
+            Ok(usr)
         } else {
             Err(anyhow!(
                 "Error authenticating user {}, please try again.",

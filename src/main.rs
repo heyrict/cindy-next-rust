@@ -19,7 +19,7 @@ pub mod gql_schema;
 pub mod models;
 mod schema;
 
-use auth::login;
+use auth::{login, signup};
 use context::{CindyContext, CindyQueryContext};
 use gql_schema::{CindySchema, MutationRoot, QueryRoot, SubscriptionRoot};
 
@@ -76,6 +76,7 @@ async fn main() -> std::io::Result<()> {
             .data(ctx.clone())
             .service(web::resource("/graphql").guard(guard::Post()).to(index))
             .service(web::resource("/login").guard(guard::Post()).to(login))
+            .service(web::resource("/signup").guard(guard::Post()).to(signup))
         /*
         .service(
             web::resource("/graphql")

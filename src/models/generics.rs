@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{DateTime, Utc};
 
 #[async_graphql::Enum]
 pub enum Ordering {
@@ -20,8 +20,7 @@ pub struct StringFiltering {
 pub type DB = diesel::pg::Pg;
 pub type ID = i32;
 
-pub type Timestamptz = NaiveDateTime;
-pub type Date = NaiveDate;
+pub type Timestamptz = DateTime<Utc>;
 
 // TODO Rewrite all these macros with proc_macro
 
