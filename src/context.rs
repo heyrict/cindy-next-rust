@@ -4,6 +4,7 @@ use diesel::r2d2::{ConnectionManager, PooledConnection};
 
 use crate::db::{establish_connection, DbPool};
 
+#[derive(Clone)]
 pub struct CindyContext {
     pool: DbPool,
 }

@@ -12,14 +12,6 @@ pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
 pub struct QueryRoot;
 
-/*
-macro_rules! gen_list_query {
-    ($filter: ident, $order: ident, $limit:ident, $offset:ident) => {
-
-    };
-}
-*/
-
 #[async_graphql::Object]
 impl QueryRoot {
     async fn user(&self, ctx: &Context<'_>, id: i32) -> FieldResult<User> {

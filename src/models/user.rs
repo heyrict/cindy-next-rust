@@ -1,6 +1,9 @@
+use anyhow::{anyhow, Context, Result};
 use diesel::prelude::*;
 use diesel::query_dsl::methods::ThenOrderDsl;
 use diesel::query_dsl::QueryDsl;
+use diesel::r2d2::{ConnectionManager, PooledConnection};
+use djangohashers::check_password_tolerant;
 
 use super::generics::*;
 
@@ -119,9 +122,11 @@ impl User {
     async fn username(&self) -> &str {
         &self.username
     }
+    /*
     async fn password(&self) -> &str {
         &self.password
     }
+    */
     async fn nickname(&self) -> &str {
         &self.nickname
     }
@@ -157,5 +162,36 @@ impl User {
     }
     async fn date_joined(&self) -> String {
         self.date_joined.to_string()
+    }
+}
+
+impl User {
+    pub async fn local_auth(
+        username: &str,
+        password: &str,
+        conn: PooledConnection<ConnectionManager<PgConnection>>,
+    ) -> Result<Self> {
+        use crate::schema::user;
+
+        let user: Self = user::table
+            .filter(user::username.eq(username))
+            .limit(1)
+            .first(&conn)
+            .context("User does not exist. Please re-check your username and password.")?;
+
+        if !user.is_active {
+            return Err(anyhow!("User is not activated by administrator. Contact the administrator for more details."));
+        }
+
+        let password_valid = check_password_tolerant(password, &user.password);
+
+        if password_valid {
+            Ok(user)
+        } else {
+            Err(anyhow!(
+                "Error authenticating user {}, please try again.",
+                username
+            ))
+        }
     }
 }

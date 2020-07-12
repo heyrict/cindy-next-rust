@@ -1,1 +1,8 @@
+# build files
 /target
+
+# dotenv
+.env
+
+# key file
+*.pem
