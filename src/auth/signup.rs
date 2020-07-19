@@ -1,7 +1,5 @@
 use actix_web::{web, HttpResponse, Result};
-use chrono::Utc;
 use diesel::prelude::*;
-use djangohashers::make_password;
 use serde::{Deserialize, Serialize};
 
 use crate::context::CindyContext;
@@ -73,14 +71,14 @@ pub async fn signup(
     let conn = ctx.get_conn().expect("Error getting connection");
 
     // Sign up the user
-    let password_encoded = make_password(password);
-    let mut usr = User::default();
-    usr.username = username.to_string();
-    usr.nickname = nickname.to_string();
-    usr.password = password_encoded;
+    let credential = User::derive_credential(password);
 
     let user_query = diesel::insert_into(user::table)
-        .values(&usr)
+        .values((
+            user::username.eq(username),
+            user::nickname.eq(nickname),
+            user::password.eq(&credential),
+        ))
         .get_results::<User>(&conn);
 
     let mut usr = match user_query {
