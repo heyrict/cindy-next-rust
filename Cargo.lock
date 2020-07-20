@@ -696,6 +696,7 @@ dependencies = [
  "frank_jwt",
  "futures",
  "lazy_static",
+ "rand",
  "ring",
  "serde",
  "serde_derive",

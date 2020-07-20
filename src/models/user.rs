@@ -4,13 +4,13 @@ use diesel::prelude::*;
 use diesel::query_dsl::methods::ThenOrderDsl;
 use diesel::query_dsl::QueryDsl;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
-use ring::{pbkdf2, rand::SecureRandom};
+use ring::pbkdf2;
 use std::num::NonZeroU32;
 
 use super::generics::*;
 
 use crate::schema::user;
-use crate::RANDOM_GENERATOR;
+use rand::{distributions::Alphanumeric, Rng};
 
 const SALT_LEN: usize = 16;
 const CRED_LEN: usize = 32;
@@ -183,13 +183,11 @@ struct Password {
 }
 
 impl User {
-    fn salt() -> [u8; SALT_LEN] {
-        // TODO The generated salt have to be a valid utf-8 string
-        let mut salt: [u8; SALT_LEN] = [0u8; SALT_LEN];
-        RANDOM_GENERATOR
-            .fill(&mut salt)
-            .expect("Error generating random number");
-        salt
+    fn salt() -> String {
+        rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(SALT_LEN)
+            .collect()
     }
 
     pub fn derive_credential(password: &str) -> String {
@@ -198,17 +196,12 @@ impl User {
         pbkdf2::derive(
             pbkdf2::PBKDF2_HMAC_SHA256,
             NonZeroU32::new(ITER_TIMES).unwrap(),
-            &salt,
+            salt.as_bytes(),
             password.as_bytes(),
             &mut credential,
         );
         let credential = base64::encode(credential.as_ref());
-        format!(
-            "pbkdf2_sha256${}${}${}",
-            ITER_TIMES,
-            String::from_utf8(salt.to_owned()),
-            credential
-        )
+        format!("pbkdf2_sha256${}${}${}", ITER_TIMES, salt, credential)
     }
 
     /// Authenticate the user.
@@ -237,15 +230,8 @@ impl User {
             salt,
             credential,
         } = usr.decompose_password()?;
-        dbg!(
-            &iter,
-            String::from_utf8(salt.clone()).unwrap(),
-            &password,
-            base64::encode(&credential),
-        );
         let mut reproduce = [0u8; CRED_LEN];
         pbkdf2::derive(alg, iter, &salt, password.as_bytes(), &mut reproduce);
-        dbg!(base64::encode(reproduce.as_ref()));
         pbkdf2::verify(alg, iter, &salt, password.as_bytes(), &credential)
             .map_err(|_| anyhow!("Invalid password"))?;
 

@@ -13,7 +13,6 @@ use actix_web_actors::ws;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::Schema;
 use async_graphql_actix_web::{GQLRequest, GQLResponse, WSSubscription};
-use ring::rand;
 
 mod auth;
 pub mod context;
@@ -25,10 +24,6 @@ mod schema;
 use auth::{login, signup};
 use context::{CindyContext, CindyQueryContext};
 use gql_schema::{CindySchema, MutationRoot, QueryRoot, SubscriptionRoot};
-
-lazy_static! {
-    pub static ref RANDOM_GENERATOR: rand::SystemRandom = rand::SystemRandom::new();
-}
 
 async fn index(
     schema: web::Data<CindySchema>,
