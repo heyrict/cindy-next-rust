@@ -75,8 +75,8 @@ pub async fn signup(
 
     let user_query = diesel::insert_into(user::table)
         .values((
-            user::username.eq(username),
-            user::nickname.eq(nickname),
+            user::username.eq(&username),
+            user::nickname.eq(&nickname),
             user::password.eq(&credential),
         ))
         .get_results::<User>(&conn);
@@ -84,7 +84,16 @@ pub async fn signup(
     let mut usr = match user_query {
         Ok(usr) => usr,
         Err(error) => {
-            return error_response::<SignupResponse, _>(format!("{}", error));
+            let error = format!("{}", error);
+
+            // Username unique constraint
+            if error.contains("user_username_key") {
+                return error_response::<SignupResponse, _>(format!(
+                    "The username {} is already used by other users", &username
+                ));
+            }
+
+            return error_response::<SignupResponse, _>(error);
         }
     };
 
