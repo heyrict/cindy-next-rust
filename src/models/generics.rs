@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 
 #[async_graphql::Enum]
 pub enum Ordering {
@@ -17,10 +17,20 @@ pub struct StringFiltering {
     pub ilike: Option<String>,
 }
 
+#[async_graphql::InputObject]
+pub struct I32Filtering {
+    pub eq: Option<i32>,
+    pub gt: Option<i32>,
+    pub lt: Option<i32>,
+    pub ge: Option<i32>,
+    pub le: Option<i32>,
+}
+
 pub type DB = diesel::pg::Pg;
 pub type ID = i32;
 
 pub type Timestamptz = DateTime<Utc>;
+pub type Date = NaiveDate;
 
 // TODO Rewrite all these macros with proc_macro
 
@@ -36,6 +46,39 @@ macro_rules! gen_string_filter {
     };
 }
 
+/// Generate filter for the query in a loop.
+macro_rules! gen_number_filter {
+    ($obj:ident: $ty:ident, $field:ident, $query:ident, $index:ident) => {
+        if let Some($obj) = $obj {
+            let $ty { eq, gt, ge, lt, le } = $obj;
+            apply_filter!(eq, $field, $query, $index);
+            apply_filter!(gt, $field, $query, $index);
+            apply_filter!(ge, $field, $query, $index);
+            apply_filter!(lt, $field, $query, $index);
+            apply_filter!(le, $field, $query, $index);
+        }
+    };
+}
+
+/// Generate filter for the query in a loop.
+macro_rules! gen_enum_filter {
+    ($obj:ident: $ty:ident, $field:ident, $query:ident, $index:ident) => {
+        if let Some($obj) = $obj {
+            let $ty { eq, ne, eq_any } = $obj;
+            apply_filter!(eq, $field, $query, $index);
+            apply_filter!(ne, $field, $query, $index);
+            if let Some(eq_any) = eq_any {
+                if $index == 0 {
+                    $query = $query.filter($field.eq(diesel::dsl::any(eq_any)));
+                } else {
+                    $query = $query.or_filter($field.eq(diesel::dsl::any(eq_any)));
+                    continue;
+                }
+            }
+        }
+    };
+}
+
 /// Applies the filter to the query in a loop.
 ///
 /// Due to limitation of the query builder, grouping `or` is not possible.
@@ -47,6 +90,16 @@ macro_rules! apply_filter {
                 $query = $query.filter($field.$obj($obj));
             } else {
                 $query = $query.or_filter($field.$obj($obj));
+                continue;
+            }
+        }
+    };
+    (($ty:ty) $obj:ident, $field:ident, $query:ident, $index:ident) => {
+        if let Some($obj) = $obj {
+            if $index == 0 {
+                $query = $query.filter($field.$obj($obj as $ty));
+            } else {
+                $query = $query.or_filter($field.$obj($obj as $ty));
                 continue;
             }
         }

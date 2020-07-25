@@ -54,6 +54,50 @@ impl QueryRoot {
 
         Ok(users)
     }
+
+    async fn puzzle(&self, ctx: &Context<'_>, id: i32) -> FieldResult<Puzzle> {
+        use crate::schema::puzzle;
+
+        let conn = ctx.data::<CindyContext>().get_conn()?;
+
+        let user = puzzle::table
+            .filter(puzzle::id.eq(id))
+            .limit(1)
+            .first(&conn)?;
+
+        Ok(user)
+    }
+
+    async fn puzzles(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<Vec<PuzzleFilter>>,
+        order: Option<Vec<PuzzleOrder>>,
+    ) -> FieldResult<Vec<Puzzle>> {
+        use crate::schema::puzzle::dsl::*;
+
+        let conn = ctx.data::<CindyContext>().get_conn()?;
+
+        let mut query = puzzle.into_boxed();
+        if let Some(order) = order {
+            query = PuzzleOrders::new(order).apply_order(query);
+        }
+        if let Some(filter) = filter {
+            query = PuzzleFilters::new(filter).apply_filter(query);
+        }
+        if let Some(limit) = limit {
+            query = query.limit(limit);
+        }
+        if let Some(offset) = offset {
+            query = query.offset(offset);
+        }
+
+        let puzzles = query.load::<Puzzle>(&conn)?;
+
+        Ok(puzzles)
+    }
 }
 
 pub struct MutationRoot;

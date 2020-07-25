@@ -1,4 +1,5 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context as _, Result};
+use async_graphql::{Context, FieldResult};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::query_dsl::methods::ThenOrderDsl;
@@ -8,7 +9,9 @@ use ring::pbkdf2;
 use std::num::NonZeroU32;
 
 use super::generics::*;
+use super::puzzle::*;
 
+use crate::context::CindyContext;
 use crate::schema::user;
 use rand::{distributions::Alphanumeric, Rng};
 
@@ -172,6 +175,37 @@ impl User {
     }
     async fn date_joined(&self) -> String {
         self.date_joined.to_string()
+    }
+
+    async fn puzzles<'ctx>(
+        &self,
+        ctx: &'ctx Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<Vec<PuzzleFilter>>,
+        order: Option<Vec<PuzzleOrder>>,
+    ) -> FieldResult<Vec<Puzzle>> {
+        use crate::schema::puzzle::dsl::*;
+
+        let conn = ctx.data::<CindyContext>().get_conn()?;
+
+        let mut query = puzzle.filter(user_id.eq(self.id)).into_boxed();
+        if let Some(order) = order {
+            query = PuzzleOrders::new(order).apply_order(query);
+        }
+        if let Some(filter) = filter {
+            query = PuzzleFilters::new(filter).apply_filter(query);
+        }
+        if let Some(limit) = limit {
+            query = query.limit(limit);
+        }
+        if let Some(offset) = offset {
+            query = query.offset(offset);
+        }
+
+        let puzzles = query.load::<Puzzle>(&conn)?;
+
+        Ok(puzzles)
     }
 }
 
