@@ -5,7 +5,7 @@ use futures::{Stream, StreamExt};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::context::CindyContext;
+use crate::context::GlobalCtx;
 use crate::models::*;
 
 pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
@@ -17,7 +17,7 @@ impl QueryRoot {
     async fn user(&self, ctx: &Context<'_>, id: i32) -> FieldResult<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<CindyContext>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>().get_conn()?;
 
         let user = user::table.filter(user::id.eq(id)).limit(1).first(&conn)?;
 
@@ -34,7 +34,7 @@ impl QueryRoot {
     ) -> FieldResult<Vec<User>> {
         use crate::schema::user::dsl::*;
 
-        let conn = ctx.data::<CindyContext>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>().get_conn()?;
 
         let mut query = user.into_boxed();
         if let Some(order) = order {
@@ -58,7 +58,7 @@ impl QueryRoot {
     async fn puzzle(&self, ctx: &Context<'_>, id: i32) -> FieldResult<Puzzle> {
         use crate::schema::puzzle;
 
-        let conn = ctx.data::<CindyContext>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>().get_conn()?;
 
         let user = puzzle::table
             .filter(puzzle::id.eq(id))
@@ -78,7 +78,7 @@ impl QueryRoot {
     ) -> FieldResult<Vec<Puzzle>> {
         use crate::schema::puzzle::dsl::*;
 
-        let conn = ctx.data::<CindyContext>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>().get_conn()?;
 
         let mut query = puzzle.into_boxed();
         if let Some(order) = order {

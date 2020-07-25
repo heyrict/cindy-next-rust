@@ -11,7 +11,7 @@ use std::num::NonZeroU32;
 use super::generics::*;
 use super::puzzle::*;
 
-use crate::context::CindyContext;
+use crate::context::GlobalCtx;
 use crate::schema::user;
 use rand::{distributions::Alphanumeric, Rng};
 
@@ -187,7 +187,7 @@ impl User {
     ) -> FieldResult<Vec<Puzzle>> {
         use crate::schema::puzzle::dsl::*;
 
-        let conn = ctx.data::<CindyContext>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>().get_conn()?;
 
         let mut query = puzzle.filter(user_id.eq(self.id)).into_boxed();
         if let Some(order) = order {

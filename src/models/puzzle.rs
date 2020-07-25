@@ -14,7 +14,7 @@ use diesel::{
 use std::io;
 
 use crate::schema::puzzle;
-use crate::context::CindyContext;
+use crate::context::GlobalCtx;
 
 use super::generics::*;
 use super::user::*;
@@ -328,7 +328,7 @@ impl Puzzle {
     async fn user(&self, ctx: &Context<'_>) -> FieldResult<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<CindyContext>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>().get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.user_id))

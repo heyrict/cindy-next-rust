@@ -2,7 +2,7 @@ use actix_web::{web, HttpResponse, Result};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::context::CindyContext;
+use crate::context::GlobalCtx;
 use crate::models::User;
 
 use super::{error_response, gen_cookie, AuthResponse};
@@ -40,7 +40,7 @@ pub struct SignupResponseData {
 
 pub async fn signup(
     item: web::Json<SignupBody>,
-    ctx: web::Data<CindyContext>,
+    ctx: web::Data<GlobalCtx>,
 ) -> Result<HttpResponse> {
     use crate::schema::user;
 

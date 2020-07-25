@@ -22,7 +22,7 @@ pub mod models;
 mod schema;
 
 use auth::{login, signup};
-use context::{CindyContext, CindyQueryContext};
+use context::{GlobalCtx, RequestCtx};
 use gql_schema::{CindySchema, MutationRoot, QueryRoot, SubscriptionRoot};
 
 async fn index(
@@ -37,7 +37,7 @@ async fn index(
 
     gql_req
         .into_inner()
-        .data(CindyQueryContext::default().with_token(token))
+        .data(RequestCtx::default().with_token(token))
         .execute(&schema)
         .await
         .into()
@@ -65,7 +65,7 @@ async fn index_ws(
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    let ctx = CindyContext::default();
+    let ctx = GlobalCtx::default();
     let schema = Schema::build(QueryRoot, MutationRoot, SubscriptionRoot)
         .data(ctx.clone())
         .finish();

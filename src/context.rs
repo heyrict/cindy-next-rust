@@ -5,11 +5,11 @@ use diesel::r2d2::{ConnectionManager, PooledConnection};
 use crate::db::{establish_connection, DbPool};
 
 #[derive(Clone)]
-pub struct CindyContext {
+pub struct GlobalCtx {
     pool: DbPool,
 }
 
-impl Default for CindyContext {
+impl Default for GlobalCtx {
     fn default() -> Self {
         let pool = establish_connection();
 
@@ -17,7 +17,7 @@ impl Default for CindyContext {
     }
 }
 
-impl CindyContext {
+impl GlobalCtx {
     pub fn new(pool: DbPool) -> Self {
         Self { pool }
     }
@@ -31,17 +31,17 @@ impl CindyContext {
     }
 }
 
-pub struct CindyQueryContext {
+pub struct RequestCtx {
     token: Option<String>,
 }
 
-impl Default for CindyQueryContext {
+impl Default for RequestCtx {
     fn default() -> Self {
         Self { token: None }
     }
 }
 
-impl CindyQueryContext {
+impl RequestCtx {
     pub fn with_token(mut self, token: Option<String>) -> Self {
         self.token = token;
         self

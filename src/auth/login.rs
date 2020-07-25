@@ -1,7 +1,7 @@
 use actix_web::{web, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::context::CindyContext;
+use crate::context::GlobalCtx;
 use crate::models::User;
 
 use super::{error_response, gen_cookie, AuthResponse};
@@ -38,7 +38,7 @@ pub struct LoginResponseData {
 
 pub async fn login(
     item: web::Json<LoginBody>,
-    ctx: web::Data<CindyContext>,
+    ctx: web::Data<GlobalCtx>,
 ) -> Result<HttpResponse> {
     let conn = ctx.get_conn().expect("Error getting connection");
     let user: User = match User::local_auth(&item.username, &item.password, conn).await {
