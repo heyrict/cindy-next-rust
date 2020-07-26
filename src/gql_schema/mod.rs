@@ -8,6 +8,10 @@ use std::time::Duration;
 use crate::context::GlobalCtx;
 use crate::models::*;
 
+mod user;
+
+use user::UpdateUserSet;
+
 pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
 pub struct QueryRoot;
@@ -15,15 +19,8 @@ pub struct QueryRoot;
 #[async_graphql::Object]
 impl QueryRoot {
     async fn user(&self, ctx: &Context<'_>, id: i32) -> FieldResult<User> {
-        use crate::schema::user;
-
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
-
-        let user = user::table.filter(user::id.eq(id)).limit(1).first(&conn)?;
-
-        Ok(user)
+        self.user_(ctx, id).await
     }
-
     async fn users(
         &self,
         ctx: &Context<'_>,
@@ -32,29 +29,8 @@ impl QueryRoot {
         filter: Option<Vec<UserFilter>>,
         order: Option<Vec<UserOrder>>,
     ) -> FieldResult<Vec<User>> {
-        use crate::schema::user::dsl::*;
-
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
-
-        let mut query = user.into_boxed();
-        if let Some(order) = order {
-            query = UserOrders::new(order).apply_order(query);
-        }
-        if let Some(filter) = filter {
-            query = UserFilters::new(filter).apply_filter(query);
-        }
-        if let Some(limit) = limit {
-            query = query.limit(limit);
-        }
-        if let Some(offset) = offset {
-            query = query.offset(offset);
-        }
-
-        let users = query.load::<User>(&conn)?;
-
-        Ok(users)
+        self.users_(ctx, limit, offset, filter, order).await
     }
-
     async fn puzzle(&self, ctx: &Context<'_>, id: i32) -> FieldResult<Puzzle> {
         use crate::schema::puzzle;
 
@@ -104,6 +80,14 @@ pub struct MutationRoot;
 
 #[async_graphql::Object]
 impl MutationRoot {
+    async fn update_user(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+        set: UpdateUserSet,
+    ) -> FieldResult<User> {
+        self.update_user_(ctx, id, set).await
+    }
     /*
     async fn create_book(&self, ctx: &Context<'_>, name: String, author: String) -> ID {
         let mut books = ctx.data::<Storage>().lock().await;
