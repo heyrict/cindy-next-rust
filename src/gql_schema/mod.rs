@@ -1,4 +1,4 @@
-use async_graphql::{Context, FieldResult, Schema, SimpleBroker, ID};
+use async_graphql::{Context, FieldResult, Schema, SimpleBroker};
 use diesel::prelude::*;
 use futures::lock::Mutex;
 use futures::{Stream, StreamExt};
@@ -8,6 +8,7 @@ use std::time::Duration;
 use crate::context::GlobalCtx;
 use crate::models::*;
 
+mod puzzle;
 mod user;
 
 use user::UpdateUserSet;
@@ -31,19 +32,10 @@ impl QueryRoot {
     ) -> FieldResult<Vec<User>> {
         self.users_(ctx, limit, offset, filter, order).await
     }
+
     async fn puzzle(&self, ctx: &Context<'_>, id: i32) -> FieldResult<Puzzle> {
-        use crate::schema::puzzle;
-
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
-
-        let user = puzzle::table
-            .filter(puzzle::id.eq(id))
-            .limit(1)
-            .first(&conn)?;
-
-        Ok(user)
+        self.puzzle_(ctx, id).await
     }
-
     async fn puzzles(
         &self,
         ctx: &Context<'_>,
@@ -52,27 +44,7 @@ impl QueryRoot {
         filter: Option<Vec<PuzzleFilter>>,
         order: Option<Vec<PuzzleOrder>>,
     ) -> FieldResult<Vec<Puzzle>> {
-        use crate::schema::puzzle::dsl::*;
-
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
-
-        let mut query = puzzle.into_boxed();
-        if let Some(order) = order {
-            query = PuzzleOrders::new(order).apply_order(query);
-        }
-        if let Some(filter) = filter {
-            query = PuzzleFilters::new(filter).apply_filter(query);
-        }
-        if let Some(limit) = limit {
-            query = query.limit(limit);
-        }
-        if let Some(offset) = offset {
-            query = query.offset(offset);
-        }
-
-        let puzzles = query.load::<Puzzle>(&conn)?;
-
-        Ok(puzzles)
+        self.puzzles_(ctx, limit, offset, filter, order).await
     }
 }
 

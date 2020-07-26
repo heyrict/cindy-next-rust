@@ -1,6 +1,6 @@
 use actix_web::{cookie::Cookie, HttpResponse, Result};
-use frank_jwt::encode;
-use serde::Serialize;
+use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::PathBuf;
 use time::{now_utc, Duration};
@@ -22,6 +22,42 @@ pub trait AuthResponse {
 
 const DEFAULT_SECRET: &'static str = "CINDYTHINK_HEYRICT";
 
+#[derive(Deserialize)]
+pub struct JwtPayloadUser {
+    id: crate::models::ID,
+    icon: Option<String>,
+    username: String,
+    nickname: String,
+}
+
+#[derive(Deserialize)]
+pub struct JwtPayload {
+    user: JwtPayloadUser,
+}
+
+pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {
+    let result = if let Some(keypath) = env::var("KEYPATH").ok() {
+        decode(
+            &token,
+            &PathBuf::from(keypath),
+            Algorithm::RS256,
+            &ValidationOptions::default(),
+        )
+    } else {
+        let secret = env::var("SECRET").unwrap_or(DEFAULT_SECRET.to_string());
+        decode(
+            &token,
+            &secret,
+            Algorithm::RS256,
+            &ValidationOptions::default(),
+        )
+    };
+    result
+        .map(|(header, payload)| header)
+        .map_err(anyhow::Error::from)
+        .and_then(|val| serde_json::from_value(val).map_err(anyhow::Error::from))
+}
+
 fn get_jwt(user: &User) -> String {
     let iat = now_utc().to_timespec();
     let exp = iat + Duration::days(30);
@@ -39,17 +75,11 @@ fn get_jwt(user: &User) -> String {
     });
 
     if let Some(keypath) = env::var("KEYPATH").ok() {
-        encode(
-            header,
-            &PathBuf::from(keypath),
-            &payload,
-            frank_jwt::Algorithm::RS256,
-        )
-        .expect("Error encoding jwt with RS256.")
+        encode(header, &PathBuf::from(keypath), &payload, Algorithm::RS256)
+            .expect("Error encoding jwt with RS256.")
     } else {
         let secret = env::var("SECRET").unwrap_or(DEFAULT_SECRET.to_string());
-        encode(header, &secret, &payload, frank_jwt::Algorithm::HS256)
-            .expect("Error encoding jwt with HS256.")
+        encode(header, &secret, &payload, Algorithm::HS256).expect("Error encoding jwt with HS256.")
     }
 }
 

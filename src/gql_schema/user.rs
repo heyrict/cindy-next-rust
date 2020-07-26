@@ -1,6 +1,5 @@
 use async_graphql::{Context, FieldResult};
 use diesel::prelude::*;
-use futures::StreamExt;
 
 use crate::context::GlobalCtx;
 use crate::models::{Timestamptz, ID};

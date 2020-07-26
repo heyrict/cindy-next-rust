@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 
+use crate::auth::{parse_jwt, JwtPayload};
 use crate::db::{establish_connection, DbPool};
 
 #[derive(Clone)]
@@ -31,19 +32,14 @@ impl GlobalCtx {
     }
 }
 
+#[derive(Default)]
 pub struct RequestCtx {
-    token: Option<String>,
-}
-
-impl Default for RequestCtx {
-    fn default() -> Self {
-        Self { token: None }
-    }
+    jwt_payload: Option<JwtPayload>,
 }
 
 impl RequestCtx {
     pub fn with_token(mut self, token: Option<String>) -> Self {
-        self.token = token;
+        self.jwt_payload = token.and_then(|token| parse_jwt(&token).ok());
         self
     }
 }

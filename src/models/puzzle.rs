@@ -90,32 +90,6 @@ impl PuzzleFilters {
         Self(orders)
     }
 
-    pub fn apply_update_filter<'a, T>(
-        self,
-        query_dsl: diesel::query_builder::BoxedUpdateStatement<'a, DB, T>,
-    ) -> diesel::query_builder::BoxedUpdateStatement<'a, DB, T> {
-        use crate::schema::puzzle::dsl::*;
-
-        let mut query = query_dsl;
-
-        for (index, obj) in self.0.into_iter().enumerate() {
-            let PuzzleFilter {
-                title: obj_title,
-                genre: obj_genre,
-                yami: obj_yami,
-                content: obj_content,
-                solution: obj_solution,
-            } = obj;
-            gen_string_filter!(obj_title, title, query, index);
-            gen_enum_filter!(obj_genre: GenreFiltering, genre, query, index);
-            gen_enum_filter!(obj_yami: YamiFiltering, yami, query, index);
-            gen_string_filter!(obj_content, content, query, index);
-            gen_string_filter!(obj_solution, solution, query, index);
-        }
-
-        query
-    }
-
     pub fn apply_filter<'a>(
         self,
         query_dsl: crate::schema::puzzle::BoxedQuery<'a, DB>,
