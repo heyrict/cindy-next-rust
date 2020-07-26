@@ -52,9 +52,25 @@ impl QueryRoot {
 }
 
 #[async_graphql::InputObject]
+pub struct UpdatePuzzleSet {
+    pub title: Option<String>,
+    pub yami: Option<Yami>,
+    pub genre: Option<Genre>,
+    pub content: Option<String>,
+    pub solution: Option<String>,
+    pub created: Option<Timestamptz>,
+    pub modified: Option<Timestamptz>,
+    pub status: Option<Status>,
+    pub memo: Option<String>,
+    pub user_id: Option<i32>,
+    pub anonymous: Option<bool>,
+    pub dazed_on: Option<Date>,
+    pub grotesque: Option<bool>,
+}
+
 #[derive(AsChangeset, Debug)]
 #[table_name = "puzzle"]
-pub struct UpdatePuzzleSet {
+pub struct UpdatePuzzleData {
     pub title: Option<String>,
     pub yami: Option<i32>,
     pub genre: Option<i32>,
@@ -70,6 +86,26 @@ pub struct UpdatePuzzleSet {
     pub grotesque: Option<bool>,
 }
 
+impl From<UpdatePuzzleSet> for UpdatePuzzleData {
+    fn from(data: UpdatePuzzleSet) -> Self {
+        Self {
+            title: data.title,
+            yami: data.yami.map(|yami| yami as i32),
+            genre: data.yami.map(|genre| genre as i32),
+            content: data.content,
+            solution: data.solution,
+            created: data.created,
+            modified: data.modified,
+            status: data.status.map(|status| status as i32),
+            memo: data.memo,
+            user_id: data.user_id,
+            anonymous: data.anonymous,
+            dazed_on: data.dazed_on,
+            grotesque: data.grotesque,
+        }
+    }
+}
+
 impl MutationRoot {
     pub async fn update_puzzle_(
         &self,
@@ -80,7 +116,7 @@ impl MutationRoot {
         let conn = ctx.data::<GlobalCtx>().get_conn()?;
         diesel::update(puzzle::table)
             .filter(puzzle::id.eq(id))
-            .set(&set)
+            .set(UpdatePuzzleData::from(set))
             .get_result(&conn)
             .map_err(|err| err.into())
     }

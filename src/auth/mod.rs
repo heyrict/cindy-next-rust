@@ -53,7 +53,7 @@ pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {
         )
     };
     result
-        .map(|(header, payload)| header)
+        .map(|(_, payload)| payload)
         .map_err(anyhow::Error::from)
         .and_then(|val| serde_json::from_value(val).map_err(anyhow::Error::from))
 }

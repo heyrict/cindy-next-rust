@@ -64,14 +64,29 @@ macro_rules! gen_number_filter {
 macro_rules! gen_enum_filter {
     ($obj:ident: $ty:ident, $field:ident, $query:ident, $index:ident) => {
         if let Some($obj) = $obj {
-            let $ty { eq, ne, eq_any } = $obj;
+            let $ty {
+                eq,
+                ne,
+                eq_any,
+                ne_any,
+            } = $obj;
             apply_filter!(eq, $field, $query, $index);
             apply_filter!(ne, $field, $query, $index);
+            // eq_any
             if let Some(eq_any) = eq_any {
                 if $index == 0 {
                     $query = $query.filter($field.eq(diesel::dsl::any(eq_any)));
                 } else {
                     $query = $query.or_filter($field.eq(diesel::dsl::any(eq_any)));
+                    continue;
+                }
+            }
+            // ne_any
+            if let Some(ne_any) = ne_any {
+                if $index == 0 {
+                    $query = $query.filter($field.ne(diesel::dsl::any(ne_any)));
+                } else {
+                    $query = $query.or_filter($field.ne(diesel::dsl::any(ne_any)));
                     continue;
                 }
             }

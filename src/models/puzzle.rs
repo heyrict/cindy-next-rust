@@ -1,6 +1,4 @@
-use async_graphql::{
-    Context, FieldResult, InputValueError, InputValueResult, Scalar, ScalarType, Value,
-};
+use async_graphql::{Context, Enum, FieldResult};
 use diesel::{
     backend::Backend,
     deserialize::{self, FromSql},
@@ -122,36 +120,15 @@ pub struct YamiFiltering {
     pub eq: Option<Yami>,
     pub ne: Option<Yami>,
     pub eq_any: Option<Vec<Yami>>,
+    pub ne_any: Option<Vec<Yami>>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, FromSqlRow)]
+#[Enum]
+#[derive(Debug, FromSqlRow)]
 pub enum Yami {
     None = 0,
     Normal = 1,
     Longterm = 2,
-}
-
-#[Scalar]
-impl ScalarType for Yami {
-    fn parse(value: Value) -> InputValueResult<Self> {
-        if let Value::Int(value) = value {
-            match value {
-                0 => Ok(Yami::None),
-                1 => Ok(Yami::Normal),
-                2 => Ok(Yami::Longterm),
-                _ => Err(InputValueError::Custom(format!(
-                    "Expect Yami in 0-2, found `{}`",
-                    value
-                ))),
-            }
-        } else {
-            Err(InputValueError::ExpectedType(value))
-        }
-    }
-
-    fn to_value(&self) -> Value {
-        Value::Int(*self as i32)
-    }
 }
 
 impl<DB> ToSql<Integer, DB> for Yami
@@ -192,38 +169,16 @@ pub struct GenreFiltering {
     pub eq: Option<Genre>,
     pub ne: Option<Genre>,
     pub eq_any: Option<Vec<Genre>>,
+    pub ne_any: Option<Vec<Genre>>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, FromSqlRow)]
+#[Enum]
+#[derive(Debug, FromSqlRow)]
 pub enum Genre {
     Classic = 0,
     TwentyQuestions = 1,
     LittleAlbat = 2,
     Others = 3,
-}
-
-#[Scalar]
-impl ScalarType for Genre {
-    fn parse(value: Value) -> InputValueResult<Self> {
-        if let Value::Int(value) = value {
-            match value {
-                0 => Ok(Genre::Classic),
-                1 => Ok(Genre::TwentyQuestions),
-                2 => Ok(Genre::LittleAlbat),
-                3 => Ok(Genre::Others),
-                _ => Err(InputValueError::Custom(format!(
-                    "Expect Genre in 0-3, found `{}`",
-                    value
-                ))),
-            }
-        } else {
-            Err(InputValueError::ExpectedType(value))
-        }
-    }
-
-    fn to_value(&self) -> Value {
-        Value::Int(*self as i32)
-    }
 }
 
 impl<DB> ToSql<Integer, DB> for Genre
@@ -260,6 +215,51 @@ where
     }
 }
 
+#[Enum]
+#[derive(Debug, FromSqlRow)]
+pub enum Status {
+    Undergoing = 0,
+    Solved = 1,
+    Dazed = 2,
+    Hidden = 3,
+    ForceHidden = 4,
+}
+
+impl<DB> ToSql<Integer, DB> for Status
+where
+    DB: Backend,
+    i32: ToSql<Integer, DB>,
+{
+    fn to_sql<W: io::Write>(&self, out: &mut Output<W, DB>) -> serialize::Result {
+        (*self as i32).to_sql(out)
+    }
+}
+
+impl AsExpression<Integer> for Status {
+    type Expression = AsExprOf<i32, Integer>;
+
+    fn as_expression(self) -> Self::Expression {
+        <i32 as AsExpression<Integer>>::as_expression(self as i32)
+    }
+}
+
+impl<DB> FromSql<Integer, DB> for Status
+where
+    DB: Backend,
+    i32: FromSql<Integer, DB>,
+{
+    fn from_sql(bytes: Option<&DB::RawValue>) -> deserialize::Result<Self> {
+        match i32::from_sql(bytes)? {
+            0 => Ok(Status::Undergoing),
+            1 => Ok(Status::Solved),
+            2 => Ok(Status::Dazed),
+            3 => Ok(Status::Hidden),
+            4 => Ok(Status::ForceHidden),
+            v => Err(format!("Invalid value `{}` for genre", &v).into()),
+        }
+    }
+}
+
 /// Object for user table
 #[derive(Queryable, Identifiable, Debug)]
 #[table_name = "puzzle"]
@@ -272,7 +272,7 @@ pub struct Puzzle {
     pub solution: String,
     pub created: Timestamptz,
     pub modified: Timestamptz,
-    pub status: i32,
+    pub status: Status,
     pub memo: String,
     pub user_id: i32,
     pub anonymous: bool,
@@ -288,11 +288,11 @@ impl Puzzle {
     async fn title(&self) -> &str {
         &self.title
     }
-    async fn yami(&self) -> i32 {
-        self.yami as i32
+    async fn yami(&self) -> Yami {
+        self.yami
     }
-    async fn genre(&self) -> i32 {
-        self.genre as i32
+    async fn genre(&self) -> Genre {
+        self.genre
     }
     async fn content(&self) -> &str {
         &self.content
@@ -306,7 +306,7 @@ impl Puzzle {
     async fn modified(&self) -> Timestamptz {
         self.modified
     }
-    async fn status(&self) -> i32 {
+    async fn status(&self) -> Status {
         self.status
     }
     async fn memo(&self) -> &str {

@@ -1,11 +1,9 @@
 use async_graphql::{Context, FieldResult, Schema, SimpleBroker};
-use diesel::prelude::*;
 use futures::lock::Mutex;
 use futures::{Stream, StreamExt};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::context::GlobalCtx;
 use crate::models::*;
 
 mod puzzle;
