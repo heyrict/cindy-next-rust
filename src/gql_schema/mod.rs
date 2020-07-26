@@ -112,7 +112,6 @@ pub struct SubscriptionRoot;
 
 #[async_graphql::Subscription]
 impl SubscriptionRoot {
-    /*
     async fn interval(&self, #[arg(default = 1)] n: i32) -> impl Stream<Item = i32> {
         let mut value = 0;
         tokio::time::interval(Duration::from_secs(1)).map(move |_| {
@@ -120,7 +119,7 @@ impl SubscriptionRoot {
             value
         })
     }
-
+    /*
     async fn books(&self, mutation_type: Option<MutationType>) -> impl Stream<Item = BookChanged> {
         SimpleBroker::<BookChanged>::subscribe().filter(move |event| {
             let res = if let Some(mutation_type) = mutation_type {
