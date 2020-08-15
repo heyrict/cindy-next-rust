@@ -1,10 +1,11 @@
 use anyhow::{anyhow, Context as _, Result};
 use async_graphql::{Context, FieldResult};
 use chrono::Utc;
+use diesel::expression::BoxableExpression;
 use diesel::prelude::*;
-use diesel::query_dsl::methods::ThenOrderDsl;
-use diesel::query_dsl::QueryDsl;
+use diesel::query_dsl::{methods::ThenOrderDsl, QueryDsl};
 use diesel::r2d2::{ConnectionManager, PooledConnection};
+use diesel::sql_types::Bool;
 use ring::pbkdf2;
 use std::num::NonZeroU32;
 
@@ -69,38 +70,34 @@ pub struct UserFilter {
     nickname: Option<StringFiltering>,
 }
 
-/// Helper object to apply the filtering to the query
-pub struct UserFilters(Vec<UserFilter>);
+impl CindyFilter<user::table, DB> for UserFilter {
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool>>> {
+        use crate::schema::user::dsl::*;
 
-impl Default for UserFilters {
-    fn default() -> Self {
-        Self(vec![])
+        let mut filter: Option<Box<dyn BoxableExpression<user, DB, SqlType = Bool>>> = None;
+        let UserFilter {
+            username: obj_username,
+            nickname: obj_nickname,
+        } = self;
+        gen_string_filter!(obj_username, username, filter);
+        gen_string_filter!(obj_nickname, nickname, filter);
+        filter
     }
 }
 
-impl UserFilters {
-    pub fn new(orders: Vec<UserFilter>) -> Self {
-        Self(orders)
-    }
-
-    pub fn apply_filter<'a>(
-        self,
-        query_dsl: crate::schema::user::BoxedQuery<'a, DB>,
-    ) -> crate::schema::user::BoxedQuery<'a, DB> {
-        use crate::schema::user::dsl::*;
-
-        let mut query = query_dsl;
-
-        for (index, obj) in self.0.into_iter().enumerate() {
-            let UserFilter {
-                username: obj_username,
-                nickname: obj_nickname,
-            } = obj;
-            gen_string_filter!(obj_username, username, query, index);
-            gen_string_filter!(obj_nickname, nickname, query, index);
+impl CindyFilter<user::table, DB> for Vec<UserFilter> {
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool>>> {
+        let mut filter: Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool>>> = None;
+        for item in self.into_iter() {
+            if let Some(item) = item.as_expression() {
+                filter = Some(if let Some(filter_) = filter {
+                    Box::new(filter_.or(item))
+                } else {
+                    Box::new(item)
+                });
+            }
         }
-
-        query
+        filter
     }
 }
 
@@ -194,7 +191,9 @@ impl User {
             query = PuzzleOrders::new(order).apply_order(query);
         }
         if let Some(filter) = filter {
-            query = PuzzleFilters::new(filter).apply_filter(query);
+            if let Some(filter_exp) = filter.as_expression() {
+                query = query.filter(filter_exp)
+            }
         }
         if let Some(limit) = limit {
             query = query.limit(limit);

@@ -33,7 +33,9 @@ impl QueryRoot {
             query = UserOrders::new(order).apply_order(query);
         }
         if let Some(filter) = filter {
-            query = UserFilters::new(filter).apply_filter(query);
+            if let Some(filter_exp) = filter.as_expression() {
+                query = query.filter(filter_exp)
+            }
         }
         if let Some(limit) = limit {
             query = query.limit(limit);

@@ -1,4 +1,5 @@
 use async_graphql::{Context, Enum, FieldResult};
+use diesel::sql_types::Bool;
 use diesel::{
     backend::Backend,
     deserialize::{self, FromSql},
@@ -74,44 +75,45 @@ pub struct PuzzleFilter {
     solution: Option<StringFiltering>,
 }
 
-/// Helper object to apply the filtering to the query
-pub struct PuzzleFilters(Vec<PuzzleFilter>);
+impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<puzzle::table, DB, SqlType = Bool>>> {
+        use crate::schema::puzzle::dsl::*;
 
-impl Default for PuzzleFilters {
-    fn default() -> Self {
-        Self(vec![])
+        let mut filter: Option<Box<dyn BoxableExpression<puzzle, DB, SqlType = Bool>>> = None;
+        let PuzzleFilter {
+            title: obj_title,
+            genre: obj_genre,
+            yami: obj_yami,
+            content: obj_content,
+            solution: obj_solution,
+        } = self;
+        gen_string_filter!(obj_title, title, filter);
+        gen_enum_filter!(obj_genre: GenreFiltering, genre, filter);
+        gen_enum_filter!(obj_yami: YamiFiltering, yami, filter);
+        gen_string_filter!(obj_content, content, filter);
+        gen_string_filter!(obj_solution, solution, filter);
+        filter
     }
 }
 
-impl PuzzleFilters {
-    pub fn new(orders: Vec<PuzzleFilter>) -> Self {
-        Self(orders)
-    }
-
-    pub fn apply_filter<'a>(
+impl CindyFilter<puzzle::table, DB> for Vec<PuzzleFilter> {
+    fn as_expression(
         self,
-        query_dsl: crate::schema::puzzle::BoxedQuery<'a, DB>,
-    ) -> crate::schema::puzzle::BoxedQuery<'a, DB> {
-        use crate::schema::puzzle::dsl::*;
-
-        let mut query = query_dsl;
-
-        for (index, obj) in self.0.into_iter().enumerate() {
-            let PuzzleFilter {
-                title: obj_title,
-                genre: obj_genre,
-                yami: obj_yami,
-                content: obj_content,
-                solution: obj_solution,
-            } = obj;
-            gen_string_filter!(obj_title, title, query, index);
-            gen_enum_filter!(obj_genre: GenreFiltering, genre, query, index);
-            gen_enum_filter!(obj_yami: YamiFiltering, yami, query, index);
-            gen_string_filter!(obj_content, content, query, index);
-            gen_string_filter!(obj_solution, solution, query, index);
+    ) -> Option<Box<dyn BoxableExpression<puzzle::table, DB, SqlType = Bool>>> {
+        let mut filter: Option<Box<dyn BoxableExpression<puzzle::table, DB, SqlType = Bool>>> =
+            None;
+        for item in self.into_iter() {
+            if let Some(item) = item.as_expression() {
+                filter = Some(if let Some(filter_) = filter {
+                    Box::new(filter_.or(item))
+                } else {
+                    Box::new(item)
+                });
+            }
         }
-
-        query
+        filter
     }
 }
 

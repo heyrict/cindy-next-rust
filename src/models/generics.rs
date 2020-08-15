@@ -1,4 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
+use diesel::expression::BoxableExpression;
+use diesel::sql_types::Bool;
 
 #[async_graphql::Enum]
 pub enum Ordering {
@@ -32,16 +34,20 @@ pub type ID = i32;
 pub type Timestamptz = DateTime<Utc>;
 pub type Date = NaiveDate;
 
+pub trait CindyFilter<Table, DB> {
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool>>>;
+}
+
 // TODO Rewrite all these macros with proc_macro
 
 /// Generate filter for the query in a loop.
 macro_rules! gen_string_filter {
-    ($obj:ident, $field:ident, $query:ident, $index:ident) => {
+    ($obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
             let StringFiltering { eq, like, ilike } = $obj;
-            apply_filter!(eq, $field, $query, $index);
-            apply_filter!(like, $field, $query, $index);
-            apply_filter!(ilike, $field, $query, $index);
+            apply_filter!(eq, $field, $filt);
+            apply_filter!(like, $field, $filt);
+            apply_filter!(ilike, $field, $filt);
         }
     };
 }
@@ -62,7 +68,7 @@ macro_rules! gen_number_filter {
 
 /// Generate filter for the query in a loop.
 macro_rules! gen_enum_filter {
-    ($obj:ident: $ty:ident, $field:ident, $query:ident, $index:ident) => {
+    ($obj:ident: $ty:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
             let $ty {
                 eq,
@@ -70,26 +76,24 @@ macro_rules! gen_enum_filter {
                 eq_any,
                 ne_any,
             } = $obj;
-            apply_filter!(eq, $field, $query, $index);
-            apply_filter!(ne, $field, $query, $index);
+            apply_filter!(eq, $field, $filt);
+            apply_filter!(ne, $field, $filt);
             // eq_any
             if let Some(eq_any) = eq_any {
-                if $index == 0 {
-                    $query = $query.filter($field.eq(diesel::dsl::any(eq_any)));
+                $filt = Some(if let Some(filt_) = $filt {
+                    Box::new(filt_.and($field.eq(diesel::dsl::any(eq_any))))
                 } else {
-                    $query = $query.or_filter($field.eq(diesel::dsl::any(eq_any)));
-                    continue;
-                }
-            }
+                    Box::new($field.eq(diesel::dsl::any(eq_any)))
+                });
+            };
             // ne_any
             if let Some(ne_any) = ne_any {
-                if $index == 0 {
-                    $query = $query.filter($field.ne(diesel::dsl::any(ne_any)));
+                $filt = Some(if let Some(filt_) = $filt {
+                    Box::new(filt_.and($field.ne(diesel::dsl::any(ne_any))))
                 } else {
-                    $query = $query.or_filter($field.ne(diesel::dsl::any(ne_any)));
-                    continue;
-                }
-            }
+                    Box::new($field.ne(diesel::dsl::any(ne_any)))
+                });
+            };
         }
     };
 }
@@ -99,25 +103,23 @@ macro_rules! gen_enum_filter {
 /// Due to limitation of the query builder, grouping `or` is not possible.
 /// Thus only one arguments from the second element in the array will be accepted.
 macro_rules! apply_filter {
-    ($obj:ident, $field:ident, $query:ident, $index:ident) => {
+    ($obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
-            if $index == 0 {
-                $query = $query.filter($field.$obj($obj));
+            $filt = Some(if let Some(filt_) = $filt {
+                Box::new(filt_.and($field.$obj($obj)))
             } else {
-                $query = $query.or_filter($field.$obj($obj));
-                continue;
-            }
-        }
+                Box::new($field.$obj($obj))
+            });
+        };
     };
-    (($ty:ty) $obj:ident, $field:ident, $query:ident, $index:ident) => {
+    (($ty:ty) $obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
-            if $index == 0 {
-                $query = $query.filter($field.$obj($obj as $ty));
+            $filt = Some(if let Some(filt_) = $filt {
+                Box::new(filt_.and($field.$obj($obj as $ty)))
             } else {
-                $query = $query.or_filter($field.$obj($obj as $ty));
-                continue;
-            }
-        }
+                Box::new($field.$obj($obj as $ty))
+            });
+        };
     };
 }
 
