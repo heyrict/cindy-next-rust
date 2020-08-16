@@ -2,6 +2,7 @@ use actix_web::{cookie::Cookie, HttpResponse, Result};
 use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
 use serde::{Deserialize, Serialize};
 use std::env;
+use std::fmt;
 use std::path::PathBuf;
 use time::{now_utc, Duration};
 
@@ -22,6 +23,38 @@ pub trait AuthResponse {
 
 const DEFAULT_SECRET: &'static str = "CINDYTHINK_HEYRICT";
 
+#[derive(Serialize, Deserialize, PartialEq)]
+pub enum Role {
+    Guest,
+    User,
+    Admin,
+}
+
+impl From<&str> for Role {
+    fn from(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "user" => Role::User,
+            "admin" => Role::Admin,
+            _ => Role::Guest,
+        }
+    }
+}
+
+impl fmt::Display for Role {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Role::Guest => "Guest",
+                Role::User => "User",
+                Role::Admin => "Admin",
+            }
+        )
+    }
+}
+
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct JwtPayloadUser {
     id: crate::models::ID,
@@ -30,9 +63,11 @@ pub struct JwtPayloadUser {
     nickname: String,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct JwtPayload {
     user: JwtPayloadUser,
+    role: Role,
 }
 
 pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {
@@ -71,7 +106,8 @@ fn get_jwt(user: &User) -> String {
             "icon": user.icon,
             "username": user.username,
             "nickname": user.nickname,
-        }
+        },
+        "role": Role::User
     });
 
     if let Some(keypath) = env::var("KEYPATH").ok() {

@@ -1,20 +1,21 @@
 use anyhow::{anyhow, Context as _, Result};
-use async_graphql::{Context, FieldResult};
+use async_graphql::{guard::Guard, Context, FieldResult};
 use chrono::Utc;
 use diesel::expression::BoxableExpression;
 use diesel::prelude::*;
 use diesel::query_dsl::{methods::ThenOrderDsl, QueryDsl};
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 use diesel::sql_types::Bool;
+use rand::{distributions::Alphanumeric, Rng};
 use ring::pbkdf2;
 use std::num::NonZeroU32;
 
 use super::generics::*;
 use super::puzzle::*;
 
+use crate::auth::Role;
 use crate::context::GlobalCtx;
 use crate::schema::user;
-use rand::{distributions::Alphanumeric, Rng};
 
 const SALT_LEN: usize = 16;
 const CRED_LEN: usize = 32;
@@ -132,11 +133,13 @@ impl User {
     async fn username(&self) -> &str {
         &self.username
     }
-    /*
+    #[field(guard(
+        DenyRoleGuard(role = "Role::User"),
+        DenyRoleGuard(role = "Role::Guest")
+    ))]
     async fn password(&self) -> &str {
         &self.password
     }
-    */
     async fn nickname(&self) -> &str {
         &self.nickname
     }

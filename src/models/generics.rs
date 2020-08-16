@@ -1,6 +1,10 @@
+use async_graphql::{async_trait, guard::Guard, Context, FieldResult};
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::expression::BoxableExpression;
 use diesel::sql_types::Bool;
+
+use crate::auth::Role;
+use crate::context::RequestCtx;
 
 #[async_graphql::Enum]
 pub enum Ordering {
@@ -36,6 +40,25 @@ pub type Date = NaiveDate;
 
 pub trait CindyFilter<Table, DB> {
     fn as_expression(self) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool>>>;
+}
+
+pub struct DenyRoleGuard {
+    pub role: Role,
+}
+
+#[async_trait::async_trait]
+impl Guard for DenyRoleGuard {
+    async fn check(&self, ctx: &Context<'_>) -> FieldResult<()> {
+        if let Some(reqctx) = ctx.data_opt::<RequestCtx>() {
+            if reqctx.get_role() == self.role {
+                Err("Forbidden: No enough privileges".into())
+            } else {
+                Ok(())
+            }
+        } else {
+            Ok(())
+        }
+    }
 }
 
 // TODO Rewrite all these macros with proc_macro

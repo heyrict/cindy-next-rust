@@ -25,6 +25,12 @@ use auth::{login, signup};
 use context::{GlobalCtx, RequestCtx};
 use gql_schema::{CindySchema, MutationRoot, QueryRoot, SubscriptionRoot};
 
+lazy_static! {
+    pub static ref ADMIN_SECRET: String = {
+        dotenv::var("ADMIN_SECRET").expect("Invalid ADMIN_SECRET env var")
+    };
+}
+
 async fn index(
     schema: web::Data<CindySchema>,
     req: HttpRequest,
@@ -34,10 +40,17 @@ async fn index(
     let token = headers
         .get("Authorization")
         .and_then(|value| value.to_str().map(|v| v.to_owned()).ok());
+    let admin_secret = headers
+        .get("X-CINDY-ADMIN-SECRET")
+        .and_then(|value| value.to_str().map(|v| v.to_owned()).ok());
 
     gql_req
         .into_inner()
-        .data(RequestCtx::default().with_token(token))
+        .data(
+            RequestCtx::default()
+                .with_token(token)
+                .with_secret(admin_secret),
+        )
         .execute(&schema)
         .await
         .into()
