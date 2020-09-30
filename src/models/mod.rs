@@ -4,6 +4,6 @@ mod generics;
 mod puzzle;
 mod user;
 
-pub use generics::{Date, Timestamptz, ID, CindyFilter};
+pub use generics::{assert_eq_guard, user_id_guard, CindyFilter, Date, Timestamptz, ID};
 pub use puzzle::*;
 pub use user::*;

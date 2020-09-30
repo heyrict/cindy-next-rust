@@ -1,8 +1,8 @@
-use async_graphql::{Context, FieldResult, InputObject};
+use async_graphql::{Context, FieldError, FieldResult, InputObject};
 use diesel::prelude::*;
 
-use crate::context::GlobalCtx;
-use crate::models::{Date, Timestamptz, ID};
+use crate::context::{GlobalCtx, RequestCtx};
+use crate::models::{assert_eq_guard, Date, Timestamptz, ID};
 use crate::schema::puzzle;
 
 use super::*;
@@ -116,6 +116,13 @@ impl MutationRoot {
         set: UpdatePuzzleSet,
     ) -> FieldResult<Puzzle> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let puzzle_inst: Puzzle = puzzle::table
+            .filter(puzzle::id.eq(id))
+            .limit(1)
+            .first(&conn)?;
+        user_id_guard(ctx, puzzle_inst.user_id)?;
+
         diesel::update(puzzle::table)
             .filter(puzzle::id.eq(id))
             .set(UpdatePuzzleData::from(set))

@@ -23,7 +23,7 @@ pub trait AuthResponse {
 
 const DEFAULT_SECRET: &'static str = "CINDYTHINK_HEYRICT";
 
-#[derive(Serialize, Deserialize, PartialEq)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Copy)]
 pub enum Role {
     Guest,
     User,
@@ -68,6 +68,20 @@ pub struct JwtPayloadUser {
 pub struct JwtPayload {
     user: JwtPayloadUser,
     role: Role,
+}
+
+impl JwtPayload {
+    pub fn get_user(&self) -> &JwtPayloadUser {
+        &self.user
+    }
+
+    pub fn get_role(&self) -> &Role {
+        &self.role
+    }
+
+    pub fn get_user_id(&self) -> crate::models::ID {
+        self.user.id
+    }
 }
 
 pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {

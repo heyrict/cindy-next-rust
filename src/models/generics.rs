@@ -1,4 +1,6 @@
-use async_graphql::{async_trait, guard::Guard, Context, Enum, FieldResult, InputObject};
+use async_graphql::{
+    async_trait, guard::Guard, Context, Enum, FieldError, FieldResult, InputObject,
+};
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::expression::BoxableExpression;
 use diesel::sql_types::Bool;
@@ -42,6 +44,15 @@ pub trait CindyFilter<Table, DB> {
     fn as_expression(self) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool>>>;
 }
 
+/// Make sure that req_value be consistent with value, otherwise throws an error.
+pub fn assert_eq_guard<T: PartialEq>(a: T, b: T) -> FieldResult<()> {
+    if a != b {
+        Err(FieldError("Assertion failed".to_string(), None))
+    } else {
+        Ok(())
+    }
+}
+
 pub struct DenyRoleGuard {
     pub role: Role,
 }
@@ -58,6 +69,21 @@ impl Guard for DenyRoleGuard {
         } else {
             Ok(())
         }
+    }
+}
+
+/// Guard guests, limit users with same user id, allow admins
+pub fn user_id_guard(ctx: &Context<'_>, user_id: ID) -> FieldResult<()> {
+    let role = ctx.data::<RequestCtx>()?.get_role();
+    match role {
+        Role::Admin => Ok(()),
+        Role::User => assert_eq_guard(
+            ctx.data::<RequestCtx>()?
+                .get_user_id()
+                .ok_or(FieldError("No user".to_string(), None))?,
+            user_id,
+        ),
+        Role::Guest => Err(FieldError("Not logged in".to_string(), None)),
     }
 }
 

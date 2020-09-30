@@ -3,7 +3,7 @@ use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 
 use super::ADMIN_SECRET;
-use crate::auth::{parse_jwt, JwtPayload, Role};
+use crate::auth::{parse_jwt, JwtPayload, JwtPayloadUser, Role};
 use crate::db::{establish_connection, DbPool};
 
 #[derive(Clone)]
@@ -53,10 +53,18 @@ impl RequestCtx {
     pub fn get_role(&self) -> Role {
         if self.admin_secret.as_ref() == Some(&ADMIN_SECRET) {
             Role::Admin
-        } else if self.jwt_payload.is_some() {
-            Role::User
+        } else if let Some(jwt) = self.jwt_payload.as_ref() {
+            *jwt.get_role()
         } else {
             Role::Guest
         }
+    }
+
+    pub fn get_user(&self) -> Option<&JwtPayloadUser> {
+        self.jwt_payload.as_ref().map(|jwt| jwt.get_user())
+    }
+
+    pub fn get_user_id(&self) -> Option<crate::models::ID> {
+        self.jwt_payload.as_ref().map(|jwt| jwt.get_user_id())
     }
 }
