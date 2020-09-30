@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fmt;
 use std::path::PathBuf;
-use time::{now_utc, Duration};
+use time::{Duration, OffsetDateTime};
 
 use crate::models::User;
 
@@ -94,11 +94,11 @@ pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {
 }
 
 fn get_jwt(user: &User) -> String {
-    let iat = now_utc().to_timespec();
-    let exp = iat + Duration::days(30);
+    let iat = OffsetDateTime::now_utc();
+    let exp: OffsetDateTime = iat + Duration::days(30);
     let header = json!({
-        "iat": iat.sec,
-        "exp": exp.sec,
+        "iat": iat.timestamp(),
+        "exp": exp.timestamp(),
     });
     let payload = json!({
         "user": {
@@ -132,8 +132,8 @@ fn gen_cookie(user: &User) -> Cookie {
     let max_age = Duration::days(30);
 
     Cookie::build("cindy-jwt-token", get_jwt(user))
-        .expires(now_utc() + max_age)
-        .max_age_time(max_age)
+        .expires(OffsetDateTime::now_utc() + max_age)
+        .max_age(max_age)
         .http_only(true)
         .path("/")
         .finish()

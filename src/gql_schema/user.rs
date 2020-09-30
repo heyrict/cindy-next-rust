@@ -1,4 +1,4 @@
-use async_graphql::{Context, FieldResult};
+use async_graphql::{Context, FieldResult, InputObject};
 use diesel::prelude::*;
 
 use crate::context::GlobalCtx;
@@ -9,7 +9,7 @@ use super::*;
 
 impl QueryRoot {
     pub async fn user_(&self, ctx: &Context<'_>, id: i32) -> FieldResult<User> {
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table.filter(user::id.eq(id)).limit(1).first(&conn)?;
 
@@ -26,7 +26,7 @@ impl QueryRoot {
     ) -> FieldResult<Vec<User>> {
         use crate::schema::user::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = user.into_boxed();
         if let Some(order) = order {
@@ -50,8 +50,7 @@ impl QueryRoot {
     }
 }
 
-#[async_graphql::InputObject]
-#[derive(AsChangeset, Debug)]
+#[derive(InputObject, AsChangeset, Debug)]
 #[table_name = "user"]
 pub struct UpdateUserSet {
     pub password: Option<String>,
@@ -79,7 +78,7 @@ impl MutationRoot {
         id: ID,
         set: UpdateUserSet,
     ) -> FieldResult<User> {
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         diesel::update(user::table)
             .filter(user::id.eq(id))
             .set(&set)

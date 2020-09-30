@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context as _, Result};
-use async_graphql::{guard::Guard, Context, FieldResult};
+use async_graphql::{guard::Guard, Context, FieldResult, InputObject};
 use chrono::Utc;
 use diesel::expression::BoxableExpression;
 use diesel::prelude::*;
@@ -22,7 +22,7 @@ const CRED_LEN: usize = 32;
 const ITER_TIMES: u32 = 100000;
 
 /// Available orders for users query
-#[async_graphql::InputObject]
+#[derive(InputObject, Clone)]
 pub struct UserOrder {
     id: Option<Ordering>,
     nickname: Option<Ordering>,
@@ -65,7 +65,7 @@ impl UserOrders {
 }
 
 /// Available filters for users query
-#[async_graphql::InputObject]
+#[derive(InputObject, Clone)]
 pub struct UserFilter {
     username: Option<StringFiltering>,
     nickname: Option<StringFiltering>,
@@ -133,7 +133,7 @@ impl User {
     async fn username(&self) -> &str {
         &self.username
     }
-    #[field(guard(
+    #[graphql(guard(
         DenyRoleGuard(role = "Role::User"),
         DenyRoleGuard(role = "Role::Guest")
     ))]
@@ -187,7 +187,7 @@ impl User {
     ) -> FieldResult<Vec<Puzzle>> {
         use crate::schema::puzzle::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = puzzle.filter(user_id.eq(self.id)).into_boxed();
         if let Some(order) = order {

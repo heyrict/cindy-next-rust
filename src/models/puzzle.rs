@@ -1,4 +1,4 @@
-use async_graphql::{Context, Enum, FieldResult};
+use async_graphql::{Context, Enum, FieldResult, InputObject};
 use diesel::sql_types::Bool;
 use diesel::{
     backend::Backend,
@@ -19,7 +19,7 @@ use super::generics::*;
 use super::user::*;
 
 /// Available orders for users query
-#[async_graphql::InputObject]
+#[derive(InputObject, Clone)]
 pub struct PuzzleOrder {
     id: Option<Ordering>,
     created: Option<Ordering>,
@@ -66,7 +66,7 @@ impl PuzzleOrders {
 }
 
 /// Available filters for users query
-#[async_graphql::InputObject]
+#[derive(InputObject, Clone)]
 pub struct PuzzleFilter {
     title: Option<StringFiltering>,
     genre: Option<GenreFiltering>,
@@ -117,7 +117,7 @@ impl CindyFilter<puzzle::table, DB> for Vec<PuzzleFilter> {
     }
 }
 
-#[async_graphql::InputObject]
+#[derive(InputObject, Eq, PartialEq, Clone)]
 pub struct YamiFiltering {
     pub eq: Option<Yami>,
     pub ne: Option<Yami>,
@@ -125,8 +125,7 @@ pub struct YamiFiltering {
     pub ne_any: Option<Vec<Yami>>,
 }
 
-#[Enum]
-#[derive(Debug, FromSqlRow)]
+#[derive(Enum, Eq, PartialEq, Clone, Copy, Debug, FromSqlRow)]
 pub enum Yami {
     None = 0,
     Normal = 1,
@@ -166,7 +165,7 @@ where
     }
 }
 
-#[async_graphql::InputObject]
+#[derive(InputObject, Eq, PartialEq, Clone)]
 pub struct GenreFiltering {
     pub eq: Option<Genre>,
     pub ne: Option<Genre>,
@@ -174,8 +173,7 @@ pub struct GenreFiltering {
     pub ne_any: Option<Vec<Genre>>,
 }
 
-#[Enum]
-#[derive(Debug, FromSqlRow)]
+#[derive(Enum, Eq, PartialEq, Copy, Clone, Debug, FromSqlRow)]
 pub enum Genre {
     Classic = 0,
     TwentyQuestions = 1,
@@ -217,8 +215,7 @@ where
     }
 }
 
-#[Enum]
-#[derive(Debug, FromSqlRow)]
+#[derive(Enum, Eq, PartialEq, Clone, Copy, Debug, FromSqlRow)]
 pub enum Status {
     Undergoing = 0,
     Solved = 1,
@@ -330,7 +327,7 @@ impl Puzzle {
     async fn user(&self, ctx: &Context<'_>) -> FieldResult<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.user_id))

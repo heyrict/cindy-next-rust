@@ -1,7 +1,7 @@
-use async_graphql::{Context, FieldResult, Schema, SimpleBroker};
-use futures::lock::Mutex;
+use async_graphql::{Context, FieldResult, Object, Schema, Subscription};
+//use futures::lock::Mutex;
 use futures::{Stream, StreamExt};
-use std::sync::Arc;
+//use std::sync::Arc;
 use std::time::Duration;
 
 use crate::models::*;
@@ -15,7 +15,7 @@ pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
 pub struct QueryRoot;
 
-#[async_graphql::Object]
+#[Object]
 impl QueryRoot {
     async fn user(&self, ctx: &Context<'_>, id: i32) -> FieldResult<User> {
         self.user_(ctx, id).await
@@ -48,7 +48,7 @@ impl QueryRoot {
 
 pub struct MutationRoot;
 
-#[async_graphql::Object]
+#[Object]
 impl MutationRoot {
     async fn update_user(
         &self,
@@ -110,9 +110,9 @@ struct BookChanged {
 
 pub struct SubscriptionRoot;
 
-#[async_graphql::Subscription]
+#[Subscription]
 impl SubscriptionRoot {
-    async fn interval(&self, #[arg(default = 1)] n: i32) -> impl Stream<Item = i32> {
+    async fn interval(&self, #[graphql(default = 1)] n: i32) -> impl Stream<Item = i32> {
         let mut value = 0;
         tokio::time::interval(Duration::from_secs(1)).map(move |_| {
             value += n;

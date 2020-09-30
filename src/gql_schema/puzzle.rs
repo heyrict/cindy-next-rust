@@ -1,4 +1,4 @@
-use async_graphql::{Context, FieldResult};
+use async_graphql::{Context, FieldResult, InputObject};
 use diesel::prelude::*;
 
 use crate::context::GlobalCtx;
@@ -9,7 +9,7 @@ use super::*;
 
 impl QueryRoot {
     pub async fn puzzle_(&self, ctx: &Context<'_>, id: i32) -> FieldResult<Puzzle> {
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzle = puzzle::table
             .filter(puzzle::id.eq(id))
@@ -29,7 +29,7 @@ impl QueryRoot {
     ) -> FieldResult<Vec<Puzzle>> {
         use crate::schema::puzzle::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = puzzle.into_boxed();
         if let Some(order) = order {
@@ -53,7 +53,7 @@ impl QueryRoot {
     }
 }
 
-#[async_graphql::InputObject]
+#[derive(InputObject)]
 pub struct UpdatePuzzleSet {
     pub title: Option<String>,
     pub yami: Option<Yami>,
@@ -115,7 +115,7 @@ impl MutationRoot {
         id: ID,
         set: UpdatePuzzleSet,
     ) -> FieldResult<Puzzle> {
-        let conn = ctx.data::<GlobalCtx>().get_conn()?;
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         diesel::update(puzzle::table)
             .filter(puzzle::id.eq(id))
             .set(UpdatePuzzleData::from(set))

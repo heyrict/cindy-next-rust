@@ -12,7 +12,7 @@ use actix_web::{guard, web, App, HttpRequest, HttpResponse, HttpServer, Result};
 use actix_web_actors::ws;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::Schema;
-use async_graphql_actix_web::{GQLRequest, GQLResponse, WSSubscription};
+use async_graphql_actix_web::{Request, Response, WSSubscription};
 
 mod auth;
 pub mod context;
@@ -26,16 +26,11 @@ use context::{GlobalCtx, RequestCtx};
 use gql_schema::{CindySchema, MutationRoot, QueryRoot, SubscriptionRoot};
 
 lazy_static! {
-    pub static ref ADMIN_SECRET: String = {
-        dotenv::var("ADMIN_SECRET").expect("Invalid ADMIN_SECRET env var")
-    };
+    pub static ref ADMIN_SECRET: String =
+        dotenv::var("ADMIN_SECRET").expect("Invalid ADMIN_SECRET env var");
 }
 
-async fn index(
-    schema: web::Data<CindySchema>,
-    req: HttpRequest,
-    gql_req: GQLRequest,
-) -> GQLResponse {
+async fn index(schema: web::Data<CindySchema>, req: HttpRequest, gql_req: Request) -> Response {
     let headers = req.headers();
     let token = headers
         .get("Authorization")
@@ -44,14 +39,14 @@ async fn index(
         .get("X-CINDY-ADMIN-SECRET")
         .and_then(|value| value.to_str().map(|v| v.to_owned()).ok());
 
-    gql_req
-        .into_inner()
-        .data(
-            RequestCtx::default()
-                .with_token(token)
-                .with_secret(admin_secret),
+    schema
+        .execute(
+            gql_req.into_inner().data(
+                RequestCtx::default()
+                    .with_token(token)
+                    .with_secret(admin_secret),
+            ),
         )
-        .execute(&schema)
         .await
         .into()
 }
@@ -66,15 +61,13 @@ async fn index_playground() -> Result<HttpResponse> {
 }
 */
 
-/*
 async fn index_ws(
-    schema: web::Data<BooksSchema>,
+    schema: web::Data<CindySchema>,
     req: HttpRequest,
     payload: web::Payload,
 ) -> Result<HttpResponse> {
-    ws::start_with_protocols(WSSubscription::new(&schema), &["graphql-ws"], &req, payload)
+    ws::start_with_protocols(WSSubscription::new(Schema::clone(&*schema)), &["graphql-ws"], &req, payload)
 }
-*/
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {

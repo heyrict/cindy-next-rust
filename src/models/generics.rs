@@ -1,4 +1,4 @@
-use async_graphql::{async_trait, guard::Guard, Context, FieldResult};
+use async_graphql::{async_trait, guard::Guard, Context, Enum, FieldResult, InputObject};
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::expression::BoxableExpression;
 use diesel::sql_types::Bool;
@@ -6,7 +6,7 @@ use diesel::sql_types::Bool;
 use crate::auth::Role;
 use crate::context::RequestCtx;
 
-#[async_graphql::Enum]
+#[derive(Enum, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Ordering {
     Asc,
     Desc,
@@ -16,14 +16,14 @@ pub enum Ordering {
     DescNullsLast,
 }
 
-#[async_graphql::InputObject]
+#[derive(InputObject, Clone, Debug)]
 pub struct StringFiltering {
     pub eq: Option<String>,
     pub like: Option<String>,
     pub ilike: Option<String>,
 }
 
-#[async_graphql::InputObject]
+#[derive(InputObject, Clone, Debug)]
 pub struct I32Filtering {
     pub eq: Option<i32>,
     pub gt: Option<i32>,
