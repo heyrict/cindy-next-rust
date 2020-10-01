@@ -1,4 +1,4 @@
-use async_graphql::{Context, FieldResult, Object, Schema, Subscription};
+use async_graphql::{Context, FieldResult, Object, Schema, SimpleObject, Subscription};
 //use futures::lock::Mutex;
 use futures::{Stream, StreamExt};
 //use std::sync::Arc;
@@ -110,14 +110,35 @@ struct BookChanged {
 
 pub struct SubscriptionRoot;
 
+#[derive(Clone, Default, SimpleObject)]
+struct IntervalMsg {
+    msg: String,
+}
+
+impl IntervalMsg {
+    pub fn new(msg: String) -> Self {
+        IntervalMsg { msg }
+    }
+}
+
 #[Subscription]
 impl SubscriptionRoot {
-    async fn interval(&self, #[graphql(default = 1)] n: i32) -> impl Stream<Item = i32> {
-        let mut value = 0;
-        tokio::time::interval(Duration::from_secs(1)).map(move |_| {
-            value += n;
-            value
-        })
+    async fn interval(
+        &self,
+        #[graphql(default = 1)] n: i32,
+    ) -> impl Stream<Item = Option<IntervalMsg>> {
+        use crate::broker::CindyBroker;
+
+        tokio::spawn(async move {
+            let mut stream = tokio::time::interval(Duration::from_secs(n as u64)).map(move |_| {
+                CindyBroker::publish(IntervalMsg::new("hello, world!".to_string()));
+            });
+            loop {
+                stream.next().await;
+            }
+        });
+
+        CindyBroker::<IntervalMsg>::subscribe()
     }
     /*
     async fn books(&self, mutation_type: Option<MutationType>) -> impl Stream<Item = BookChanged> {

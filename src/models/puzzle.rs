@@ -259,6 +259,11 @@ where
     }
 }
 
+pub enum PuzzleSub {
+    Created(Puzzle),
+    Updated(Puzzle),
+}
+
 /// Object for user table
 #[derive(Queryable, Identifiable, Debug)]
 #[table_name = "puzzle"]

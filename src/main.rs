@@ -19,6 +19,7 @@ pub mod db;
 pub mod gql_schema;
 pub mod models;
 mod schema;
+mod broker;
 
 use auth::{login, signup};
 use context::{GlobalCtx, RequestCtx};
