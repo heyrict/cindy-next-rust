@@ -1,6 +1,4 @@
-use async_graphql::{
-    async_trait, guard::Guard, Context, Enum, FieldError, FieldResult, InputObject,
-};
+use async_graphql::{self, async_trait, guard::Guard, Context, Enum, InputObject};
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::expression::BoxableExpression;
 use diesel::sql_types::Bool;
@@ -93,9 +91,9 @@ pub trait CindyFilter<Table, DB> {
 }
 
 /// Make sure that req_value be consistent with value, otherwise throws an error.
-pub fn assert_eq_guard<T: PartialEq>(a: T, b: T) -> FieldResult<()> {
+pub fn assert_eq_guard<T: PartialEq>(a: T, b: T) -> async_graphql::Result<()> {
     if a != b {
-        Err(FieldError("Assertion failed".to_string(), None))
+        Err(async_graphql::Error::new("Assertion failed".to_string()))
     } else {
         Ok(())
     }
@@ -107,7 +105,7 @@ pub struct DenyRoleGuard {
 
 #[async_trait::async_trait]
 impl Guard for DenyRoleGuard {
-    async fn check(&self, ctx: &Context<'_>) -> FieldResult<()> {
+    async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
         if let Some(reqctx) = ctx.data_opt::<RequestCtx>() {
             if reqctx.get_role() == self.role {
                 Err("Forbidden: No enough privileges".into())
@@ -121,17 +119,17 @@ impl Guard for DenyRoleGuard {
 }
 
 /// Guard guests, limit users with same user id, allow admins
-pub fn user_id_guard(ctx: &Context<'_>, user_id: ID) -> FieldResult<()> {
+pub fn user_id_guard(ctx: &Context<'_>, user_id: ID) -> async_graphql::Result<()> {
     let role = ctx.data::<RequestCtx>()?.get_role();
     match role {
         Role::Admin => Ok(()),
         Role::User => assert_eq_guard(
             ctx.data::<RequestCtx>()?
                 .get_user_id()
-                .ok_or(FieldError("No user".to_string(), None))?,
+                .ok_or(async_graphql::Error::new("No user"))?,
             user_id,
         ),
-        Role::Guest => Err(FieldError("Not logged in".to_string(), None)),
+        Role::Guest => Err(async_graphql::Error::new("Not logged in")),
     }
 }
 

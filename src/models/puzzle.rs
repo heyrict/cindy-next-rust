@@ -1,4 +1,4 @@
-use async_graphql::{Context, Enum, FieldResult, InputObject, Object};
+use async_graphql::{self, Context, Enum, InputObject, Object};
 use diesel::sql_types::Bool;
 use diesel::{
     backend::Backend,
@@ -406,7 +406,7 @@ impl Puzzle {
         self.grotesque
     }
 
-    async fn user(&self, ctx: &Context<'_>) -> FieldResult<User> {
+    async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;

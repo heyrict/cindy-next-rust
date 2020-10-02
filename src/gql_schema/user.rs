@@ -1,4 +1,4 @@
-use async_graphql::{Context, FieldResult, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use diesel::prelude::*;
 
 use crate::context::GlobalCtx;
@@ -12,7 +12,7 @@ pub struct UserMutation;
 
 #[Object]
 impl UserQuery {
-    pub async fn user(&self, ctx: &Context<'_>, id: i32) -> FieldResult<User> {
+    pub async fn user(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<User> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table.filter(user::id.eq(id)).limit(1).first(&conn)?;
@@ -27,7 +27,7 @@ impl UserQuery {
         offset: Option<i64>,
         filter: Option<Vec<UserFilter>>,
         order: Option<Vec<UserOrder>>,
-    ) -> FieldResult<Vec<User>> {
+    ) -> async_graphql::Result<Vec<User>> {
         use crate::schema::user::dsl::*;
 
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
@@ -82,7 +82,7 @@ impl UserMutation {
         ctx: &Context<'_>,
         id: ID,
         set: UpdateUserSet,
-    ) -> FieldResult<User> {
+    ) -> async_graphql::Result<User> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         diesel::update(user::table)
             .filter(user::id.eq(id))

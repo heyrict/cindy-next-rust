@@ -1,4 +1,4 @@
-use async_graphql::{Context, FieldError, FieldResult, InputObject, Object, Subscription};
+use async_graphql::{self, Context, InputObject, Object, Subscription};
 use diesel::prelude::*;
 use futures::{Stream, StreamExt};
 
@@ -16,7 +16,7 @@ pub struct PuzzleSubscription;
 
 #[Object]
 impl PuzzleQuery {
-    pub async fn puzzle(&self, ctx: &Context<'_>, id: i32) -> FieldResult<Puzzle> {
+    pub async fn puzzle(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Puzzle> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzle = puzzle::table
@@ -34,7 +34,7 @@ impl PuzzleQuery {
         offset: Option<i64>,
         filter: Option<Vec<PuzzleFilter>>,
         order: Option<Vec<PuzzleOrder>>,
-    ) -> FieldResult<Vec<Puzzle>> {
+    ) -> async_graphql::Result<Vec<Puzzle>> {
         use crate::schema::puzzle::dsl::*;
 
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
@@ -123,7 +123,7 @@ impl PuzzleMutation {
         ctx: &Context<'_>,
         id: ID,
         set: UpdatePuzzleSet,
-    ) -> FieldResult<Puzzle> {
+    ) -> async_graphql::Result<Puzzle> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         // User should be the owner on update mutation
@@ -137,7 +137,7 @@ impl PuzzleMutation {
             .filter(puzzle::id.eq(id))
             .set(UpdatePuzzleData::from(set))
             .get_result(&conn)
-            .map_err(|err| FieldError::from(err))?;
+            .map_err(|err| async_graphql::Error::from(err))?;
 
         CindyBroker::publish(PuzzleSub::Updated(puzzle_inst, puzzle.clone()));
 
