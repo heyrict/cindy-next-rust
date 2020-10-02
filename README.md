@@ -2,17 +2,69 @@
 
 An experimental graphql backend for [cindy-next](https://github.com/heyrict/cindy-next).
 
-It is based on `async-graphql`, `actix-web`, `diesel` now but may change in future versions.
+It is based on `async-graphql`, `actix-web`, `diesel`, powered by Rust.
 
 ## Features
 
-- [x] Dynamic query building with `diesel` (with limitations on complex filtering)
+- [x] Dynamic query building with `diesel` (with support for complex filtering)
 - [x] Graphql interface
-- [ ] Authorization
-- [ ] Access control
-- [ ] Relay-like pagination (it won't be included here, but you can build that with the code here!)
+- [x] Realtime Subscriptions
+- [x] Authorization
+- [x] Access control
+- [ ] Relay-like pagination (not included)
+
+## Dependencies
+
+- **Rust**, first of all. Follow the instructions on rustup.rs if you don't have one. The minimum supported version is v1.46.
+
+    ```sh
+    # Install rustup
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    # Install latest rust and cargo
+    rustup install nightly
+    ```
+
+- **Postgresql**, and its dev library.
+
+    ```sh
+    # Debian-based OS
+    sudo apt-get install postgresql libpq-dev
+    # Arch linux
+    sudo pacman -S postgresql postgresql-libs
+    ```
+
+- **Diesel client**. You need to compile this yourself
+
+    ```sh
+    cargo install diesel_cli --no-default-features --features "postgres"
+    ```
+
+- **just** (optional), to run recipes defined in `justfile`.
+
+    ```sh
+    cargo install just
+    ```
+
+- **Graphql Playground** (optional), to check the graphql API.
+
+    Download the application at https://www.electronjs.org/apps/graphql-playground
 
 ## Quickstart
 
-- Make sure you have exact the same database schema as the latest `cindy-next` commit. (Migration scripts to be come)
-- Run `DATABASE_URL=... cargo run` to run the server
+- Clone the repo with `git clone https://github.com/heyrict/cindy-next-rust`.
+- Create an empty database for *Cindy* with `sudo -u postgres psql`
+
+    ```postgresql
+    CREATE ROLE cindy LOGIN PASSWORD 'cindy-password';
+    CREATE DATABASE cindy-db;
+    GRANT ALL ON DATABASE cindy-db TO cindy;
+    ```
+
+- Setup the database with `diesel database setup`.
+
+- Copy `.env.example` to `.env` and edit it based on your flavor.
+
+  Make sure the `DATABASE_URL` in the config file points to your postgres instance.
+  If you followed the config before, it is `postgres://cindy:cindy-password@127.0.0.1:5432/cindy-db`
+
+- Run the binary `cindy-next-rust`
