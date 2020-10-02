@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context as _, Result};
-use async_graphql::{guard::Guard, Context, FieldResult, InputObject};
+use async_graphql::{self, guard::Guard, Context, InputObject};
 use chrono::Utc;
 use diesel::expression::BoxableExpression;
 use diesel::prelude::*;
@@ -184,7 +184,7 @@ impl User {
         offset: Option<i64>,
         filter: Option<Vec<PuzzleFilter>>,
         order: Option<Vec<PuzzleOrder>>,
-    ) -> FieldResult<Vec<Puzzle>> {
+    ) -> async_graphql::Result<Vec<Puzzle>> {
         use crate::schema::puzzle::dsl::*;
 
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;

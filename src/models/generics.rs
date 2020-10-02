@@ -1,12 +1,29 @@
-use async_graphql::{
-    async_trait, guard::Guard, Context, Enum, FieldError, FieldResult, InputObject,
-};
+use async_graphql::{self, async_trait, guard::Guard, Context, Enum, InputObject};
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::expression::BoxableExpression;
 use diesel::sql_types::Bool;
 
 use crate::auth::Role;
 use crate::context::RequestCtx;
+
+/// A filter available to check raw values
+pub trait RawFilter<T> {
+    /// Check if item matches the filter condition
+    fn check(&self, item: &T) -> bool;
+}
+
+impl<U: RawFilter<T>, T> RawFilter<T> for Vec<U> {
+    fn check(&self, item: &T) -> bool {
+        !self.iter().any(|u| u.check(item) == false)
+    }
+}
+
+#[derive(Enum, Eq, PartialEq, Clone, Copy, Debug)]
+pub enum DbOp {
+    Created,
+    Updated,
+    Deleted,
+}
 
 #[derive(Enum, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum Ordering {
@@ -25,6 +42,17 @@ pub struct StringFiltering {
     pub ilike: Option<String>,
 }
 
+impl StringFiltering {
+    fn check(&self, item: String) -> bool {
+        if let Some(eq) = self.eq.as_ref() {
+            &item == eq
+        } else {
+            // TODO like && ilike unimplemented
+            true
+        }
+    }
+}
+
 #[derive(InputObject, Clone, Debug)]
 pub struct I32Filtering {
     pub eq: Option<i32>,
@@ -32,6 +60,24 @@ pub struct I32Filtering {
     pub lt: Option<i32>,
     pub ge: Option<i32>,
     pub le: Option<i32>,
+}
+
+impl I32Filtering {
+    fn check(&self, item: &i32) -> bool {
+        if let Some(eq) = self.eq.as_ref() {
+            item == eq
+        } else if let Some(gt) = self.gt.as_ref() {
+            item > gt
+        } else if let Some(lt) = self.lt.as_ref() {
+            item < lt
+        } else if let Some(ge) = self.ge.as_ref() {
+            item >= ge
+        } else if let Some(le) = self.le.as_ref() {
+            item <= le
+        } else {
+            true
+        }
+    }
 }
 
 pub type DB = diesel::pg::Pg;
@@ -45,9 +91,9 @@ pub trait CindyFilter<Table, DB> {
 }
 
 /// Make sure that req_value be consistent with value, otherwise throws an error.
-pub fn assert_eq_guard<T: PartialEq>(a: T, b: T) -> FieldResult<()> {
+pub fn assert_eq_guard<T: PartialEq>(a: T, b: T) -> async_graphql::Result<()> {
     if a != b {
-        Err(FieldError("Assertion failed".to_string(), None))
+        Err(async_graphql::Error::new("Assertion failed".to_string()))
     } else {
         Ok(())
     }
@@ -59,7 +105,7 @@ pub struct DenyRoleGuard {
 
 #[async_trait::async_trait]
 impl Guard for DenyRoleGuard {
-    async fn check(&self, ctx: &Context<'_>) -> FieldResult<()> {
+    async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
         if let Some(reqctx) = ctx.data_opt::<RequestCtx>() {
             if reqctx.get_role() == self.role {
                 Err("Forbidden: No enough privileges".into())
@@ -73,17 +119,17 @@ impl Guard for DenyRoleGuard {
 }
 
 /// Guard guests, limit users with same user id, allow admins
-pub fn user_id_guard(ctx: &Context<'_>, user_id: ID) -> FieldResult<()> {
+pub fn user_id_guard(ctx: &Context<'_>, user_id: ID) -> async_graphql::Result<()> {
     let role = ctx.data::<RequestCtx>()?.get_role();
     match role {
         Role::Admin => Ok(()),
         Role::User => assert_eq_guard(
             ctx.data::<RequestCtx>()?
                 .get_user_id()
-                .ok_or(FieldError("No user".to_string(), None))?,
+                .ok_or(async_graphql::Error::new("No user"))?,
             user_id,
         ),
-        Role::Guest => Err(FieldError("Not logged in".to_string(), None)),
+        Role::Guest => Err(async_graphql::Error::new("Not logged in")),
     }
 }
 
@@ -123,7 +169,7 @@ macro_rules! gen_enum_filter {
                 eq,
                 ne,
                 eq_any,
-                ne_any,
+                ne_all,
             } = $obj;
             apply_filter!(eq, $field, $filt);
             apply_filter!(ne, $field, $filt);
@@ -135,12 +181,12 @@ macro_rules! gen_enum_filter {
                     Box::new($field.eq(diesel::dsl::any(eq_any)))
                 });
             };
-            // ne_any
-            if let Some(ne_any) = ne_any {
+            // ne_all
+            if let Some(ne_all) = ne_all {
                 $filt = Some(if let Some(filt_) = $filt {
-                    Box::new(filt_.and($field.ne(diesel::dsl::any(ne_any))))
+                    Box::new(filt_.and($field.ne(diesel::dsl::all(ne_all))))
                 } else {
-                    Box::new($field.ne(diesel::dsl::any(ne_any)))
+                    Box::new($field.ne(diesel::dsl::all(ne_all)))
                 });
             };
         }
