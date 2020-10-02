@@ -1,7 +1,6 @@
 use actix_web::{cookie::Cookie, HttpResponse, Result};
 use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
 use serde::{Deserialize, Serialize};
-use std::env;
 use std::fmt;
 use std::path::PathBuf;
 use time::{Duration, OffsetDateTime};
@@ -23,7 +22,7 @@ pub trait AuthResponse {
 
 const DEFAULT_SECRET: &'static str = "CINDYTHINK_HEYRICT";
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug)]
 pub enum Role {
     Guest,
     User,
@@ -54,8 +53,7 @@ impl fmt::Display for Role {
     }
 }
 
-#[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct JwtPayloadUser {
     id: crate::models::ID,
     icon: Option<String>,
@@ -63,8 +61,7 @@ pub struct JwtPayloadUser {
     nickname: String,
 }
 
-#[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct JwtPayload {
     user: JwtPayloadUser,
     role: Role,
@@ -85,7 +82,7 @@ impl JwtPayload {
 }
 
 pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {
-    let result = if let Some(keypath) = env::var("KEYPATH").ok() {
+    let result = if let Some(keypath) = dotenv::var("KEYPATH").ok() {
         decode(
             &token,
             &PathBuf::from(keypath),
@@ -93,11 +90,11 @@ pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {
             &ValidationOptions::default(),
         )
     } else {
-        let secret = env::var("SECRET").unwrap_or(DEFAULT_SECRET.to_string());
+        let secret = dotenv::var("SECRET").unwrap_or(DEFAULT_SECRET.to_string());
         decode(
             &token,
             &secret,
-            Algorithm::RS256,
+            Algorithm::HS256,
             &ValidationOptions::default(),
         )
     };
@@ -110,11 +107,10 @@ pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {
 fn get_jwt(user: &User) -> String {
     let iat = OffsetDateTime::now_utc();
     let exp: OffsetDateTime = iat + Duration::days(30);
-    let header = json!({
+    let header = json!({});
+    let payload = json!({
         "iat": iat.timestamp(),
         "exp": exp.timestamp(),
-    });
-    let payload = json!({
         "user": {
             "id": user.id,
             "icon": user.icon,
@@ -124,11 +120,11 @@ fn get_jwt(user: &User) -> String {
         "role": Role::User
     });
 
-    if let Some(keypath) = env::var("KEYPATH").ok() {
+    if let Some(keypath) = dotenv::var("KEYPATH").ok() {
         encode(header, &PathBuf::from(keypath), &payload, Algorithm::RS256)
             .expect("Error encoding jwt with RS256.")
     } else {
-        let secret = env::var("SECRET").unwrap_or(DEFAULT_SECRET.to_string());
+        let secret = dotenv::var("SECRET").unwrap_or(DEFAULT_SECRET.to_string());
         encode(header, &secret, &payload, Algorithm::HS256).expect("Error encoding jwt with HS256.")
     }
 }

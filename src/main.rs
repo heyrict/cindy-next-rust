@@ -32,9 +32,14 @@ lazy_static! {
 
 async fn index(schema: web::Data<CindySchema>, req: HttpRequest, gql_req: Request) -> Response {
     let headers = req.headers();
-    let token = headers
-        .get("Authorization")
-        .and_then(|value| value.to_str().map(|v| v.to_owned()).ok());
+    let token = headers.get("Authorization").and_then(|value| {
+        value
+            .to_str()
+            .ok()
+            // Drop `Bearer `
+            .and_then(|v| v.splitn(2, ' ').nth(1))
+            .map(|v| v.to_string())
+    });
     let admin_secret = headers
         .get("X-CINDY-ADMIN-SECRET")
         .and_then(|value| value.to_str().map(|v| v.to_owned()).ok());
@@ -66,6 +71,7 @@ async fn index_ws(
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    let endpoint = dotenv::var("ENDPOINT").unwrap_or("127.0.0.1:8000".to_string());
     let ctx = GlobalCtx::default();
     let schema = Schema::build(
         QueryRoot::default(),
@@ -75,7 +81,7 @@ async fn main() -> std::io::Result<()> {
     .data(ctx.clone())
     .finish();
 
-    println!("Endpoint: http://localhost:8000/graphql");
+    println!("Endpoint: http://{}/graphql", &endpoint);
 
     HttpServer::new(move || {
         App::new()
@@ -91,7 +97,7 @@ async fn main() -> std::io::Result<()> {
                     .to(index_ws),
             )
     })
-    .bind("127.0.0.1:8000")?
+    .bind(&endpoint)?
     .run()
     .await
 }
