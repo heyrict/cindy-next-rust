@@ -1,4 +1,4 @@
-use async_graphql::{Context, Enum, FieldResult, InputObject};
+use async_graphql::{Context, Enum, FieldResult, InputObject, Object};
 use diesel::sql_types::Bool;
 use diesel::{
     backend::Backend,
@@ -71,6 +71,7 @@ pub struct PuzzleFilter {
     title: Option<StringFiltering>,
     genre: Option<GenreFiltering>,
     yami: Option<YamiFiltering>,
+    status: Option<StatusFiltering>,
     content: Option<StringFiltering>,
     solution: Option<StringFiltering>,
 }
@@ -86,12 +87,14 @@ impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
             title: obj_title,
             genre: obj_genre,
             yami: obj_yami,
+            status: obj_status,
             content: obj_content,
             solution: obj_solution,
         } = self;
         gen_string_filter!(obj_title, title, filter);
         gen_enum_filter!(obj_genre: GenreFiltering, genre, filter);
         gen_enum_filter!(obj_yami: YamiFiltering, yami, filter);
+        gen_enum_filter!(obj_status: StatusFiltering, status, filter);
         gen_string_filter!(obj_content, content, filter);
         gen_string_filter!(obj_solution, solution, filter);
         filter
@@ -122,7 +125,23 @@ pub struct YamiFiltering {
     pub eq: Option<Yami>,
     pub ne: Option<Yami>,
     pub eq_any: Option<Vec<Yami>>,
-    pub ne_any: Option<Vec<Yami>>,
+    pub ne_all: Option<Vec<Yami>>,
+}
+
+impl RawFilter<Yami> for YamiFiltering {
+    fn check(&self, item: &Yami) -> bool {
+        if let Some(eq) = self.eq.as_ref() {
+            item == eq
+        } else if let Some(ne) = self.ne.as_ref() {
+            item != ne
+        } else if let Some(eq_any) = self.eq_any.as_ref() {
+            eq_any.iter().any(|u| u == item)
+        } else if let Some(ne_all) = self.ne_all.as_ref() {
+            ne_all.iter().all(|u| u != item)
+        } else {
+            true
+        }
+    }
 }
 
 #[derive(Enum, Eq, PartialEq, Clone, Copy, Debug, FromSqlRow)]
@@ -170,7 +189,7 @@ pub struct GenreFiltering {
     pub eq: Option<Genre>,
     pub ne: Option<Genre>,
     pub eq_any: Option<Vec<Genre>>,
-    pub ne_any: Option<Vec<Genre>>,
+    pub ne_all: Option<Vec<Genre>>,
 }
 
 #[derive(Enum, Eq, PartialEq, Copy, Clone, Debug, FromSqlRow)]
@@ -179,6 +198,22 @@ pub enum Genre {
     TwentyQuestions = 1,
     LittleAlbat = 2,
     Others = 3,
+}
+
+impl RawFilter<Genre> for GenreFiltering {
+    fn check(&self, item: &Genre) -> bool {
+        if let Some(eq) = self.eq.as_ref() {
+            item == eq
+        } else if let Some(ne) = self.ne.as_ref() {
+            item != ne
+        } else if let Some(eq_any) = self.eq_any.as_ref() {
+            eq_any.iter().any(|u| u == item)
+        } else if let Some(ne_all) = self.ne_all.as_ref() {
+            ne_all.iter().all(|u| u != item)
+        } else {
+            true
+        }
+    }
 }
 
 impl<DB> ToSql<Integer, DB> for Genre
@@ -224,6 +259,30 @@ pub enum Status {
     ForceHidden = 4,
 }
 
+#[derive(InputObject, Eq, PartialEq, Clone)]
+pub struct StatusFiltering {
+    pub eq: Option<Status>,
+    pub ne: Option<Status>,
+    pub eq_any: Option<Vec<Status>>,
+    pub ne_all: Option<Vec<Status>>,
+}
+
+impl RawFilter<Status> for StatusFiltering {
+    fn check(&self, item: &Status) -> bool {
+        if let Some(eq) = self.eq.as_ref() {
+            item == eq
+        } else if let Some(ne) = self.ne.as_ref() {
+            item != ne
+        } else if let Some(eq_any) = self.eq_any.as_ref() {
+            eq_any.iter().any(|u| u == item)
+        } else if let Some(ne_all) = self.ne_all.as_ref() {
+            ne_all.iter().all(|u| u != item)
+        } else {
+            true
+        }
+    }
+}
+
 impl<DB> ToSql<Integer, DB> for Status
 where
     DB: Backend,
@@ -259,13 +318,31 @@ where
     }
 }
 
+#[derive(Clone)]
 pub enum PuzzleSub {
     Created(Puzzle),
-    Updated(Puzzle),
+    Updated(Puzzle, Puzzle),
+}
+
+#[Object]
+impl PuzzleSub {
+    async fn op(&self) -> DbOp {
+        match &self {
+            PuzzleSub::Created(_) => DbOp::Created,
+            PuzzleSub::Updated(_, _) => DbOp::Updated,
+        }
+    }
+
+    async fn data(&self) -> Puzzle {
+        match &self {
+            PuzzleSub::Created(puzzle) => puzzle.clone(),
+            PuzzleSub::Updated(_, puzzle) => puzzle.clone(),
+        }
+    }
 }
 
 /// Object for user table
-#[derive(Queryable, Identifiable, Debug)]
+#[derive(Queryable, Identifiable, Clone, Debug)]
 #[table_name = "puzzle"]
 pub struct Puzzle {
     pub id: ID,
@@ -284,7 +361,7 @@ pub struct Puzzle {
     pub grotesque: bool,
 }
 
-#[async_graphql::Object]
+#[Object]
 impl Puzzle {
     async fn id(&self) -> ID {
         self.id

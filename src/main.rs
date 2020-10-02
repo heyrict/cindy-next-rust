@@ -14,12 +14,12 @@ use async_graphql::Schema;
 use async_graphql_actix_web::{Request, Response, WSSubscription};
 
 mod auth;
+mod broker;
 pub mod context;
 pub mod db;
 pub mod gql_schema;
 pub mod models;
 mod schema;
-mod broker;
 
 use auth::{login, signup};
 use context::{GlobalCtx, RequestCtx};
@@ -67,9 +67,13 @@ async fn index_ws(
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let ctx = GlobalCtx::default();
-    let schema = Schema::build(QueryRoot, MutationRoot, SubscriptionRoot)
-        .data(ctx.clone())
-        .finish();
+    let schema = Schema::build(
+        QueryRoot::default(),
+        MutationRoot::default(),
+        SubscriptionRoot::default(),
+    )
+    .data(ctx.clone())
+    .finish();
 
     println!("Endpoint: http://localhost:8000/graphql");
 
