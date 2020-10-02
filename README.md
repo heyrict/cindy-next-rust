@@ -56,6 +56,9 @@ It is based on `async-graphql`, `actix-web`, `diesel`, powered by Rust.
 
     ```postgresql
     CREATE ROLE cindy LOGIN PASSWORD 'cindy-password';
+    ALTER ROLE cindy SET client_encoding TO 'utf8';
+    ALTER ROLE cindy SET default_transaction_isolation TO 'react committed';
+    ALTER ROLE cindy SET timezone TO 'UTC';
     CREATE DATABASE cindy-db;
     GRANT ALL ON DATABASE cindy-db TO cindy;
     ```
@@ -64,7 +67,7 @@ It is based on `async-graphql`, `actix-web`, `diesel`, powered by Rust.
 
 - Copy `.env.example` to `.env` and edit it based on your flavor.
 
-  Make sure the `DATABASE_URL` in the config file points to your postgres instance.
-  If you followed the config before, it is `postgres://cindy:cindy-password@127.0.0.1:5432/cindy-db`
+  Make sure `DATABASE_URL` in the config file points to your postgres instance.
+  If you followed the steps above, it is `postgres://cindy:cindy-password@127.0.0.1:5432/cindy-db`.
 
-- Run the binary `cindy-next-rust`
+- Run server with `./target/release/cindy-next-rust` (or `cargo run --release` if the binary doesn't exist)
