@@ -86,22 +86,6 @@ impl CindyFilter<user::table, DB> for UserFilter {
     }
 }
 
-impl CindyFilter<user::table, DB> for Vec<UserFilter> {
-    fn as_expression(self) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool>>> {
-        let mut filter: Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool>>> = None;
-        for item in self.into_iter() {
-            if let Some(item) = item.as_expression() {
-                filter = Some(if let Some(filter_) = filter {
-                    Box::new(filter_.or(item))
-                } else {
-                    Box::new(item)
-                });
-            }
-        }
-        filter
-    }
-}
-
 /// Object for user table
 #[derive(Queryable, Identifiable, Debug)]
 #[table_name = "user"]

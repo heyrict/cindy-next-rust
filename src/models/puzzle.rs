@@ -5,7 +5,6 @@ use diesel::{
     deserialize::{self, FromSql},
     expression::{helper_types::AsExprOf, AsExpression},
     prelude::*,
-    query_dsl::methods::ThenOrderDsl,
     query_dsl::QueryDsl,
     serialize::{self, Output, ToSql},
     sql_types::Integer,
@@ -97,25 +96,6 @@ impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
         gen_enum_filter!(obj_status: StatusFiltering, status, filter);
         gen_string_filter!(obj_content, content, filter);
         gen_string_filter!(obj_solution, solution, filter);
-        filter
-    }
-}
-
-impl CindyFilter<puzzle::table, DB> for Vec<PuzzleFilter> {
-    fn as_expression(
-        self,
-    ) -> Option<Box<dyn BoxableExpression<puzzle::table, DB, SqlType = Bool>>> {
-        let mut filter: Option<Box<dyn BoxableExpression<puzzle::table, DB, SqlType = Bool>>> =
-            None;
-        for item in self.into_iter() {
-            if let Some(item) = item.as_expression() {
-                filter = Some(if let Some(filter_) = filter {
-                    Box::new(filter_.or(item))
-                } else {
-                    Box::new(item)
-                });
-            }
-        }
         filter
     }
 }
@@ -355,7 +335,7 @@ pub struct Puzzle {
     pub modified: Timestamptz,
     pub status: Status,
     pub memo: String,
-    pub user_id: i32,
+    pub user_id: ID,
     pub anonymous: bool,
     pub dazed_on: Date,
     pub grotesque: bool,

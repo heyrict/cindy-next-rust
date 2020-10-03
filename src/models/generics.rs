@@ -1,7 +1,6 @@
 use async_graphql::{self, async_trait, guard::Guard, Context, Enum, InputObject};
 use chrono::{DateTime, NaiveDate, Utc};
-use diesel::expression::BoxableExpression;
-use diesel::sql_types::Bool;
+use diesel::{backend::Backend, expression::BoxableExpression, prelude::*, sql_types::Bool};
 
 use crate::auth::Role;
 use crate::context::RequestCtx;
@@ -88,6 +87,26 @@ pub type Date = NaiveDate;
 
 pub trait CindyFilter<Table, DB> {
     fn as_expression(self) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool>>>;
+}
+
+impl<T: 'static, DB: 'static, F> CindyFilter<T, DB> for Vec<F>
+where
+    DB: Backend,
+    F: CindyFilter<T, DB>,
+{
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool>>> {
+        let mut filter: Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool>>> = None;
+        for item in self.into_iter() {
+            if let Some(item) = item.as_expression() {
+                filter = Some(if let Some(filter_) = filter {
+                    Box::new(filter_.or(item))
+                } else {
+                    Box::new(item)
+                });
+            }
+        }
+        filter
+    }
 }
 
 /// Make sure that req_value be consistent with value, otherwise throws an error.
@@ -240,7 +259,7 @@ macro_rules! gen_order {
 macro_rules! apply_order {
     ($query:ident, $flag:ident, $order:expr) => {
         if $flag {
-            $query = ThenOrderDsl::then_order_by($query, $order);
+            $query = diesel::query_dsl::methods::ThenOrderDsl::then_order_by($query, $order);
         } else {
             $query = $query.order_by($order);
             $flag = true;
