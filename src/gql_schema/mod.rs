@@ -7,17 +7,25 @@ use std::time::Duration;
 mod dialogue;
 mod hint;
 mod puzzle;
+mod puzzle_log;
 mod user;
 
 use dialogue::{DialogueMutation, DialogueQuery};
 use hint::{HintMutation, HintQuery};
 use puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription};
+use puzzle_log::PuzzleLogQuery;
 use user::{UserMutation, UserQuery};
 
 pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
 #[derive(MergedObject, Default)]
-pub struct QueryRoot(UserQuery, PuzzleQuery, HintQuery, DialogueQuery);
+pub struct QueryRoot(
+    UserQuery,
+    PuzzleQuery,
+    HintQuery,
+    DialogueQuery,
+    PuzzleLogQuery,
+);
 
 #[derive(MergedObject, Default)]
 pub struct MutationRoot(UserMutation, PuzzleMutation, HintMutation, DialogueMutation);

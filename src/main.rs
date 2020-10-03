@@ -16,12 +16,14 @@ use async_graphql::Schema;
 use async_graphql_actix_web::{Request, Response, WSSubscription};
 use std::io::Write;
 
+#[macro_use]
+pub mod models;
+
 mod auth;
 mod broker;
 pub mod context;
 pub mod db;
 pub mod gql_schema;
-pub mod models;
 mod schema;
 
 use auth::{login, signup, Role};

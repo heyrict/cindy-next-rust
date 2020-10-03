@@ -300,6 +300,7 @@ pub fn user_id_guard(ctx: &Context<'_>, user_id: ID) -> async_graphql::Result<()
 // TODO Rewrite all these macros with proc_macro
 
 /// Generate filter for the query in a loop.
+#[macro_export]
 macro_rules! gen_string_filter {
     ($obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
@@ -312,6 +313,7 @@ macro_rules! gen_string_filter {
 }
 
 /// Generate filter for the query in a loop.
+#[macro_export]
 macro_rules! gen_bool_filter {
     ($obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
@@ -322,6 +324,7 @@ macro_rules! gen_bool_filter {
 }
 
 /// Generate filter for the query in a loop.
+#[macro_export]
 macro_rules! gen_number_filter {
     ($obj:ident: $ty:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
@@ -336,6 +339,7 @@ macro_rules! gen_number_filter {
 }
 
 /// Generate filter for the query in a loop.
+#[macro_export]
 macro_rules! gen_nullable_number_filter {
     ($obj:ident: $ty:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
@@ -364,6 +368,7 @@ macro_rules! gen_nullable_number_filter {
 }
 
 /// Generate filter for the query in a loop.
+#[macro_export]
 macro_rules! gen_enum_filter {
     ($obj:ident: $ty:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
@@ -399,6 +404,7 @@ macro_rules! gen_enum_filter {
 ///
 /// Due to limitation of the query builder, grouping `or` is not possible.
 /// Thus only one arguments from the second element in the array will be accepted.
+#[macro_export]
 macro_rules! apply_filter {
     ($obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
@@ -421,6 +427,7 @@ macro_rules! apply_filter {
 }
 
 /// Generate order_by for the query in a loop.
+#[macro_export]
 macro_rules! gen_order {
     ($obj:ident, $field:ident, $query:ident) => {
         if let Some(order) = $obj.$field {
@@ -437,6 +444,7 @@ macro_rules! gen_order {
 }
 
 /// Applies order_by statement to the query in a loop.
+#[macro_export]
 macro_rules! apply_order {
     ($query:ident, $order:expr) => {
         $query = $query.then_order_by($order);
