@@ -18,7 +18,10 @@ impl DialogueQuery {
     pub async fn dialogue(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Dialogue> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let dialogue = dialogue::table.filter(dialogue::id.eq(id)).limit(1).first(&conn)?;
+        let dialogue = dialogue::table
+            .filter(dialogue::id.eq(id))
+            .limit(1)
+            .first(&conn)?;
 
         Ok(dialogue)
     }
@@ -64,8 +67,10 @@ pub struct UpdateDialogueInput {
     pub question: Option<String>,
     pub answer: Option<String>,
     #[column_name = "good"]
+    #[graphql(name = "good")]
     pub is_good: Option<bool>,
-    #[column_name = "true"]
+    #[column_name = "true_"]
+    #[graphql(name = "true")]
     pub is_true: Option<bool>,
     pub created: Option<Timestamptz>,
     #[column_name = "answeredtime"]
@@ -77,7 +82,8 @@ pub struct UpdateDialogueInput {
     #[column_name = "questionEditTimes"]
     pub question_edit_times: Option<i32>,
     pub qno: Option<i32>,
-    pub modified: Option<Timestamptz>,
+    #[graphql(default_with = "Utc::now()")]
+    pub modified: Timestamptz,
 }
 
 #[derive(InputObject, Insertable)]
@@ -86,39 +92,28 @@ pub struct CreateDialogueInput {
     pub id: Option<ID>,
     pub question: Option<String>,
     #[graphql(default)]
-    pub answer: Option<String>,
+    pub answer: String,
     #[column_name = "good"]
-    #[graphql(default)]
-    pub is_good: Option<bool>,
-    #[column_name = "true"]
-    #[graphql(default)]
-    pub is_true: Option<bool>,
+    #[graphql(default, name = "good")]
+    pub is_good: bool,
+    #[column_name = "true_"]
+    #[graphql(default, name = "true")]
+    pub is_true: bool,
     #[graphql(default_with = "Utc::now()")]
-    pub created: Option<Timestamptz>,
+    pub created: Timestamptz,
     #[column_name = "answeredtime"]
     pub answered_time: Option<Option<Timestamptz>>,
-    pub puzzle_id: Option<ID>,
+    pub puzzle_id: ID,
     pub user_id: Option<ID>,
     #[column_name = "answerEditTimes"]
-    pub answer_edit_times: Option<i32>,
+    #[graphql(default)]
+    pub answer_edit_times: i32,
     #[column_name = "questionEditTimes"]
     #[graphql(default)]
     pub question_edit_times: i32,
     pub qno: Option<i32>,
     #[graphql(default_with = "Utc::now()")]
     pub modified: Timestamptz,
-}
-
-impl CreateDialogueInput {
-    pub fn set_default(mut self) -> Self {
-        let now = Utc::now();
-        // Set field `created`
-        if self.created.is_none() {
-            self.created = Some(now.clone());
-        };
-
-        self
-    }
 }
 
 #[Object]
@@ -129,21 +124,34 @@ impl DialogueMutation {
         id: ID,
         mut set: UpdateDialogueInput,
     ) -> async_graphql::Result<Dialogue> {
-        use crate::schema::puzzle;
-
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let reqctx = ctx.data::<RequestCtx>()?;
+        let role = reqctx.get_role();
 
-        // User should be the owner on update mutation
-        let dialogue_inst: Dialogue = dialogue::table.filter(dialogue::id.eq(id)).limit(1).first(&conn)?;
-        let puzzle_inst: Puzzle = puzzle::table
-            .filter(puzzle::id.eq(dialogue_inst.puzzle_id))
-            .limit(1)
-            .first(&conn)?;
-        user_id_guard(ctx, puzzle_inst.user_id)?;
+        match role {
+            Role::User => {
+                assert_eq_guard_msg(set.qno, None, "Setting qno explicitly is prohibited")?;
+                let dialogue_inst: Dialogue = dialogue::table
+                    .filter(dialogue::id.eq(id))
+                    .limit(1)
+                    .first(&conn)?;
 
-        // Set `modified` to the current time when edited
-        set.modified = Some(Utc::now());
-        set.edit_times = Some(dialogue_inst.edit_times + 1);
+                // Update edit times
+                if set.question.is_some() {
+                    set.question_edit_times = Some(dialogue_inst.question_edit_times + 1);
+                }
+                if set.answer.is_some() {
+                    // Update answered time
+                    if dialogue_inst.answer.is_empty() && dialogue_inst.answered_time.is_none() {
+                        set.answered_time = Some(Some(Utc::now()));
+                    } else {
+                        set.answer_edit_times = Some(dialogue_inst.answer_edit_times + 1);
+                    }
+                }
+            }
+            Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
+            Role::Admin => {}
+        };
 
         let dialogue: Dialogue = diesel::update(dialogue::table)
             .filter(dialogue::id.eq(id))
@@ -154,37 +162,31 @@ impl DialogueMutation {
         Ok(dialogue)
     }
 
+    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
     pub async fn create_dialogue(
         &self,
         ctx: &Context<'_>,
-        data: CreateDialogueInput,
+        mut data: CreateDialogueInput,
     ) -> async_graphql::Result<Dialogue> {
-        use crate::schema::puzzle;
-
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
-        let role = reqctx.get_role();
 
-        let insert_data = match role {
-            Role::User => {
-                // Assert that time-related are unset
-                assert_eq_guard(data.created, None)?;
-                assert_eq_guard(data.modified, None)?;
-                // Assert that upstream puzzle exists
-                let puzzle_inst: Puzzle = puzzle::table
-                    .filter(puzzle::id.eq(data.puzzle_id))
-                    .limit(1)
-                    .first(&conn)?;
-                // Assert the user is the owner of the puzzle.
-                user_id_guard(ctx, puzzle_inst.user_id)?;
-                data.set_default()
-            }
-            Role::Admin => data.set_default(),
-            Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
+        // Assert user_id is set to the user
+        if let Some(user_id) = data.user_id {
+            user_id_guard(ctx, user_id)?;
+        } else {
+            data.user_id = reqctx.get_user_id();
         };
 
+        // Set qno
+        let qno: i64 = dialogue::table
+            .filter(dialogue::puzzle_id.eq(data.puzzle_id))
+            .count()
+            .get_result(&conn)?;
+        data.qno = Some((qno + 1) as i32);
+
         let dialogue: Dialogue = diesel::insert_into(dialogue::table)
-            .values(&insert_data)
+            .values(&data)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
@@ -196,7 +198,11 @@ impl DialogueMutation {
         DenyRoleGuard(role = "Role::User"),
         DenyRoleGuard(role = "Role::Guest")
     ))]
-    pub async fn delete_dialogue(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Dialogue> {
+    pub async fn delete_dialogue(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+    ) -> async_graphql::Result<Dialogue> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let dialogue = diesel::delete(dialogue::table.filter(dialogue::id.eq(id)))

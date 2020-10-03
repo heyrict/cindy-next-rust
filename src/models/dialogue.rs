@@ -35,9 +35,9 @@ impl DialogueOrders {
 
     pub fn apply_order<'a>(
         self,
-        query_dsl: crate::schema::puzzle::BoxedQuery<'a, DB>,
-    ) -> crate::schema::puzzle::BoxedQuery<'a, DB> {
-        use crate::schema::puzzle::dsl::*;
+        query_dsl: crate::schema::dialogue::BoxedQuery<'a, DB>,
+    ) -> crate::schema::dialogue::BoxedQuery<'a, DB> {
+        use crate::schema::dialogue::dsl::*;
 
         let mut query = query_dsl;
         let mut flag = false;
@@ -58,9 +58,9 @@ pub struct DialogueFilter {
     id: Option<I32Filtering>,
     question: Option<StringFiltering>,
     answer: Option<StringFiltering>,
-    #[field = "good"]
+    #[graphql(name = "good")]
     is_good: Option<BoolFiltering>,
-    #[field = "true"]
+    #[graphql(name = "true")]
     is_true: Option<BoolFiltering>,
     created: Option<TimestamptzFiltering>,
     answered_time: Option<NullableTimestamptzFiltering>,
