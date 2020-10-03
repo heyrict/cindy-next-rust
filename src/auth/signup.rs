@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -41,6 +41,7 @@ pub struct SignupResponseData {
 pub async fn signup(
     item: web::Json<SignupBody>,
     ctx: web::Data<GlobalCtx>,
+    req: HttpRequest,
 ) -> Result<HttpResponse> {
     use crate::schema::user;
 
@@ -89,7 +90,8 @@ pub async fn signup(
             // Username unique constraint
             if error.contains("user_username_key") {
                 return error_response::<SignupResponse, _>(format!(
-                    "The username {} is already used by other users", &username
+                    "The username {} is already used by other users",
+                    &username
                 ));
             }
 
@@ -104,6 +106,24 @@ pub async fn signup(
     } else {
         usr.pop().unwrap()
     };
+
+    // Logging
+    let headers = req.headers();
+    let connection_info = req.connection_info();
+    let ip_addr = if let Some(header_real_ip) = dotenv::var("HEADER_REAL_IP").ok() {
+        headers
+            .get(header_real_ip)
+            .and_then(|ip| ip.to_str().ok())
+            .or_else(|| connection_info.remote_addr())
+    } else {
+        connection_info.remote_addr()
+    };
+    info!(
+        "({}) /signup: User<{}:{}>",
+        ip_addr.unwrap_or_default(),
+        &usr.id,
+        &usr.nickname
+    );
 
     Ok(HttpResponse::Ok()
         .cookie(gen_cookie(&usr))

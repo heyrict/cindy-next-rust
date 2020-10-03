@@ -55,10 +55,10 @@ impl fmt::Display for Role {
 
 #[derive(Deserialize, Debug)]
 pub struct JwtPayloadUser {
-    id: crate::models::ID,
-    icon: Option<String>,
-    username: String,
-    nickname: String,
+    pub id: crate::models::ID,
+    pub icon: Option<String>,
+    pub username: String,
+    pub nickname: String,
 }
 
 #[derive(Deserialize, Debug)]
