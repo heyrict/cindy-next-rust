@@ -1,4 +1,4 @@
-use async_graphql::{self, Context, InputObject, Object, Subscription};
+use async_graphql::{self, guard::Guard, Context, InputObject, Object, Subscription};
 use chrono::{Duration, Utc};
 use diesel::prelude::*;
 use futures::{Stream, StreamExt};
@@ -6,6 +6,7 @@ use futures::{Stream, StreamExt};
 use crate::auth::Role;
 use crate::broker::CindyBroker;
 use crate::context::{GlobalCtx, RequestCtx};
+use crate::models::puzzle::*;
 use crate::models::*;
 use crate::schema::puzzle;
 
@@ -356,6 +357,24 @@ impl PuzzleMutation {
             .map_err(|err| async_graphql::Error::from(err))?;
 
         CindyBroker::publish(PuzzleSub::Created(puzzle.clone()));
+
+        Ok(puzzle)
+    }
+
+    // Delete puzzle (admin only)
+    #[graphql(guard(
+        DenyRoleGuard(role = "Role::User"),
+        DenyRoleGuard(role = "Role::Guest")
+    ))]
+    pub async fn delete_puzzle(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Puzzle> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let reqctx = ctx.data::<RequestCtx>()?;
+        let user_id = reqctx.get_user_id();
+        let role = reqctx.get_role();
+
+        let puzzle = diesel::delete(puzzle::table.filter(puzzle::id.eq(id)))
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(puzzle)
     }

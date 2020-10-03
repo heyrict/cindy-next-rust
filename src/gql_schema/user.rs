@@ -3,6 +3,7 @@ use diesel::prelude::*;
 
 use crate::context::GlobalCtx;
 use crate::models::*;
+use crate::models::user::*;
 use crate::schema::user;
 
 #[derive(Default)]
