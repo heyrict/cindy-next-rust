@@ -422,17 +422,15 @@ macro_rules! apply_filter {
 
 /// Generate order_by for the query in a loop.
 macro_rules! gen_order {
-    ($obj:ident, $field:ident, $query:ident, $flag:ident) => {
+    ($obj:ident, $field:ident, $query:ident) => {
         if let Some(order) = $obj.$field {
             match order {
-                Ordering::Asc => apply_order!($query, $flag, $field.asc()),
-                Ordering::Desc => apply_order!($query, $flag, $field.desc()),
-                Ordering::AscNullsFirst => apply_order!($query, $flag, $field.asc().nulls_first()),
-                Ordering::DescNullsFirst => {
-                    apply_order!($query, $flag, $field.desc().nulls_first())
-                }
-                Ordering::AscNullsLast => apply_order!($query, $flag, $field.asc().nulls_last()),
-                Ordering::DescNullsLast => apply_order!($query, $flag, $field.desc().nulls_last()),
+                Ordering::Asc => apply_order!($query, $field.asc()),
+                Ordering::Desc => apply_order!($query, $field.desc()),
+                Ordering::AscNullsFirst => apply_order!($query, $field.asc().nulls_first()),
+                Ordering::DescNullsFirst => apply_order!($query, $field.desc().nulls_first()),
+                Ordering::AscNullsLast => apply_order!($query, $field.asc().nulls_last()),
+                Ordering::DescNullsLast => apply_order!($query, $field.desc().nulls_last()),
             }
         };
     };
@@ -440,12 +438,7 @@ macro_rules! gen_order {
 
 /// Applies order_by statement to the query in a loop.
 macro_rules! apply_order {
-    ($query:ident, $flag:ident, $order:expr) => {
-        if $flag {
-            $query = diesel::query_dsl::methods::ThenOrderDsl::then_order_by($query, $order);
-        } else {
-            $query = $query.order_by($order);
-            $flag = true;
-        }
+    ($query:ident, $order:expr) => {
+        $query = $query.then_order_by($order);
     };
 }

@@ -51,13 +51,12 @@ impl UserOrders {
         use crate::schema::user::dsl::*;
 
         let mut query = query_dsl;
-        let mut flag = false;
 
         for obj in self.0 {
-            gen_order!(obj, id, query, flag);
-            gen_order!(obj, nickname, query, flag);
-            gen_order!(obj, date_joined, query, flag);
-            gen_order!(obj, last_login, query, flag);
+            gen_order!(obj, id, query);
+            gen_order!(obj, nickname, query);
+            gen_order!(obj, date_joined, query);
+            gen_order!(obj, last_login, query);
         }
 
         query

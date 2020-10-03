@@ -35,12 +35,11 @@ impl HintOrders {
         use crate::schema::hint::dsl::*;
 
         let mut query = query_dsl;
-        let mut flag = false;
 
         for obj in self.0 {
-            gen_order!(obj, id, query, flag);
-            gen_order!(obj, created, query, flag);
-            gen_order!(obj, modified, query, flag);
+            gen_order!(obj, id, query);
+            gen_order!(obj, created, query);
+            gen_order!(obj, modified, query);
         }
 
         query

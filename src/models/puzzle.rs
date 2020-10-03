@@ -49,15 +49,14 @@ impl PuzzleOrders {
         use crate::schema::puzzle::dsl::*;
 
         let mut query = query_dsl;
-        let mut flag = false;
 
         for obj in self.0 {
-            gen_order!(obj, id, query, flag);
-            gen_order!(obj, yami, query, flag);
-            gen_order!(obj, genre, query, flag);
-            gen_order!(obj, created, query, flag);
-            gen_order!(obj, modified, query, flag);
-            gen_order!(obj, status, query, flag);
+            gen_order!(obj, id, query);
+            gen_order!(obj, yami, query);
+            gen_order!(obj, genre, query);
+            gen_order!(obj, created, query);
+            gen_order!(obj, modified, query);
+            gen_order!(obj, status, query);
         }
 
         query
@@ -73,6 +72,7 @@ pub struct PuzzleFilter {
     status: Option<StatusFiltering>,
     content: Option<StringFiltering>,
     solution: Option<StringFiltering>,
+    user_id: Option<I32Filtering>,
 }
 
 impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
@@ -89,6 +89,7 @@ impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
             status: obj_status,
             content: obj_content,
             solution: obj_solution,
+            user_id: obj_user_id,
         } = self;
         gen_string_filter!(obj_title, title, filter);
         gen_enum_filter!(obj_genre: GenreFiltering, genre, filter);
@@ -96,6 +97,7 @@ impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
         gen_enum_filter!(obj_status: StatusFiltering, status, filter);
         gen_string_filter!(obj_content, content, filter);
         gen_string_filter!(obj_solution, solution, filter);
+        gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
         filter
     }
 }

@@ -40,12 +40,11 @@ impl DialogueOrders {
         use crate::schema::dialogue::dsl::*;
 
         let mut query = query_dsl;
-        let mut flag = false;
 
         for obj in self.0 {
-            gen_order!(obj, id, query, flag);
-            gen_order!(obj, created, query, flag);
-            gen_order!(obj, modified, query, flag);
+            gen_order!(obj, id, query);
+            gen_order!(obj, created, query);
+            gen_order!(obj, modified, query);
         }
 
         query
@@ -65,6 +64,7 @@ pub struct DialogueFilter {
     created: Option<TimestamptzFiltering>,
     answered_time: Option<NullableTimestamptzFiltering>,
     modified: Option<TimestamptzFiltering>,
+    puzzle_id: Option<I32Filtering>,
 }
 
 impl CindyFilter<dialogue::table, DB> for DialogueFilter {
@@ -83,8 +83,10 @@ impl CindyFilter<dialogue::table, DB> for DialogueFilter {
             created: obj_created,
             answered_time: obj_answered_time,
             modified: obj_modified,
+            puzzle_id: obj_puzzle_id,
         } = self;
         gen_number_filter!(obj_id: I32Filtering, id, filter);
+        gen_number_filter!(obj_puzzle_id: I32Filtering, puzzle_id, filter);
         gen_string_filter!(obj_question, question, filter);
         gen_string_filter!(obj_answer, answer, filter);
         gen_bool_filter!(obj_is_good, good, filter);
