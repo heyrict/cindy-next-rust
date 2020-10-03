@@ -1,12 +1,10 @@
 use async_graphql::{self, Context, InputObject, Object};
-use diesel::{prelude::*, query_dsl::QueryDsl};
+use diesel::{prelude::*, query_dsl::QueryDsl, sql_types::Bool};
 
 use crate::context::GlobalCtx;
 use crate::schema::hint;
 
-use super::generics::*;
-use super::puzzle::*;
-use super::user::*;
+use super::*;
 
 /// Available orders for hint query
 #[derive(InputObject, Clone)]
@@ -32,9 +30,9 @@ impl HintOrders {
 
     pub fn apply_order<'a>(
         self,
-        query_dsl: crate::schema::puzzle::BoxedQuery<'a, DB>,
-    ) -> crate::schema::puzzle::BoxedQuery<'a, DB> {
-        use crate::schema::puzzle::dsl::*;
+        query_dsl: crate::schema::hint::BoxedQuery<'a, DB>,
+    ) -> crate::schema::hint::BoxedQuery<'a, DB> {
+        use crate::schema::hint::dsl::*;
 
         let mut query = query_dsl;
         let mut flag = false;
@@ -49,6 +47,37 @@ impl HintOrders {
     }
 }
 
+/// Available filters for hint query
+#[derive(InputObject, Clone)]
+pub struct HintFilter {
+    id: Option<I32Filtering>,
+    content: Option<StringFiltering>,
+    created: Option<TimestamptzFiltering>,
+    receiver_id: Option<NullableI32Filtering>,
+    modified: Option<TimestamptzFiltering>,
+}
+
+impl CindyFilter<hint::table, DB> for HintFilter {
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool>>> {
+        use crate::schema::hint::dsl::*;
+
+        let mut filter: Option<Box<dyn BoxableExpression<hint, DB, SqlType = Bool>>> = None;
+        let HintFilter {
+            id: obj_id,
+            content: obj_content,
+            created: obj_created,
+            modified: obj_modified,
+            receiver_id: obj_receiver_id,
+        } = self;
+        gen_number_filter!(obj_id: I32Filtering, id, filter);
+        gen_string_filter!(obj_content, content, filter);
+        gen_number_filter!(obj_created: TimestamptzFiltering, created, filter);
+        gen_number_filter!(obj_modified: TimestamptzFiltering, modified, filter);
+        gen_nullable_number_filter!(obj_receiver_id: NullableI32Filtering, receiver_id, filter);
+        filter
+    }
+}
+
 /// Object for dialogue table
 #[derive(Queryable, Identifiable, Clone, Debug)]
 #[table_name = "hint"]
@@ -57,7 +86,8 @@ pub struct Hint {
     pub content: String,
     pub created: Timestamptz,
     pub puzzle_id: ID,
-    pub edittimes: i32,
+    #[column_name = "edittimes"]
+    pub edit_times: i32,
     pub receiver_id: Option<ID>,
     pub modified: Timestamptz,
 }
@@ -76,8 +106,8 @@ impl Hint {
     async fn puzzle_id(&self) -> ID {
         self.puzzle_id
     }
-    async fn edittimes(&self) -> i32 {
-        self.edittimes
+    async fn edit_times(&self) -> i32 {
+        self.edit_times
     }
     async fn receiver_id(&self) -> Option<ID> {
         self.receiver_id

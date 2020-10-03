@@ -41,12 +41,26 @@ pub struct StringFiltering {
     pub ilike: Option<String>,
 }
 
-impl StringFiltering {
-    fn check(&self, item: String) -> bool {
+impl RawFilter<&str> for StringFiltering {
+    fn check(&self, item: &&str) -> bool {
         if let Some(eq) = self.eq.as_ref() {
-            &item == eq
+            item == eq
         } else {
             // TODO like && ilike unimplemented
+            true
+        }
+    }
+}
+#[derive(InputObject, Clone, Debug)]
+pub struct BoolFiltering {
+    pub eq: Option<bool>,
+}
+
+impl RawFilter<bool> for BoolFiltering {
+    fn check(&self, item: &bool) -> bool {
+        if let Some(eq) = self.eq.as_ref() {
+            item == eq
+        } else {
             true
         }
     }
@@ -61,7 +75,7 @@ pub struct I32Filtering {
     pub le: Option<i32>,
 }
 
-impl I32Filtering {
+impl RawFilter<i32> for I32Filtering {
     fn check(&self, item: &i32) -> bool {
         if let Some(eq) = self.eq.as_ref() {
             item == eq
@@ -75,6 +89,121 @@ impl I32Filtering {
             item <= le
         } else {
             true
+        }
+    }
+}
+
+#[derive(InputObject, Clone, Debug)]
+pub struct NullableI32Filtering {
+    pub is_null: Option<bool>,
+    pub eq: Option<i32>,
+    pub gt: Option<i32>,
+    pub lt: Option<i32>,
+    pub ge: Option<i32>,
+    pub le: Option<i32>,
+}
+
+impl RawFilter<Option<i32>> for NullableI32Filtering {
+    fn check(&self, item: &Option<i32>) -> bool {
+        if let Some(item) = item {
+            if self.is_null == Some(true) {
+                false
+            } else if let Some(eq) = self.eq.as_ref() {
+                item == eq
+            } else if let Some(gt) = self.gt.as_ref() {
+                item > gt
+            } else if let Some(lt) = self.lt.as_ref() {
+                item < lt
+            } else if let Some(ge) = self.ge.as_ref() {
+                item >= ge
+            } else if let Some(le) = self.le.as_ref() {
+                item <= le
+            } else {
+                true
+            }
+        } else {
+            if self.is_null == Some(false)
+                || self.eq.is_some()
+                || self.gt.is_some()
+                || self.lt.is_some()
+                || self.ge.is_some()
+                || self.le.is_some()
+            {
+                false
+            } else {
+                true
+            }
+        }
+    }
+}
+
+#[derive(InputObject, Clone, Debug)]
+pub struct TimestamptzFiltering {
+    pub eq: Option<Timestamptz>,
+    pub gt: Option<Timestamptz>,
+    pub lt: Option<Timestamptz>,
+    pub ge: Option<Timestamptz>,
+    pub le: Option<Timestamptz>,
+}
+
+impl RawFilter<Timestamptz> for TimestamptzFiltering {
+    fn check(&self, item: &Timestamptz) -> bool {
+        if let Some(eq) = self.eq.as_ref() {
+            item == eq
+        } else if let Some(gt) = self.gt.as_ref() {
+            item > gt
+        } else if let Some(lt) = self.lt.as_ref() {
+            item < lt
+        } else if let Some(ge) = self.ge.as_ref() {
+            item >= ge
+        } else if let Some(le) = self.le.as_ref() {
+            item <= le
+        } else {
+            true
+        }
+    }
+}
+
+#[derive(InputObject, Clone, Debug)]
+pub struct NullableTimestamptzFiltering {
+    pub is_null: Option<bool>,
+    pub eq: Option<Timestamptz>,
+    pub gt: Option<Timestamptz>,
+    pub lt: Option<Timestamptz>,
+    pub ge: Option<Timestamptz>,
+    pub le: Option<Timestamptz>,
+}
+
+impl RawFilter<Option<Timestamptz>> for NullableTimestamptzFiltering {
+    fn check(&self, item: &Option<Timestamptz>) -> bool {
+        if let Some(item) = item {
+            if self.is_null == Some(true) {
+                false
+            } else if let Some(eq) = self.eq.as_ref() {
+                item == eq
+            } else if let Some(gt) = self.gt.as_ref() {
+                item > gt
+            } else if let Some(lt) = self.lt.as_ref() {
+                item < lt
+            } else if let Some(ge) = self.ge.as_ref() {
+                item >= ge
+            } else if let Some(le) = self.le.as_ref() {
+                item <= le
+            } else {
+                true
+            }
+        } else {
+            if self.is_null == Some(false)
+                || self.eq.is_some()
+                || self.gt.is_some()
+                || self.lt.is_some()
+                || self.ge.is_some()
+                || self.le.is_some()
+            {
+                false
+            } else {
+                true
+            }
         }
     }
 }
@@ -113,6 +242,22 @@ where
 pub fn assert_eq_guard<T: PartialEq>(a: T, b: T) -> async_graphql::Result<()> {
     if a != b {
         Err(async_graphql::Error::new("Assertion failed".to_string()))
+    } else {
+        Ok(())
+    }
+}
+
+/// Make sure that req_value be consistent with value, otherwise throws an error message `msg`.
+pub fn assert_eq_guard_msg<T: PartialEq>(
+    a: T,
+    b: T,
+    msg: impl AsRef<str>,
+) -> async_graphql::Result<()> {
+    if a != b {
+        Err(async_graphql::Error::new(format!(
+            "Assertion failed: {}",
+            msg.as_ref()
+        )))
     } else {
         Ok(())
     }
@@ -167,15 +312,53 @@ macro_rules! gen_string_filter {
 }
 
 /// Generate filter for the query in a loop.
+macro_rules! gen_bool_filter {
+    ($obj:ident, $field:ident, $filt:ident) => {
+        if let Some($obj) = $obj {
+            let BoolFiltering { eq } = $obj;
+            apply_filter!(eq, $field, $filt);
+        }
+    };
+}
+
+/// Generate filter for the query in a loop.
 macro_rules! gen_number_filter {
-    ($obj:ident: $ty:ident, $field:ident, $query:ident, $index:ident) => {
+    ($obj:ident: $ty:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
             let $ty { eq, gt, ge, lt, le } = $obj;
-            apply_filter!(eq, $field, $query, $index);
-            apply_filter!(gt, $field, $query, $index);
-            apply_filter!(ge, $field, $query, $index);
-            apply_filter!(lt, $field, $query, $index);
-            apply_filter!(le, $field, $query, $index);
+            apply_filter!(eq, $field, $filt);
+            apply_filter!(gt, $field, $filt);
+            apply_filter!(ge, $field, $filt);
+            apply_filter!(lt, $field, $filt);
+            apply_filter!(le, $field, $filt);
+        }
+    };
+}
+
+/// Generate filter for the query in a loop.
+macro_rules! gen_nullable_number_filter {
+    ($obj:ident: $ty:ident, $field:ident, $filt:ident) => {
+        if let Some($obj) = $obj {
+            let $ty {
+                is_null,
+                eq,
+                gt,
+                ge,
+                lt,
+                le,
+            } = $obj;
+            if let Some(is_null) = is_null {
+                $filt = Some(if is_null {
+                    Box::new($field.is_null())
+                } else {
+                    Box::new($field.is_not_null())
+                });
+            };
+            apply_filter!(eq, $field, $filt);
+            apply_filter!(gt, $field, $filt);
+            apply_filter!(ge, $field, $filt);
+            apply_filter!(lt, $field, $filt);
+            apply_filter!(le, $field, $filt);
         }
     };
 }

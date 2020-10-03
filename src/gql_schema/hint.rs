@@ -1,10 +1,8 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object, Subscription};
-use chrono::{Duration, Utc};
+use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use chrono::Utc;
 use diesel::prelude::*;
-use futures::{Stream, StreamExt};
 
 use crate::auth::Role;
-use crate::broker::CindyBroker;
 use crate::context::{GlobalCtx, RequestCtx};
 use crate::models::hint::*;
 use crate::models::*;
@@ -59,221 +57,36 @@ impl HintQuery {
     }
 }
 
-#[derive(InputObject)]
+#[derive(InputObject, AsChangeset, Debug)]
+#[table_name = "hint"]
 pub struct UpdateHintInput {
-    pub title: Option<String>,
-    pub yami: Option<Yami>,
-    pub genre: Option<Genre>,
+    pub id: Option<ID>,
     pub content: Option<String>,
-    pub solution: Option<String>,
     pub created: Option<Timestamptz>,
-    pub modified: Option<Timestamptz>,
-    pub status: Option<Status>,
-    pub memo: Option<String>,
-    pub user_id: Option<i32>,
-    pub anonymous: Option<bool>,
-    pub dazed_on: Option<Date>,
-    pub grotesque: Option<bool>,
+    pub puzzle_id: Option<ID>,
+    #[column_name = "edittimes"]
+    pub edit_times: Option<i32>,
+    pub receiver_id: Option<Option<ID>>,
+    #[graphql(default_with = "Utc::now()")]
+    pub modified: Timestamptz,
 }
 
-#[derive(AsChangeset, Debug)]
+#[derive(InputObject, Insertable)]
 #[table_name = "hint"]
-pub struct UpdateHintData {
-    pub title: Option<String>,
-    pub yami: Option<i32>,
-    pub genre: Option<i32>,
-    pub content: Option<String>,
-    pub solution: Option<String>,
-    pub created: Option<Timestamptz>,
-    pub modified: Option<Timestamptz>,
-    pub status: Option<i32>,
-    pub memo: Option<String>,
-    pub user_id: Option<i32>,
-    pub anonymous: Option<bool>,
-    pub dazed_on: Option<Date>,
-    pub grotesque: Option<bool>,
-}
-
-impl From<UpdateHintInput> for UpdateHintData {
-    fn from(data: UpdateHintInput) -> Self {
-        Self {
-            title: data.title,
-            yami: data.yami.map(|yami| yami as i32),
-            genre: data.yami.map(|genre| genre as i32),
-            content: data.content,
-            solution: data.solution,
-            created: data.created,
-            modified: data.modified,
-            status: data.status.map(|status| status as i32),
-            memo: data.memo,
-            user_id: data.user_id,
-            anonymous: data.anonymous,
-            dazed_on: data.dazed_on,
-            grotesque: data.grotesque,
-        }
-    }
-}
-
-/// Calculate dazing duration of a hint
-#[derive(Default)]
-struct DazedTimeCalc {
-    yami: Option<Yami>,
-    genre: Option<Genre>,
-}
-
-impl DazedTimeCalc {
-    pub fn yami(mut self, yami: Option<Yami>) -> Self {
-        self.yami = yami;
-        self
-    }
-    pub fn genre(mut self, genre: Option<Genre>) -> Self {
-        self.genre = genre;
-        self
-    }
-    /// Get dazing duration
-    pub fn duration(&self) -> Duration {
-        dotenv::dotenv().ok();
-        let mut duration = std::env::var("DAZE_DURATION_DEFAULT").unwrap_or("7".to_owned());
-
-        if let Some(genre) = self.genre {
-            match genre {
-                Genre::Classic => {
-                    if let Ok(value) = std::env::var("DAZE_DURATION_GENRE_CLASSIC") {
-                        duration = value;
-                    }
-                }
-                Genre::TwentyQuestions => {
-                    if let Ok(value) = std::env::var("DAZE_DURATION_GENRE_TWENTY_QUESTIONS") {
-                        duration = value;
-                    }
-                }
-                Genre::LittleAlbat => {
-                    if let Ok(value) = std::env::var("DAZE_DURATION_GENRE_LITTLE_ALBAT") {
-                        duration = value;
-                    }
-                }
-                Genre::Others => {
-                    if let Ok(value) = std::env::var("DAZE_DURATION_GENRE_OTHERS") {
-                        duration = value;
-                    }
-                }
-            }
-        }
-
-        if let Some(yami) = self.yami {
-            match yami {
-                Yami::None => {
-                    if let Ok(value) = std::env::var("DAZE_DURATION_YAMI_NONE") {
-                        duration = value;
-                    }
-                }
-                Yami::Normal => {
-                    if let Ok(value) = std::env::var("DAZE_DURATION_YAMI_NORMAL") {
-                        duration = value;
-                    }
-                }
-                Yami::Longterm => {
-                    if let Ok(value) = std::env::var("DAZE_DURATION_YAMI_LONGTERM") {
-                        duration = value;
-                    }
-                }
-            }
-        }
-
-        Duration::days(
-            duration
-                .parse::<i64>()
-                .expect("Invalid DAZE_DURATION_* variable"),
-        )
-    }
-}
-
-#[derive(InputObject)]
 pub struct CreateHintInput {
-    pub title: Option<String>,
-    pub yami: Option<Yami>,
-    pub genre: Option<Genre>,
-    pub content: Option<String>,
-    pub solution: Option<String>,
-    pub created: Option<Timestamptz>,
-    pub modified: Option<Timestamptz>,
-    pub status: Option<Status>,
-    pub memo: Option<String>,
-    pub user_id: Option<i32>,
-    pub anonymous: Option<bool>,
-    pub dazed_on: Option<Date>,
-    pub grotesque: Option<bool>,
-}
-
-impl CreateHintInput {
-    pub fn set_default(mut self) -> Self {
-        let now = Utc::now();
-        // Set field `created`
-        if self.created.is_none() {
-            self.created = Some(now.clone());
-        };
-
-        // Set field `dazed_on`
-        if self.dazed_on.is_none() {
-            self.dazed_on = Some(
-                now.date().naive_utc()
-                    + DazedTimeCalc::default()
-                        .yami(self.yami.clone())
-                        .genre(self.genre.clone())
-                        .duration(),
-            );
-        };
-
-        // Set field `status`
-        if self.status.is_none() {
-            self.status = Some(Status::Undergoing);
-        };
-
-        self
-    }
-
-    pub fn set_user_id(mut self, user_id: Option<i32>) -> Self {
-        self.user_id = user_id;
-        self
-    }
-}
-
-#[derive(Insertable)]
-#[table_name = "hint"]
-pub struct CreateHintData {
-    pub title: Option<String>,
-    pub yami: Option<i32>,
-    pub genre: Option<i32>,
-    pub content: Option<String>,
-    pub solution: Option<String>,
-    pub created: Option<Timestamptz>,
-    pub modified: Option<Timestamptz>,
-    pub status: Option<i32>,
-    pub memo: Option<String>,
-    pub user_id: Option<i32>,
-    pub anonymous: Option<bool>,
-    pub dazed_on: Option<Date>,
-    pub grotesque: Option<bool>,
-}
-
-impl From<CreateHintInput> for CreateHintData {
-    fn from(data: CreateHintInput) -> Self {
-        Self {
-            title: data.title,
-            yami: data.yami.map(|yami| yami as i32),
-            genre: data.yami.map(|genre| genre as i32),
-            content: data.content,
-            solution: data.solution,
-            created: data.created,
-            modified: data.modified,
-            status: data.status.map(|status| status as i32),
-            memo: data.memo,
-            user_id: data.user_id,
-            anonymous: data.anonymous,
-            dazed_on: data.dazed_on,
-            grotesque: data.grotesque,
-        }
-    }
+    pub id: Option<ID>,
+    #[graphql(default)]
+    pub content: String,
+    #[graphql(default_with = "Utc::now()")]
+    pub created: Timestamptz,
+    pub puzzle_id: ID,
+    #[column_name = "edittimes"]
+    #[graphql(default)]
+    pub edit_times: i32,
+    #[graphql(default)]
+    pub receiver_id: Option<Option<ID>>,
+    #[graphql(default_with = "Utc::now()")]
+    pub modified: Timestamptz,
 }
 
 #[Object]
@@ -284,32 +97,34 @@ impl HintMutation {
         id: ID,
         mut set: UpdateHintInput,
     ) -> async_graphql::Result<Hint> {
+        use crate::schema::puzzle;
+
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let reqctx = ctx.data::<RequestCtx>()?;
+        let role = reqctx.get_role();
 
-        // User should be the owner on update mutation
-        let hint_inst: Hint = hint::table.filter(hint::id.eq(id)).limit(1).first(&conn)?;
-        user_id_guard(ctx, hint_inst.user_id)?;
+        match role {
+            Role::User => {
+                // User should be the owner on update mutation
+                let hint_inst: Hint = hint::table.filter(hint::id.eq(id)).limit(1).first(&conn)?;
+                let puzzle_inst: Puzzle = puzzle::table
+                    .filter(puzzle::id.eq(hint_inst.puzzle_id))
+                    .limit(1)
+                    .first(&conn)?;
+                user_id_guard(ctx, puzzle_inst.user_id)?;
 
-        // Prevent further edit from user if its status is forced hidden
-        if let Status::ForceHidden = hint_inst.status {
-            return Err(async_graphql::Error::new(
-                "Further edits are blocked from a forced hidden hint",
-            ));
-        };
-
-        // Set `modified` to the current time when hint is solved
-        // TODO rename `modified` -> `time_solved`
-        if hint_inst.status == Status::Undergoing && set.status != Some(Status::Undergoing) {
-            set.modified = Some(Utc::now());
+                // Set `modified` to the current time when edited
+                set.edit_times = Some(hint_inst.edit_times + 1);
+            }
+            Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
+            _ => {}
         };
 
         let hint: Hint = diesel::update(hint::table)
             .filter(hint::id.eq(id))
-            .set(UpdateHintData::from(set))
+            .set(set)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
-
-        CindyBroker::publish(HintSub::Updated(hint_inst, hint.clone()));
 
         Ok(hint)
     }
@@ -319,36 +134,30 @@ impl HintMutation {
         ctx: &Context<'_>,
         data: CreateHintInput,
     ) -> async_graphql::Result<Hint> {
+        use crate::schema::puzzle;
+
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
-        let user_id = reqctx.get_user_id();
         let role = reqctx.get_role();
 
-        let insert_data = match role {
+        match role {
             Role::User => {
-                // Assert that time-related are unset
-                assert_eq_guard(data.created, None)?;
-                assert_eq_guard(data.modified, None)?;
-                // Assert user_id is set to the user
-                let insert_data = if let Some(user_id) = data.user_id {
-                    user_id_guard(ctx, user_id)?;
-                    CreateHintData::from(data.set_default())
-                } else {
-                    CreateHintData::from(data.set_default().set_user_id(user_id))
-                };
-
-                insert_data
+                // Assert that upstream puzzle exists
+                let puzzle_inst: Puzzle = puzzle::table
+                    .filter(puzzle::id.eq(data.puzzle_id))
+                    .limit(1)
+                    .first(&conn)?;
+                // Assert the user is the owner of the puzzle.
+                user_id_guard(ctx, puzzle_inst.user_id)?;
             }
-            Role::Admin => CreateHintData::from(data.set_default()),
+            Role::Admin => {}
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
         };
 
         let hint: Hint = diesel::insert_into(hint::table)
-            .values(&insert_data)
+            .values(&data)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
-
-        CindyBroker::publish(HintSub::Created(hint.clone()));
 
         Ok(hint)
     }
@@ -360,8 +169,6 @@ impl HintMutation {
     ))]
     pub async fn delete_hint(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Hint> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
-        let reqctx = ctx.data::<RequestCtx>()?;
-        let user_id = reqctx.get_user_id();
 
         let hint = diesel::delete(hint::table.filter(hint::id.eq(id)))
             .get_result(&conn)

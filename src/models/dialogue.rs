@@ -1,12 +1,104 @@
-use async_graphql::{self, Context, Object};
+use async_graphql::{self, Context, InputObject, Object};
+use diesel::sql_types::Bool;
 use diesel::{prelude::*, query_dsl::QueryDsl};
 
 use crate::context::GlobalCtx;
 use crate::schema::dialogue;
 
-use super::generics::*;
-use super::puzzle::*;
-use super::user::*;
+use super::*;
+
+/// Available orders for dialogue query
+#[derive(InputObject, Clone)]
+pub struct DialogueOrder {
+    id: Option<Ordering>,
+    created: Option<Ordering>,
+    answered_time: Option<Ordering>,
+    modified: Option<Ordering>,
+    puzzle_id: Option<Ordering>,
+    user_id: Option<Ordering>,
+    qno: Option<Ordering>,
+}
+
+/// Helper object to apply the order to the query
+pub struct DialogueOrders(Vec<DialogueOrder>);
+
+impl Default for DialogueOrders {
+    fn default() -> Self {
+        Self(vec![])
+    }
+}
+
+impl DialogueOrders {
+    pub fn new(orders: Vec<DialogueOrder>) -> Self {
+        Self(orders)
+    }
+
+    pub fn apply_order<'a>(
+        self,
+        query_dsl: crate::schema::puzzle::BoxedQuery<'a, DB>,
+    ) -> crate::schema::puzzle::BoxedQuery<'a, DB> {
+        use crate::schema::puzzle::dsl::*;
+
+        let mut query = query_dsl;
+        let mut flag = false;
+
+        for obj in self.0 {
+            gen_order!(obj, id, query, flag);
+            gen_order!(obj, created, query, flag);
+            gen_order!(obj, modified, query, flag);
+        }
+
+        query
+    }
+}
+
+/// Available filters for dialogue query
+#[derive(InputObject, Clone)]
+pub struct DialogueFilter {
+    id: Option<I32Filtering>,
+    question: Option<StringFiltering>,
+    answer: Option<StringFiltering>,
+    #[field = "good"]
+    is_good: Option<BoolFiltering>,
+    #[field = "true"]
+    is_true: Option<BoolFiltering>,
+    created: Option<TimestamptzFiltering>,
+    answered_time: Option<NullableTimestamptzFiltering>,
+    modified: Option<TimestamptzFiltering>,
+}
+
+impl CindyFilter<dialogue::table, DB> for DialogueFilter {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool>>> {
+        use crate::schema::dialogue::dsl::*;
+
+        let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool>>> = None;
+        let DialogueFilter {
+            id: obj_id,
+            question: obj_question,
+            answer: obj_answer,
+            is_good: obj_is_good,
+            is_true: obj_is_true,
+            created: obj_created,
+            answered_time: obj_answered_time,
+            modified: obj_modified,
+        } = self;
+        gen_number_filter!(obj_id: I32Filtering, id, filter);
+        gen_string_filter!(obj_question, question, filter);
+        gen_string_filter!(obj_answer, answer, filter);
+        gen_bool_filter!(obj_is_good, good, filter);
+        gen_bool_filter!(obj_is_true, true_, filter);
+        gen_number_filter!(obj_created: TimestamptzFiltering, created, filter);
+        gen_number_filter!(obj_modified: TimestamptzFiltering, modified, filter);
+        gen_nullable_number_filter!(
+            obj_answered_time: NullableTimestamptzFiltering,
+            answeredtime,
+            filter
+        );
+        filter
+    }
+}
 
 /// Object for dialogue table
 #[derive(Queryable, Identifiable, Clone, Debug)]
@@ -15,7 +107,7 @@ pub struct Dialogue {
     pub id: ID,
     pub question: String,
     pub answer: String,
-    #[column_name = "true"]
+    #[column_name = "good"]
     pub is_good: bool,
     #[column_name = "true"]
     pub is_true: bool,

@@ -1,9 +1,10 @@
 use async_graphql::{self, Context, InputObject, Object};
 use diesel::prelude::*;
 
-use crate::context::GlobalCtx;
-use crate::models::*;
+use crate::auth::Role;
+use crate::context::{GlobalCtx, RequestCtx};
 use crate::models::user::*;
+use crate::models::*;
 use crate::schema::user;
 
 #[derive(Default)]
@@ -85,6 +86,32 @@ impl UserMutation {
         set: UpdateUserSet,
     ) -> async_graphql::Result<User> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let reqctx = ctx.data::<RequestCtx>()?;
+        let role = reqctx.get_role();
+
+        match role {
+            Role::User => {
+                // Some fields shouldn't be modified by a user
+                assert_eq_guard_msg(
+                    &set.password,
+                    &None,
+                    "Setting password explicitly is prohibited",
+                )?;
+                assert_eq_guard_msg(
+                    &set.date_joined,
+                    &None,
+                    "Setting date_joined explicitly is prohibited",
+                )?;
+                assert_eq_guard_msg(
+                    &set.last_login,
+                    &None,
+                    "Setting last_login explicitly is prohibited",
+                )?;
+            }
+            Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
+            _ => {}
+        };
+
         diesel::update(user::table)
             .filter(user::id.eq(id))
             .set(&set)

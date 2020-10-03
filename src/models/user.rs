@@ -3,7 +3,7 @@ use async_graphql::{self, guard::Guard, Context, InputObject};
 use chrono::Utc;
 use diesel::expression::BoxableExpression;
 use diesel::prelude::*;
-use diesel::query_dsl::{methods::ThenOrderDsl, QueryDsl};
+use diesel::query_dsl::QueryDsl;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 use diesel::sql_types::Bool;
 use rand::{distributions::Alphanumeric, Rng};

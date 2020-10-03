@@ -4,21 +4,21 @@ use futures::{Stream, StreamExt};
 //use std::sync::Arc;
 use std::time::Duration;
 
-use crate::gql_schema::{
-    puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription},
-    user::{UserMutation, UserQuery},
-};
-
+mod hint;
 mod puzzle;
 mod user;
+
+use hint::{HintMutation, HintQuery};
+use puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription};
+use user::{UserMutation, UserQuery};
 
 pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
 #[derive(MergedObject, Default)]
-pub struct QueryRoot(UserQuery, PuzzleQuery);
+pub struct QueryRoot(UserQuery, PuzzleQuery, HintQuery);
 
 #[derive(MergedObject, Default)]
-pub struct MutationRoot(UserMutation, PuzzleMutation);
+pub struct MutationRoot(UserMutation, PuzzleMutation, HintMutation);
 
 #[derive(MergedSubscription, Default)]
 pub struct SubscriptionRoot(BaseSubscription, PuzzleSubscription);

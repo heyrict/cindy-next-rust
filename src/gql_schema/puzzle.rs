@@ -368,8 +368,6 @@ impl PuzzleMutation {
     ))]
     pub async fn delete_puzzle(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Puzzle> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
-        let reqctx = ctx.data::<RequestCtx>()?;
-        let user_id = reqctx.get_user_id();
 
         let puzzle = diesel::delete(puzzle::table.filter(puzzle::id.eq(id)))
             .get_result(&conn)

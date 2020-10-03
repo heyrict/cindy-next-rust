@@ -17,7 +17,7 @@ use crate::schema::puzzle;
 use super::generics::*;
 use super::user::*;
 
-/// Available orders for users query
+/// Available orders for puzzle query
 #[derive(InputObject, Clone)]
 pub struct PuzzleOrder {
     id: Option<Ordering>,
@@ -64,7 +64,7 @@ impl PuzzleOrders {
     }
 }
 
-/// Available filters for users query
+/// Available filters for puzzle query
 #[derive(InputObject, Clone)]
 pub struct PuzzleFilter {
     title: Option<StringFiltering>,
