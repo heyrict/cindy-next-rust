@@ -14,7 +14,10 @@ use actix_web::{guard, web, App, HttpRequest, HttpResponse, HttpServer, Result};
 use actix_web_actors::ws;
 use async_graphql::Schema;
 use async_graphql_actix_web::{Request, Response, WSSubscription};
+use futures::StreamExt;
+use std::convert::TryInto;
 use std::io::Write;
+use time::Duration;
 
 #[macro_use]
 pub mod models;
@@ -114,8 +117,21 @@ async fn index_ws(
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    // Spawn cache cleaner
+    tokio::spawn(async move {
+        loop {
+            tokio::time::delay_for(
+                Duration::day()
+                .try_into()
+                .expect("Error converting a day to std::Duration"),
+            ).await;
+            debug!("Cleaning up cache");
+            broker::cleanup();
+        }
+    });
+
     // Setup logger
-    env_logger::Builder::new()
+    env_logger::builder()
         .format(|buf, record| {
             writeln!(
                 buf,
