@@ -379,6 +379,7 @@ impl PuzzleMutation {
 
 #[derive(InputObject, Eq, PartialEq, Clone)]
 pub struct PuzzleSubFilter {
+    id: Option<I32Filtering>,
     status: Option<StatusFiltering>,
     yami: Option<YamiFiltering>,
     genre: Option<GenreFiltering>,
@@ -386,7 +387,9 @@ pub struct PuzzleSubFilter {
 
 impl RawFilter<Puzzle> for PuzzleSubFilter {
     fn check(&self, item: &Puzzle) -> bool {
-        if let Some(filter) = self.status.as_ref() {
+        if let Some(filter) = self.id.as_ref() {
+            filter.check(&item.id)
+        } else if let Some(filter) = self.status.as_ref() {
             filter.check(&item.status)
         } else if let Some(filter) = self.yami.as_ref() {
             filter.check(&item.yami)

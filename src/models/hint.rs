@@ -93,16 +93,16 @@ pub struct Hint {
 
 #[Object]
 impl Hint {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         self.id
     }
     async fn content(&self) -> &str {
         &self.content
     }
-    async fn created(&self) -> Timestamptz {
+    pub async fn created(&self) -> Timestamptz {
         self.created
     }
-    async fn puzzle_id(&self) -> ID {
+    pub async fn puzzle_id(&self) -> ID {
         self.puzzle_id
     }
     async fn edit_times(&self) -> i32 {
@@ -111,7 +111,7 @@ impl Hint {
     async fn receiver_id(&self) -> Option<ID> {
         self.receiver_id
     }
-    async fn modified(&self) -> Timestamptz {
+    pub async fn modified(&self) -> Timestamptz {
         self.modified
     }
 

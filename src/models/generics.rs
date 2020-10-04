@@ -52,7 +52,7 @@ impl RawFilter<&str> for StringFiltering {
     }
 }
 
-#[derive(InputObject, Clone, Debug)]
+#[derive(InputObject, Clone, Debug, Eq, PartialEq)]
 pub struct I32Filtering {
     pub eq: Option<i32>,
     pub gt: Option<i32>,

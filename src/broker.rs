@@ -88,6 +88,25 @@ impl<T: Sync + Send + Clone + 'static> CindyBroker<T> {
         });
     }
 
+    /// Publish a message that all subscription streams can receive with a given key filter.
+    pub fn publish_to_all(filter: impl Fn(&Key) -> bool, msg: T) {
+        let mut map = SUBSCRIPTIONS.lock().unwrap();
+        let submap = map
+            .entry(TypeId::of::<T>())
+            .or_insert_with(|| Default::default());
+        submap
+            .iter_mut()
+            .filter(|(key, _)| filter(key))
+            .for_each(|(_, sp)| {
+                let today = Local::today();
+                if sp.updated != today {
+                    sp.updated = today;
+                };
+                let tx = sp.tx.downcast_ref::<watch::Sender<Option<T>>>().unwrap();
+                tx.broadcast(Some(msg.clone())).ok();
+            });
+    }
+
     /// Subscribe to the message of the specified type with a given key and returns a `Stream`.
     pub fn subscribe_to(key: Key) -> impl Stream<Item = Option<T>> {
         with_senders_to::<T, _, _>(key, |_, rx| BrokerStream(rx.clone()))

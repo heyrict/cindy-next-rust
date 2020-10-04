@@ -60,6 +60,7 @@ impl UserQuery {
 #[table_name = "user"]
 pub struct UpdateUserSet {
     pub password: Option<String>,
+    // TODO use MaybeUndefined
     pub last_login: Option<Option<Timestamptz>>,
     pub is_superuser: Option<bool>,
     pub username: Option<String>,
@@ -71,8 +72,10 @@ pub struct UpdateUserSet {
     pub date_joined: Option<Timestamptz>,
     pub nickname: Option<String>,
     pub profile: Option<String>,
+    // TODO use MaybeUndefined
     pub current_award_id: Option<Option<i32>>,
     pub hide_bookmark: Option<bool>,
+    // TODO use MaybeUndefined
     pub last_read_dm_id: Option<Option<i32>>,
     pub icon: Option<Option<String>>,
 }

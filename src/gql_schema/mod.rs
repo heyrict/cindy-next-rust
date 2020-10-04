@@ -15,7 +15,7 @@ use chatroom::{ChatroomMutation, ChatroomQuery};
 use dialogue::{DialogueMutation, DialogueQuery};
 use hint::{HintMutation, HintQuery};
 use puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription};
-use puzzle_log::PuzzleLogQuery;
+use puzzle_log::{PuzzleLogQuery, PuzzleLogSubscription};
 use user::{UserMutation, UserQuery};
 
 pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
@@ -40,7 +40,7 @@ pub struct MutationRoot(
 );
 
 #[derive(MergedSubscription, Default)]
-pub struct SubscriptionRoot(BaseSubscription, PuzzleSubscription);
+pub struct SubscriptionRoot(BaseSubscription, PuzzleSubscription, PuzzleLogSubscription);
 
 #[derive(Clone, Default, SimpleObject)]
 struct IntervalMsg {

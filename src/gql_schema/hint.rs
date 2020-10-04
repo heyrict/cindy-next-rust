@@ -3,9 +3,9 @@ use chrono::Utc;
 use diesel::prelude::*;
 
 use crate::auth::Role;
+use crate::broker::CindyBroker;
 use crate::context::{GlobalCtx, RequestCtx};
-use crate::models::hint::*;
-use crate::models::*;
+use crate::models::{hint::*, puzzle_log::PuzzleLogSub, *};
 use crate::schema::hint;
 
 #[derive(Default)]
@@ -66,6 +66,7 @@ pub struct UpdateHintInput {
     pub puzzle_id: Option<ID>,
     #[column_name = "edittimes"]
     pub edit_times: Option<i32>,
+    // TODO use MaybeUndefined
     pub receiver_id: Option<Option<ID>>,
     #[graphql(default_with = "Utc::now()")]
     pub modified: Timestamptz,
@@ -84,6 +85,7 @@ pub struct CreateHintInput {
     #[graphql(default)]
     pub edit_times: i32,
     #[graphql(default)]
+    // TODO use MaybeUndefined
     pub receiver_id: Option<Option<ID>>,
     #[graphql(default_with = "Utc::now()")]
     pub modified: Timestamptz,
@@ -103,10 +105,11 @@ impl HintMutation {
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
+        let hint_inst: Hint = hint::table.filter(hint::id.eq(id)).limit(1).first(&conn)?;
+
         match role {
             Role::User => {
                 // User should be the owner on update mutation
-                let hint_inst: Hint = hint::table.filter(hint::id.eq(id)).limit(1).first(&conn)?;
                 let puzzle_inst: Puzzle = puzzle::table
                     .filter(puzzle::id.eq(hint_inst.puzzle_id))
                     .limit(1)
@@ -125,6 +128,13 @@ impl HintMutation {
             .set(set)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
+
+        let key_starts_with = format!("puzzleLog<{}", hint.puzzle_id);
+        CindyBroker::publish(PuzzleLogSub::HintUpdated(hint_inst.clone(), hint.clone()));
+        CindyBroker::publish_to_all(
+            |key| key.starts_with(&key_starts_with),
+            PuzzleLogSub::HintUpdated(hint_inst, hint.clone()),
+        );
 
         Ok(hint)
     }
@@ -158,6 +168,13 @@ impl HintMutation {
             .values(&data)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
+
+        let key_starts_with = format!("puzzleLog<{}", hint.puzzle_id);
+        CindyBroker::publish(PuzzleLogSub::HintCreated(hint.clone()));
+        CindyBroker::publish_to_all(
+            |key| key.starts_with(&key_starts_with),
+            PuzzleLogSub::HintCreated(hint.clone()),
+        );
 
         Ok(hint)
     }

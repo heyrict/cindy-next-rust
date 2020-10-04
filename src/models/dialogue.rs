@@ -128,7 +128,7 @@ pub struct Dialogue {
 
 #[Object]
 impl Dialogue {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         self.id
     }
     async fn question(&self) -> &str {
@@ -145,13 +145,13 @@ impl Dialogue {
     async fn is_true(&self) -> bool {
         self.is_true
     }
-    async fn created(&self) -> Timestamptz {
+    pub async fn created(&self) -> Timestamptz {
         self.created
     }
     async fn answered_time(&self) -> Option<Timestamptz> {
         self.answered_time
     }
-    async fn puzzle_id(&self) -> ID {
+    pub async fn puzzle_id(&self) -> ID {
         self.puzzle_id
     }
     async fn user_id(&self) -> ID {
@@ -166,7 +166,7 @@ impl Dialogue {
     async fn qno(&self) -> i32 {
         self.qno
     }
-    async fn modified(&self) -> Timestamptz {
+    pub async fn modified(&self) -> Timestamptz {
         self.modified
     }
 
@@ -183,7 +183,7 @@ impl Dialogue {
         Ok(user_inst)
     }
 
-    async fn puzzle(&self, ctx: &Context<'_>) -> async_graphql::Result<Puzzle> {
+    pub async fn puzzle(&self, ctx: &Context<'_>) -> async_graphql::Result<Puzzle> {
         use crate::schema::puzzle;
 
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;

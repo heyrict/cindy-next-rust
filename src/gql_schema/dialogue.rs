@@ -3,9 +3,9 @@ use chrono::Utc;
 use diesel::prelude::*;
 
 use crate::auth::Role;
+use crate::broker::CindyBroker;
 use crate::context::{GlobalCtx, RequestCtx};
-use crate::models::dialogue::*;
-use crate::models::*;
+use crate::models::{dialogue::*, puzzle_log::PuzzleLogSub, *};
 use crate::schema::dialogue;
 
 #[derive(Default)]
@@ -74,6 +74,7 @@ pub struct UpdateDialogueInput {
     pub is_true: Option<bool>,
     pub created: Option<Timestamptz>,
     #[column_name = "answeredtime"]
+    // TODO use MaybeUndefined
     pub answered_time: Option<Option<Timestamptz>>,
     pub puzzle_id: Option<ID>,
     pub user_id: Option<ID>,
@@ -102,6 +103,7 @@ pub struct CreateDialogueInput {
     #[graphql(default_with = "Utc::now()")]
     pub created: Timestamptz,
     #[column_name = "answeredtime"]
+    // TODO use MaybeUndefined
     pub answered_time: Option<Option<Timestamptz>>,
     pub puzzle_id: ID,
     pub user_id: Option<ID>,
@@ -128,13 +130,14 @@ impl DialogueMutation {
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
+        let dialogue_inst: Dialogue = dialogue::table
+            .filter(dialogue::id.eq(id))
+            .limit(1)
+            .first(&conn)?;
+
         match role {
             Role::User => {
                 assert_eq_guard_msg(set.qno, None, "Setting qno explicitly is prohibited")?;
-                let dialogue_inst: Dialogue = dialogue::table
-                    .filter(dialogue::id.eq(id))
-                    .limit(1)
-                    .first(&conn)?;
 
                 // Update edit times
                 if set.question.is_some() {
@@ -158,6 +161,16 @@ impl DialogueMutation {
             .set(set)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
+
+        let key_starts_with = format!("puzzleLog<{}", dialogue.puzzle_id);
+        CindyBroker::publish(PuzzleLogSub::DialogueUpdated(
+            dialogue_inst.clone(),
+            dialogue.clone(),
+        ));
+        CindyBroker::publish_to_all(
+            |key| key.starts_with(&key_starts_with),
+            PuzzleLogSub::DialogueUpdated(dialogue_inst, dialogue.clone()),
+        );
 
         Ok(dialogue)
     }
@@ -189,6 +202,13 @@ impl DialogueMutation {
             .values(&data)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
+
+        let key_starts_with = format!("puzzleLog<{}", dialogue.puzzle_id);
+        CindyBroker::publish(PuzzleLogSub::DialogueCreated(dialogue.clone()));
+        CindyBroker::publish_to_all(
+            |key| key.starts_with(&key_starts_with),
+            PuzzleLogSub::DialogueCreated(dialogue.clone()),
+        );
 
         Ok(dialogue)
     }

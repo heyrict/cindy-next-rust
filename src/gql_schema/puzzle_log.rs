@@ -1,70 +1,15 @@
-use async_graphql::{self, Context, InputObject, Object, Subscription, Union};
-use chrono::{Duration, Utc};
+use async_graphql::{Context, InputObject, Object, Subscription};
 use diesel::prelude::*;
-use diesel::sql_types::Bool;
 use futures::{Stream, StreamExt};
 
-use crate::auth::Role;
 use crate::broker::CindyBroker;
-use crate::context::{GlobalCtx, RequestCtx};
-use crate::models::{dialogue::*, hint::*, *};
-use crate::schema::{dialogue, hint};
+use crate::context::GlobalCtx;
+use crate::models::{dialogue::*, hint::*, puzzle_log::*, *};
 
 #[derive(Default)]
 pub struct PuzzleLogQuery;
 #[derive(Default)]
 pub struct PuzzleLogSubscription;
-
-#[derive(Union)]
-pub enum PuzzleLog {
-    Dialogue(Dialogue),
-    Hint(Hint),
-}
-
-/// Available orders for puzzle log query
-#[derive(InputObject, Clone)]
-pub struct PuzzleLogOrder {
-    id: Option<Ordering>,
-    created: Option<Ordering>,
-    modified: Option<Ordering>,
-}
-
-/// Available filters for puzzle log query
-#[derive(InputObject, Clone)]
-pub struct PuzzleLogFilter {
-    /// ID of the Puzzle to check log with
-    puzzle_id: i32,
-    /// Whether to check log only related to given user_id
-    user_id: Option<i32>,
-}
-
-impl CindyFilter<hint::table, DB> for PuzzleLogFilter {
-    fn as_expression(self) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool>>> {
-        use crate::schema::hint::dsl::*;
-        Some(if let Some(user_id_val) = self.user_id {
-            Box::new(
-                puzzle_id
-                    .eq(self.puzzle_id)
-                    .and(receiver_id.is_null().or(receiver_id.eq(user_id_val))),
-            )
-        } else {
-            Box::new(puzzle_id.eq(self.puzzle_id).and(receiver_id.is_null()))
-        })
-    }
-}
-
-impl CindyFilter<dialogue::table, DB> for PuzzleLogFilter {
-    fn as_expression(
-        self,
-    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool>>> {
-        use crate::schema::dialogue::dsl::*;
-        Some(if let Some(user_id_val) = self.user_id {
-            Box::new(puzzle_id.eq(self.puzzle_id).and(user_id.eq(user_id_val)))
-        } else {
-            Box::new(puzzle_id.eq(self.puzzle_id))
-        })
-    }
-}
 
 #[Object]
 impl PuzzleLogQuery {
@@ -181,5 +126,61 @@ impl PuzzleLogQuery {
         };
 
         Ok(puzzle_logs)
+    }
+}
+
+/// Available filters for puzzle log query
+#[derive(InputObject, Clone)]
+pub struct PuzzleLogSubFilter {
+    /// ID of the Puzzle to check log with
+    puzzle_id: i32,
+    /// Whether to check log only related to given user_id
+    user_id: Option<i32>,
+}
+
+impl RawFilter<Dialogue> for PuzzleLogSubFilter {
+    fn check(&self, item: &Dialogue) -> bool {
+        self.user_id.map(|uid| uid == item.user_id).unwrap_or(true)
+            && self.puzzle_id == item.puzzle_id
+    }
+}
+
+impl RawFilter<Hint> for PuzzleLogSubFilter {
+    fn check(&self, item: &Hint) -> bool {
+        (self.user_id == item.receiver_id || item.receiver_id.is_none())
+            && self.puzzle_id == item.puzzle_id
+    }
+}
+
+#[Subscription]
+impl PuzzleLogSubscription {
+    pub async fn puzzle_log_sub(
+        &self,
+        filter: Option<PuzzleLogSubFilter>,
+    ) -> impl Stream<Item = Option<PuzzleLogSub>> {
+        let key = if let Some(filter) = filter.as_ref() {
+            if let Some(user_id) = filter.user_id {
+                format!("puzzleLog<{}-{}>", filter.puzzle_id, user_id)
+            } else {
+                format!("puzzleLog<{}>", filter.puzzle_id)
+            }
+        } else {
+            "puzzleLog".to_string()
+        };
+        CindyBroker::<PuzzleLogSub>::subscribe_to(key).filter(move |puzzle_log_sub| {
+            let check = if let Some(filter) = filter.as_ref() {
+                match puzzle_log_sub {
+                    Some(PuzzleLogSub::DialogueCreated(obj)) => filter.check(obj),
+                    Some(PuzzleLogSub::HintCreated(obj)) => filter.check(obj),
+                    Some(PuzzleLogSub::DialogueUpdated(orig, _)) => filter.check(orig),
+                    Some(PuzzleLogSub::HintUpdated(orig, _)) => filter.check(orig),
+                    None => false,
+                }
+            } else {
+                puzzle_log_sub.is_some()
+            };
+
+            async move { check }
+        })
     }
 }
