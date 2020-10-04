@@ -77,7 +77,7 @@ impl CindyFilter<hint::table, DB> for HintFilter {
     }
 }
 
-/// Object for dialogue table
+/// Object for hint table
 #[derive(Queryable, Identifiable, Clone, Debug)]
 #[table_name = "hint"]
 pub struct Hint {

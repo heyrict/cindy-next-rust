@@ -58,9 +58,9 @@ pub struct DialogueFilter {
     question: Option<StringFiltering>,
     answer: Option<StringFiltering>,
     #[graphql(name = "good")]
-    is_good: Option<BoolFiltering>,
+    is_good: Option<bool>,
     #[graphql(name = "true")]
-    is_true: Option<BoolFiltering>,
+    is_true: Option<bool>,
     created: Option<TimestamptzFiltering>,
     answered_time: Option<NullableTimestamptzFiltering>,
     modified: Option<TimestamptzFiltering>,

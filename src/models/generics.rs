@@ -51,20 +51,6 @@ impl RawFilter<&str> for StringFiltering {
         }
     }
 }
-#[derive(InputObject, Clone, Debug)]
-pub struct BoolFiltering {
-    pub eq: Option<bool>,
-}
-
-impl RawFilter<bool> for BoolFiltering {
-    fn check(&self, item: &bool) -> bool {
-        if let Some(eq) = self.eq.as_ref() {
-            item == eq
-        } else {
-            true
-        }
-    }
-}
 
 #[derive(InputObject, Clone, Debug)]
 pub struct I32Filtering {
@@ -148,6 +134,33 @@ pub struct TimestamptzFiltering {
 
 impl RawFilter<Timestamptz> for TimestamptzFiltering {
     fn check(&self, item: &Timestamptz) -> bool {
+        if let Some(eq) = self.eq.as_ref() {
+            item == eq
+        } else if let Some(gt) = self.gt.as_ref() {
+            item > gt
+        } else if let Some(lt) = self.lt.as_ref() {
+            item < lt
+        } else if let Some(ge) = self.ge.as_ref() {
+            item >= ge
+        } else if let Some(le) = self.le.as_ref() {
+            item <= le
+        } else {
+            true
+        }
+    }
+}
+
+#[derive(InputObject, Clone, Debug)]
+pub struct DateFiltering {
+    pub eq: Option<Date>,
+    pub gt: Option<Date>,
+    pub lt: Option<Date>,
+    pub ge: Option<Date>,
+    pub le: Option<Date>,
+}
+
+impl RawFilter<Date> for DateFiltering {
+    fn check(&self, item: &Date) -> bool {
         if let Some(eq) = self.eq.as_ref() {
             item == eq
         } else if let Some(gt) = self.gt.as_ref() {
@@ -317,8 +330,11 @@ macro_rules! gen_string_filter {
 macro_rules! gen_bool_filter {
     ($obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
-            let BoolFiltering { eq } = $obj;
-            apply_filter!(eq, $field, $filt);
+            $filt = Some(if let Some(filt_) = $filt {
+                Box::new(filt_.and($field.eq($obj)))
+            } else {
+                Box::new($field.eq($obj))
+            });
         }
     };
 }
