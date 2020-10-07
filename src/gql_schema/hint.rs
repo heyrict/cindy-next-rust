@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, guard::Guard, Context, InputObject, MaybeUndefined, Object};
 use chrono::Utc;
 use diesel::prelude::*;
 
@@ -57,23 +57,46 @@ impl HintQuery {
     }
 }
 
-#[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "hint"]
+#[derive(InputObject, Debug)]
 pub struct UpdateHintInput {
+    pub id: Option<ID>,
+    pub content: Option<String>,
+    pub created: Option<Timestamptz>,
+    pub puzzle_id: Option<ID>,
+    pub edit_times: Option<i32>,
+    pub receiver_id: MaybeUndefined<ID>,
+    #[graphql(default_with = "Utc::now()")]
+    pub modified: Timestamptz,
+}
+
+#[derive(AsChangeset, Debug)]
+#[table_name = "hint"]
+pub struct UpdateHintData {
     pub id: Option<ID>,
     pub content: Option<String>,
     pub created: Option<Timestamptz>,
     pub puzzle_id: Option<ID>,
     #[column_name = "edittimes"]
     pub edit_times: Option<i32>,
-    // TODO use MaybeUndefined
     pub receiver_id: Option<Option<ID>>,
-    #[graphql(default_with = "Utc::now()")]
     pub modified: Timestamptz,
 }
 
-#[derive(InputObject, Insertable)]
-#[table_name = "hint"]
+impl From<UpdateHintInput> for UpdateHintData {
+    fn from(x: UpdateHintInput) -> Self {
+        Self {
+            id: x.id,
+            content: x.content,
+            created: x.created,
+            puzzle_id: x.puzzle_id,
+            edit_times: x.edit_times,
+            receiver_id: x.receiver_id.as_options(),
+            modified: x.modified,
+        }
+    }
+}
+
+#[derive(InputObject)]
 pub struct CreateHintInput {
     pub id: Option<ID>,
     #[graphql(default)]
@@ -81,14 +104,39 @@ pub struct CreateHintInput {
     #[graphql(default_with = "Utc::now()")]
     pub created: Timestamptz,
     pub puzzle_id: ID,
-    #[column_name = "edittimes"]
     #[graphql(default)]
     pub edit_times: i32,
     #[graphql(default)]
-    // TODO use MaybeUndefined
-    pub receiver_id: Option<Option<ID>>,
+    pub receiver_id: MaybeUndefined<ID>,
     #[graphql(default_with = "Utc::now()")]
     pub modified: Timestamptz,
+}
+
+#[derive(Insertable)]
+#[table_name = "hint"]
+pub struct CreateHintData {
+    pub id: Option<ID>,
+    pub content: String,
+    pub created: Timestamptz,
+    pub puzzle_id: ID,
+    #[column_name = "edittimes"]
+    pub edit_times: i32,
+    pub receiver_id: Option<Option<ID>>,
+    pub modified: Timestamptz,
+}
+
+impl From<CreateHintInput> for CreateHintData {
+    fn from(x: CreateHintInput) -> Self {
+        Self {
+            id: x.id,
+            content: x.content,
+            created: x.created,
+            puzzle_id: x.puzzle_id,
+            edit_times: x.edit_times,
+            receiver_id: x.receiver_id.as_options(),
+            modified: x.modified,
+        }
+    }
 }
 
 #[Object]
@@ -123,9 +171,13 @@ impl HintMutation {
             _ => {}
         };
 
+        debug!("update_hint: {:?}", &set);
+        let data = UpdateHintData::from(set);
+        debug!("update_hint: {:?}", &data);
+
         let hint: Hint = diesel::update(hint::table)
             .filter(hint::id.eq(id))
-            .set(set)
+            .set(data)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
@@ -165,7 +217,7 @@ impl HintMutation {
         };
 
         let hint: Hint = diesel::insert_into(hint::table)
-            .values(&data)
+            .values(&CreateHintData::from(data))
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 

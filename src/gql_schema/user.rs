@@ -1,4 +1,4 @@
-use async_graphql::{self, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, MaybeUndefined, Object};
 use diesel::prelude::*;
 
 use crate::auth::Role;
@@ -56,11 +56,30 @@ impl UserQuery {
     }
 }
 
-#[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "user"]
+#[derive(InputObject, Debug)]
 pub struct UpdateUserSet {
     pub password: Option<String>,
-    // TODO use MaybeUndefined
+    pub last_login: MaybeUndefined<Timestamptz>,
+    pub is_superuser: Option<bool>,
+    pub username: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub email: Option<String>,
+    pub is_staff: Option<bool>,
+    pub is_active: Option<bool>,
+    pub date_joined: Option<Timestamptz>,
+    pub nickname: Option<String>,
+    pub profile: Option<String>,
+    pub current_award_id: MaybeUndefined<i32>,
+    pub hide_bookmark: Option<bool>,
+    pub last_read_dm_id: MaybeUndefined<i32>,
+    pub icon: Option<Option<String>>,
+}
+
+#[derive(AsChangeset, Debug)]
+#[table_name = "user"]
+pub struct UpdateUserData {
+    pub password: Option<String>,
     pub last_login: Option<Option<Timestamptz>>,
     pub is_superuser: Option<bool>,
     pub username: Option<String>,
@@ -72,12 +91,33 @@ pub struct UpdateUserSet {
     pub date_joined: Option<Timestamptz>,
     pub nickname: Option<String>,
     pub profile: Option<String>,
-    // TODO use MaybeUndefined
     pub current_award_id: Option<Option<i32>>,
     pub hide_bookmark: Option<bool>,
-    // TODO use MaybeUndefined
     pub last_read_dm_id: Option<Option<i32>>,
     pub icon: Option<Option<String>>,
+}
+
+impl From<UpdateUserSet> for UpdateUserData {
+    fn from(x: UpdateUserSet) -> Self {
+        Self {
+            password: x.password,
+            last_login: x.last_login.as_options(),
+            is_superuser: x.is_superuser,
+            username: x.username,
+            first_name: x.first_name,
+            last_name: x.last_name,
+            email: x.email,
+            is_staff: x.is_staff,
+            is_active: x.is_active,
+            date_joined: x.date_joined,
+            nickname: x.nickname,
+            profile: x.profile,
+            current_award_id: x.current_award_id.as_options(),
+            hide_bookmark: x.hide_bookmark,
+            last_read_dm_id: x.last_read_dm_id.as_options(),
+            icon: x.icon,
+        }
+    }
 }
 
 #[Object]
@@ -107,7 +147,7 @@ impl UserMutation {
                 )?;
                 assert_eq_guard_msg(
                     &set.last_login,
-                    &None,
+                    &MaybeUndefined::Undefined,
                     "Setting last_login explicitly is prohibited",
                 )?;
             }
@@ -117,7 +157,7 @@ impl UserMutation {
 
         diesel::update(user::table)
             .filter(user::id.eq(id))
-            .set(&set)
+            .set(&UpdateUserData::from(set))
             .get_result(&conn)
             .map_err(|err| err.into())
     }

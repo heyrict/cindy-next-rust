@@ -1,4 +1,4 @@
-use async_graphql::{self, async_trait, guard::Guard, Context, Enum, InputObject};
+use async_graphql::{self, async_trait, guard::Guard, Context, Enum, InputObject, MaybeUndefined};
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::{
     backend::Backend,
@@ -231,6 +231,20 @@ pub type ID = i32;
 
 pub type Timestamptz = DateTime<Utc>;
 pub type Date = NaiveDate;
+
+pub trait MaybeUndefinedExt<T> {
+    fn as_options(self) -> Option<Option<T>>;
+}
+
+impl<T> MaybeUndefinedExt<T> for MaybeUndefined<T> {
+    fn as_options(self) -> Option<Option<T>> {
+        match self {
+            MaybeUndefined::Value(v) => Some(Some(v)),
+            MaybeUndefined::Null => Some(None),
+            MaybeUndefined::Undefined => None,
+        }
+    }
+}
 
 pub trait CindyFilter<Table: Send, DB> {
     fn as_expression(

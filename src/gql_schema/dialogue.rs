@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, guard::Guard, Context, InputObject, MaybeUndefined, Object};
 use chrono::Utc;
 use diesel::prelude::*;
 
@@ -60,21 +60,38 @@ impl DialogueQuery {
     }
 }
 
-#[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "dialogue"]
+#[derive(InputObject, Debug)]
 pub struct UpdateDialogueInput {
     pub id: Option<ID>,
     pub question: Option<String>,
     pub answer: Option<String>,
-    #[column_name = "good"]
     #[graphql(name = "good")]
     pub is_good: Option<bool>,
-    #[column_name = "true_"]
     #[graphql(name = "true")]
     pub is_true: Option<bool>,
     pub created: Option<Timestamptz>,
+    pub answered_time: MaybeUndefined<Timestamptz>,
+    pub puzzle_id: Option<ID>,
+    pub user_id: Option<ID>,
+    pub answer_edit_times: Option<i32>,
+    pub question_edit_times: Option<i32>,
+    pub qno: Option<i32>,
+    #[graphql(default_with = "Utc::now()")]
+    pub modified: Timestamptz,
+}
+
+#[derive(AsChangeset, Debug)]
+#[table_name = "dialogue"]
+pub struct UpdateDialogueData {
+    pub id: Option<ID>,
+    pub question: Option<String>,
+    pub answer: Option<String>,
+    #[column_name = "good"]
+    pub is_good: Option<bool>,
+    #[column_name = "true_"]
+    pub is_true: Option<bool>,
+    pub created: Option<Timestamptz>,
     #[column_name = "answeredtime"]
-    // TODO use MaybeUndefined
     pub answered_time: Option<Option<Timestamptz>>,
     pub puzzle_id: Option<ID>,
     pub user_id: Option<ID>,
@@ -83,39 +100,94 @@ pub struct UpdateDialogueInput {
     #[column_name = "questionEditTimes"]
     pub question_edit_times: Option<i32>,
     pub qno: Option<i32>,
-    #[graphql(default_with = "Utc::now()")]
     pub modified: Timestamptz,
 }
 
-#[derive(InputObject, Insertable)]
-#[table_name = "dialogue"]
+impl From<UpdateDialogueInput> for UpdateDialogueData {
+    fn from(x: UpdateDialogueInput) -> Self {
+        Self {
+            id: x.id,
+            question: x.question,
+            answer: x.answer,
+            is_good: x.is_good,
+            is_true: x.is_true,
+            created: x.created,
+            answered_time: x.answered_time.as_options(),
+            puzzle_id: x.puzzle_id,
+            user_id: x.user_id,
+            answer_edit_times: x.answer_edit_times,
+            question_edit_times: x.question_edit_times,
+            qno: x.qno,
+            modified: x.modified,
+        }
+    }
+}
+
+#[derive(InputObject)]
 pub struct CreateDialogueInput {
     pub id: Option<ID>,
     pub question: Option<String>,
     #[graphql(default)]
     pub answer: String,
-    #[column_name = "good"]
     #[graphql(default, name = "good")]
     pub is_good: bool,
-    #[column_name = "true_"]
     #[graphql(default, name = "true")]
     pub is_true: bool,
     #[graphql(default_with = "Utc::now()")]
     pub created: Timestamptz,
-    #[column_name = "answeredtime"]
-    // TODO use MaybeUndefined
-    pub answered_time: Option<Option<Timestamptz>>,
+    pub answered_time: MaybeUndefined<Timestamptz>,
     pub puzzle_id: ID,
     pub user_id: Option<ID>,
-    #[column_name = "answerEditTimes"]
     #[graphql(default)]
     pub answer_edit_times: i32,
-    #[column_name = "questionEditTimes"]
     #[graphql(default)]
     pub question_edit_times: i32,
     pub qno: Option<i32>,
     #[graphql(default_with = "Utc::now()")]
     pub modified: Timestamptz,
+}
+
+#[derive(Insertable)]
+#[table_name = "dialogue"]
+pub struct CreateDialogueData {
+    pub id: Option<ID>,
+    pub question: Option<String>,
+    pub answer: String,
+    #[column_name = "good"]
+    pub is_good: bool,
+    #[column_name = "true_"]
+    pub is_true: bool,
+    pub created: Timestamptz,
+    #[column_name = "answeredtime"]
+    pub answered_time: Option<Option<Timestamptz>>,
+    pub puzzle_id: ID,
+    pub user_id: Option<ID>,
+    #[column_name = "answerEditTimes"]
+    pub answer_edit_times: i32,
+    #[column_name = "questionEditTimes"]
+    pub question_edit_times: i32,
+    pub qno: Option<i32>,
+    pub modified: Timestamptz,
+}
+
+impl From<CreateDialogueInput> for CreateDialogueData {
+    fn from(x: CreateDialogueInput) -> Self {
+        Self {
+            id: x.id,
+            question: x.question,
+            answer: x.answer,
+            is_good: x.is_good,
+            is_true: x.is_true,
+            created: x.created,
+            answered_time: x.answered_time.as_options(),
+            puzzle_id: x.puzzle_id,
+            user_id: x.user_id,
+            answer_edit_times: x.answer_edit_times,
+            question_edit_times: x.question_edit_times,
+            qno: x.qno,
+            modified: x.modified,
+        }
+    }
 }
 
 #[Object]
@@ -146,7 +218,7 @@ impl DialogueMutation {
                 if set.answer.is_some() {
                     // Update answered time
                     if dialogue_inst.answer.is_empty() && dialogue_inst.answered_time.is_none() {
-                        set.answered_time = Some(Some(Utc::now()));
+                        set.answered_time = MaybeUndefined::Value(Utc::now());
                     } else {
                         set.answer_edit_times = Some(dialogue_inst.answer_edit_times + 1);
                     }
@@ -158,7 +230,7 @@ impl DialogueMutation {
 
         let dialogue: Dialogue = diesel::update(dialogue::table)
             .filter(dialogue::id.eq(id))
-            .set(set)
+            .set(UpdateDialogueData::from(set))
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
@@ -199,7 +271,7 @@ impl DialogueMutation {
         data.qno = Some((qno + 1) as i32);
 
         let dialogue: Dialogue = diesel::insert_into(dialogue::table)
-            .values(&data)
+            .values(&CreateDialogueData::from(data))
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
