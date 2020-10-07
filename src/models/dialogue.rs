@@ -1,6 +1,6 @@
 use async_graphql::{self, Context, InputObject, Object};
 use diesel::sql_types::Bool;
-use diesel::{prelude::*, query_dsl::QueryDsl};
+use diesel::{prelude::*, query_dsl::QueryDsl, sql_types::Nullable};
 
 use crate::context::GlobalCtx;
 use crate::schema::dialogue;
@@ -70,10 +70,13 @@ pub struct DialogueFilter {
 impl CindyFilter<dialogue::table, DB> for DialogueFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool>>> {
+    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Nullable<Bool>> + Send>>
+    {
         use crate::schema::dialogue::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool>>> = None;
+        let mut filter: Option<
+            Box<dyn BoxableExpression<dialogue, DB, SqlType = Nullable<Bool>> + Send>,
+        > = None;
         let DialogueFilter {
             id: obj_id,
             question: obj_question,

@@ -1,11 +1,13 @@
 use anyhow::{anyhow, Context as _, Result};
 use async_graphql::{self, guard::Guard, Context, InputObject};
 use chrono::Utc;
-use diesel::expression::BoxableExpression;
-use diesel::prelude::*;
-use diesel::query_dsl::QueryDsl;
-use diesel::r2d2::{ConnectionManager, PooledConnection};
-use diesel::sql_types::Bool;
+use diesel::{
+    expression::BoxableExpression,
+    prelude::*,
+    query_dsl::QueryDsl,
+    r2d2::{ConnectionManager, PooledConnection},
+    sql_types::{Bool, Nullable},
+};
 use rand::{distributions::Alphanumeric, Rng};
 use ring::pbkdf2;
 use std::num::NonZeroU32;
@@ -71,10 +73,14 @@ pub struct UserFilter {
 }
 
 impl CindyFilter<user::table, DB> for UserFilter {
-    fn as_expression(self) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool>>> {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Nullable<Bool>> + Send>> {
         use crate::schema::user::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<user, DB, SqlType = Bool>>> = None;
+        let mut filter: Option<
+            Box<dyn BoxableExpression<user, DB, SqlType = Nullable<Bool>> + Send>,
+        > = None;
         let UserFilter {
             username: obj_username,
             nickname: obj_nickname,

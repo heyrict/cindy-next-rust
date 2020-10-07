@@ -1,6 +1,11 @@
 use async_graphql::{self, async_trait, guard::Guard, Context, Enum, InputObject};
 use chrono::{DateTime, NaiveDate, Utc};
-use diesel::{backend::Backend, expression::BoxableExpression, prelude::*, sql_types::Bool};
+use diesel::{
+    backend::Backend,
+    expression::BoxableExpression,
+    prelude::*,
+    sql_types::{Bool, Nullable},
+};
 
 use crate::auth::Role;
 use crate::context::RequestCtx;
@@ -227,17 +232,23 @@ pub type ID = i32;
 pub type Timestamptz = DateTime<Utc>;
 pub type Date = NaiveDate;
 
-pub trait CindyFilter<Table, DB> {
-    fn as_expression(self) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool>>>;
+pub trait CindyFilter<Table: Send, DB> {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Nullable<Bool>> + Send>>;
 }
 
 impl<T: 'static, DB: 'static, F> CindyFilter<T, DB> for Vec<F>
 where
+    T: Send,
     DB: Backend,
     F: CindyFilter<T, DB>,
 {
-    fn as_expression(self) -> Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool>>> {
-        let mut filter: Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool>>> = None;
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<T, DB, SqlType = Nullable<Bool>> + Send>> {
+        let mut filter: Option<Box<dyn BoxableExpression<T, DB, SqlType = Nullable<Bool>> + Send>> =
+            None;
         for item in self.into_iter() {
             if let Some(item) = item.as_expression() {
                 filter = Some(if let Some(filter_) = filter {
@@ -331,9 +342,9 @@ macro_rules! gen_bool_filter {
     ($obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
             $filt = Some(if let Some(filt_) = $filt {
-                Box::new(filt_.and($field.eq($obj)))
+                Box::new(filt_.and($field.eq($obj).nullable()))
             } else {
-                Box::new($field.eq($obj))
+                Box::new($field.eq($obj).nullable())
             });
         }
     };
@@ -369,9 +380,9 @@ macro_rules! gen_nullable_number_filter {
             } = $obj;
             if let Some(is_null) = is_null {
                 $filt = Some(if is_null {
-                    Box::new($field.is_null())
+                    Box::new($field.is_null().nullable())
                 } else {
-                    Box::new($field.is_not_null())
+                    Box::new($field.is_not_null().nullable())
                 });
             };
             apply_filter!(eq, $field, $filt);
@@ -399,17 +410,17 @@ macro_rules! gen_enum_filter {
             // eq_any
             if let Some(eq_any) = eq_any {
                 $filt = Some(if let Some(filt_) = $filt {
-                    Box::new(filt_.and($field.eq(diesel::dsl::any(eq_any))))
+                    Box::new(filt_.and($field.eq(diesel::dsl::any(eq_any)).nullable()))
                 } else {
-                    Box::new($field.eq(diesel::dsl::any(eq_any)))
+                    Box::new($field.eq(diesel::dsl::any(eq_any)).nullable())
                 });
             };
             // ne_all
             if let Some(ne_all) = ne_all {
                 $filt = Some(if let Some(filt_) = $filt {
-                    Box::new(filt_.and($field.ne(diesel::dsl::all(ne_all))))
+                    Box::new(filt_.and($field.ne(diesel::dsl::all(ne_all)).nullable()))
                 } else {
-                    Box::new($field.ne(diesel::dsl::all(ne_all)))
+                    Box::new($field.ne(diesel::dsl::all(ne_all)).nullable())
                 });
             };
         }
@@ -425,18 +436,18 @@ macro_rules! apply_filter {
     ($obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
             $filt = Some(if let Some(filt_) = $filt {
-                Box::new(filt_.and($field.$obj($obj)))
+                Box::new(filt_.and($field.$obj($obj).nullable()))
             } else {
-                Box::new($field.$obj($obj))
+                Box::new($field.$obj($obj).nullable())
             });
         };
     };
     (($ty:ty) $obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
             $filt = Some(if let Some(filt_) = $filt {
-                Box::new(filt_.and($field.$obj($obj as $ty)))
+                Box::new(filt_.and($field.$obj($obj as $ty).nullable()))
             } else {
-                Box::new($field.$obj($obj as $ty))
+                Box::new($field.$obj($obj as $ty).nullable())
             });
         };
     };

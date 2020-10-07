@@ -1,6 +1,6 @@
 use async_graphql::{InputObject, Interface, Object};
 use diesel::prelude::*;
-use diesel::sql_types::Bool;
+use diesel::sql_types::{Bool, Nullable};
 
 use crate::schema::{dialogue, hint};
 
@@ -26,7 +26,9 @@ pub struct PuzzleLogFilter {
 }
 
 impl CindyFilter<hint::table, DB> for PuzzleLogFilter {
-    fn as_expression(self) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool>>> {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Nullable<Bool>> + Send>> {
         use crate::schema::hint::dsl::*;
 
         let PuzzleLogFilter {
@@ -36,16 +38,17 @@ impl CindyFilter<hint::table, DB> for PuzzleLogFilter {
             modified: obj_modified,
         } = self;
 
-        let mut filter: Option<Box<dyn BoxableExpression<hint, DB, SqlType = Bool>>> =
-            Some(if let Some(user_id_val) = obj_user_id {
-                Box::new(
-                    puzzle_id
-                        .eq(obj_puzzle_id)
-                        .and(receiver_id.is_null().or(receiver_id.eq(user_id_val))),
-                )
-            } else {
-                Box::new(puzzle_id.eq(obj_puzzle_id).and(receiver_id.is_null()))
-            });
+        let mut filter: Option<
+            Box<dyn BoxableExpression<hint, DB, SqlType = Nullable<Bool>> + Send>,
+        > = Some(if let Some(user_id_val) = obj_user_id {
+            Box::new(
+                puzzle_id
+                    .eq(obj_puzzle_id)
+                    .and(receiver_id.is_null().or(receiver_id.eq(user_id_val))),
+            )
+        } else {
+            Box::new(puzzle_id.eq(obj_puzzle_id).and(receiver_id.is_null()))
+        });
 
         gen_number_filter!(obj_created: TimestamptzFiltering, created, filter);
         gen_number_filter!(obj_modified: TimestamptzFiltering, modified, filter);
@@ -56,7 +59,8 @@ impl CindyFilter<hint::table, DB> for PuzzleLogFilter {
 impl CindyFilter<dialogue::table, DB> for PuzzleLogFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool>>> {
+    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Nullable<Bool>> + Send>>
+    {
         use crate::schema::dialogue::dsl::*;
 
         let PuzzleLogFilter {
@@ -66,16 +70,17 @@ impl CindyFilter<dialogue::table, DB> for PuzzleLogFilter {
             modified: obj_modified,
         } = self;
 
-        let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool>>> =
-            Some(if let Some(user_id_val) = obj_user_id {
-                Box::new(
-                    puzzle_id
-                        .eq(obj_puzzle_id)
-                        .and(user_id.is_null().or(user_id.eq(user_id_val))),
-                )
-            } else {
-                Box::new(puzzle_id.eq(obj_puzzle_id).and(user_id.is_null()))
-            });
+        let mut filter: Option<
+            Box<dyn BoxableExpression<dialogue, DB, SqlType = Nullable<Bool>> + Send>,
+        > = Some(if let Some(user_id_val) = obj_user_id {
+            Box::new(
+                puzzle_id
+                    .eq(obj_puzzle_id)
+                    .and(user_id.is_null().or(user_id.eq(user_id_val))),
+            )
+        } else {
+            Box::new(puzzle_id.eq(obj_puzzle_id).and(user_id.is_null()))
+        });
 
         gen_number_filter!(obj_created: TimestamptzFiltering, created, filter);
         gen_number_filter!(obj_modified: TimestamptzFiltering, modified, filter);

@@ -1,13 +1,13 @@
 use async_graphql::{self, Context, Enum, InputObject, Object};
 use diesel::sql_types::Bool;
 use diesel::{
-    backend::Backend,
+    backend::{Backend, HasRawValue},
     deserialize::{self, FromSql},
     expression::{helper_types::AsExprOf, AsExpression},
     prelude::*,
     query_dsl::QueryDsl,
     serialize::{self, Output, ToSql},
-    sql_types::Integer,
+    sql_types::{Integer, Nullable},
 };
 use std::io;
 
@@ -78,10 +78,11 @@ pub struct PuzzleFilter {
 impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<puzzle::table, DB, SqlType = Bool>>> {
+    ) -> Option<Box<dyn BoxableExpression<puzzle::table, DB, SqlType = Nullable<Bool>> + Send>> {
         use crate::schema::puzzle::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<puzzle, DB, SqlType = Bool>>> = None;
+        let mut filter: Option<Box<dyn BoxableExpression<puzzle, DB, SqlType = Nullable<Bool>> + Send>> =
+            None;
         let PuzzleFilter {
             title: obj_title,
             genre: obj_genre,
@@ -156,7 +157,7 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(bytes: Option<&DB::RawValue>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: <DB as HasRawValue>::RawValue) -> deserialize::Result<Self> {
         match i32::from_sql(bytes)? {
             0 => Ok(Yami::None),
             1 => Ok(Yami::Normal),
@@ -221,7 +222,7 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(bytes: Option<&DB::RawValue>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: <DB as HasRawValue>::RawValue) -> deserialize::Result<Self> {
         match i32::from_sql(bytes)? {
             0 => Ok(Genre::Classic),
             1 => Ok(Genre::TwentyQuestions),
@@ -288,7 +289,7 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(bytes: Option<&DB::RawValue>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: <DB as HasRawValue>::RawValue) -> deserialize::Result<Self> {
         match i32::from_sql(bytes)? {
             0 => Ok(Status::Undergoing),
             1 => Ok(Status::Solved),

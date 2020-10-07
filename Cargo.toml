@@ -31,5 +31,6 @@ time = "^0.2"
 tokio = { version = "0.2", features = ["time", "stream", "sync"] }
 chrono = "0.4"
 futures = "0.3.0"
-diesel = { version = "^1.4", features = ["postgres", "r2d2", "chrono"] }
+#diesel = { version = "^1.4", features = ["postgres", "r2d2", "chrono"] }
+diesel = { path = "../diesel/diesel", features = ["postgres", "r2d2", "chrono"] }
 lazy_static = "^1.4"
