@@ -6,6 +6,7 @@ use std::time::Duration;
 
 mod chatroom;
 mod dialogue;
+mod favchatroom;
 mod hint;
 mod puzzle;
 mod puzzle_log;
@@ -13,6 +14,7 @@ mod user;
 
 use chatroom::{ChatroomMutation, ChatroomQuery};
 use dialogue::{DialogueMutation, DialogueQuery};
+use favchatroom::{FavChatroomMutation, FavChatroomQuery};
 use hint::{HintMutation, HintQuery};
 use puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription};
 use puzzle_log::{PuzzleLogQuery, PuzzleLogSubscription};
@@ -24,6 +26,7 @@ pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 pub struct QueryRoot(
     ChatroomQuery,
     DialogueQuery,
+    FavChatroomQuery,
     HintQuery,
     PuzzleLogQuery,
     PuzzleQuery,
@@ -34,6 +37,7 @@ pub struct QueryRoot(
 pub struct MutationRoot(
     ChatroomMutation,
     DialogueMutation,
+    FavChatroomMutation,
     HintMutation,
     PuzzleMutation,
     UserMutation,
