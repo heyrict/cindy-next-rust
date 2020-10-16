@@ -4,6 +4,7 @@ use futures::{Stream, StreamExt};
 //use std::sync::Arc;
 use std::time::Duration;
 
+mod award;
 mod chatroom;
 mod dialogue;
 mod favchatroom;
@@ -12,6 +13,7 @@ mod puzzle;
 mod puzzle_log;
 mod user;
 
+use award::{AwardMutation, AwardQuery};
 use chatroom::{ChatroomMutation, ChatroomQuery};
 use dialogue::{DialogueMutation, DialogueQuery};
 use favchatroom::{FavChatroomMutation, FavChatroomQuery};
