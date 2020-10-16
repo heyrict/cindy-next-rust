@@ -6,6 +6,7 @@ use std::time::Duration;
 
 mod award;
 mod bookmark;
+mod chatmessage;
 mod chatroom;
 mod dialogue;
 mod favchatroom;
@@ -16,6 +17,7 @@ mod user;
 
 use award::{AwardMutation, AwardQuery};
 use bookmark::{BookmarkMutation, BookmarkQuery};
+use chatmessage::{ChatMessageMutation, ChatMessageQuery};
 use chatroom::{ChatroomMutation, ChatroomQuery};
 use dialogue::{DialogueMutation, DialogueQuery};
 use favchatroom::{FavChatroomMutation, FavChatroomQuery};
@@ -31,6 +33,7 @@ pub struct QueryRoot(
     AwardQuery,
     BookmarkQuery,
     ChatroomQuery,
+    ChatMessageQuery,
     DialogueQuery,
     FavChatroomQuery,
     HintQuery,
@@ -44,6 +47,7 @@ pub struct MutationRoot(
     AwardMutation,
     BookmarkMutation,
     ChatroomMutation,
+    ChatMessageMutation,
     DialogueMutation,
     FavChatroomMutation,
     HintMutation,
