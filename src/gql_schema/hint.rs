@@ -232,10 +232,10 @@ impl HintMutation {
     }
 
     // Delete hint (admin only)
-    #[graphql(guard(
+    #[graphql(guard(and(
         DenyRoleGuard(role = "Role::User"),
         DenyRoleGuard(role = "Role::Guest")
-    ))]
+    )))]
     pub async fn delete_hint(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Hint> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 

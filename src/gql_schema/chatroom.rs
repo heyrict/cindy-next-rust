@@ -148,10 +148,10 @@ impl ChatroomMutation {
     }
 
     // Delete chatroom (admin only)
-    #[graphql(guard(
+    #[graphql(guard(and(
         DenyRoleGuard(role = "Role::User"),
         DenyRoleGuard(role = "Role::Guest")
-    ))]
+    )))]
     pub async fn delete_chatroom(
         &self,
         ctx: &Context<'_>,

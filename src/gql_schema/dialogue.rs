@@ -286,10 +286,10 @@ impl DialogueMutation {
     }
 
     // Delete dialogue (admin only)
-    #[graphql(guard(
+    #[graphql(guard(and(
         DenyRoleGuard(role = "Role::User"),
         DenyRoleGuard(role = "Role::Guest")
-    ))]
+    )))]
     pub async fn delete_dialogue(
         &self,
         ctx: &Context<'_>,

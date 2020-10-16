@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context as _, Result};
-use async_graphql::{self, guard::Guard, Context, InputObject};
+use async_graphql::{self, guard::Guard, Context, InputObject, Object};
 use chrono::Utc;
 use diesel::{
     expression::BoxableExpression,
@@ -114,7 +114,7 @@ pub struct User {
     pub icon: Option<String>,
 }
 
-#[async_graphql::Object]
+#[Object]
 impl User {
     async fn id(&self) -> ID {
         self.id
@@ -122,10 +122,10 @@ impl User {
     async fn username(&self) -> &str {
         &self.username
     }
-    #[graphql(guard(
+    #[graphql(guard(and(
         DenyRoleGuard(role = "Role::User"),
         DenyRoleGuard(role = "Role::Guest")
-    ))]
+    )))]
     async fn password(&self) -> &str {
         &self.password
     }
