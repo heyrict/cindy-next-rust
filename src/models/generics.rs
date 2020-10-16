@@ -84,6 +84,33 @@ impl RawFilter<i32> for I32Filtering {
     }
 }
 
+#[derive(InputObject, Clone, Debug, Eq, PartialEq)]
+pub struct I16Filtering {
+    pub eq: Option<i16>,
+    pub gt: Option<i16>,
+    pub lt: Option<i16>,
+    pub ge: Option<i16>,
+    pub le: Option<i16>,
+}
+
+impl RawFilter<i16> for I16Filtering {
+    fn check(&self, item: &i16) -> bool {
+        if let Some(eq) = self.eq.as_ref() {
+            item == eq
+        } else if let Some(gt) = self.gt.as_ref() {
+            item > gt
+        } else if let Some(lt) = self.lt.as_ref() {
+            item < lt
+        } else if let Some(ge) = self.ge.as_ref() {
+            item >= ge
+        } else if let Some(le) = self.le.as_ref() {
+            item <= le
+        } else {
+            true
+        }
+    }
+}
+
 #[derive(InputObject, Clone, Debug)]
 pub struct NullableI32Filtering {
     pub is_null: Option<bool>,

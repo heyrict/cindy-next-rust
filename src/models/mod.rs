@@ -2,6 +2,7 @@
 mod generics;
 
 pub mod award;
+pub mod bookmark;
 pub mod chatroom;
 pub mod dialogue;
 pub mod favchatroom;
@@ -13,6 +14,7 @@ pub mod user;
 pub use generics::*;
 
 pub use award::Award;
+pub use bookmark::Bookmark;
 pub use chatroom::Chatroom;
 pub use dialogue::Dialogue;
 pub use favchatroom::FavChatroom;

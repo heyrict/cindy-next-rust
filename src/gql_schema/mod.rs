@@ -5,6 +5,7 @@ use futures::{Stream, StreamExt};
 use std::time::Duration;
 
 mod award;
+mod bookmark;
 mod chatroom;
 mod dialogue;
 mod favchatroom;
@@ -14,6 +15,7 @@ mod puzzle_log;
 mod user;
 
 use award::{AwardMutation, AwardQuery};
+use bookmark::{BookmarkMutation, BookmarkQuery};
 use chatroom::{ChatroomMutation, ChatroomQuery};
 use dialogue::{DialogueMutation, DialogueQuery};
 use favchatroom::{FavChatroomMutation, FavChatroomQuery};
@@ -26,6 +28,8 @@ pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
 #[derive(MergedObject, Default)]
 pub struct QueryRoot(
+    AwardQuery,
+    BookmarkQuery,
     ChatroomQuery,
     DialogueQuery,
     FavChatroomQuery,
@@ -37,6 +41,8 @@ pub struct QueryRoot(
 
 #[derive(MergedObject, Default)]
 pub struct MutationRoot(
+    AwardMutation,
+    BookmarkMutation,
     ChatroomMutation,
     DialogueMutation,
     FavChatroomMutation,
