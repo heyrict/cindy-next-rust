@@ -2,7 +2,7 @@ use async_graphql::{self, Context, InputObject, Object};
 use diesel::{
     prelude::*,
     query_dsl::QueryDsl,
-    sql_types::{Bool},
+    sql_types::Bool,
 };
 
 use crate::context::GlobalCtx;

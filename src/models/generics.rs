@@ -1,11 +1,6 @@
 use async_graphql::{self, async_trait, guard::Guard, Context, Enum, InputObject, MaybeUndefined};
 use chrono::{DateTime, NaiveDate, Utc};
-use diesel::{
-    backend::Backend,
-    expression::BoxableExpression,
-    prelude::*,
-    sql_types::{Bool},
-};
+use diesel::{backend::Backend, expression::BoxableExpression, prelude::*, sql_types::Bool};
 
 use crate::auth::Role;
 use crate::context::RequestCtx;
@@ -52,6 +47,33 @@ impl RawFilter<&str> for StringFiltering {
             item == eq
         } else {
             // TODO like && ilike unimplemented
+            true
+        }
+    }
+}
+
+#[derive(InputObject, Clone, Debug, Eq, PartialEq)]
+pub struct I16Filtering {
+    pub eq: Option<i16>,
+    pub gt: Option<i16>,
+    pub lt: Option<i16>,
+    pub ge: Option<i16>,
+    pub le: Option<i16>,
+}
+
+impl RawFilter<i16> for I16Filtering {
+    fn check(&self, item: &i16) -> bool {
+        if let Some(eq) = self.eq.as_ref() {
+            item == eq
+        } else if let Some(gt) = self.gt.as_ref() {
+            item > gt
+        } else if let Some(lt) = self.lt.as_ref() {
+            item < lt
+        } else if let Some(ge) = self.ge.as_ref() {
+            item >= ge
+        } else if let Some(le) = self.le.as_ref() {
+            item <= le
+        } else {
             true
         }
     }
@@ -247,9 +269,7 @@ impl<T> MaybeUndefinedExt<T> for MaybeUndefined<T> {
 }
 
 pub trait CindyFilter<Table: Send, DB> {
-    fn as_expression(
-        self,
-    ) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool> + Send>>;
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool> + Send>>;
 }
 
 impl<T: 'static, DB: 'static, F> CindyFilter<T, DB> for Vec<F>
@@ -258,11 +278,8 @@ where
     DB: Backend,
     F: CindyFilter<T, DB>,
 {
-    fn as_expression(
-        self,
-    ) -> Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool> + Send>> {
-        let mut filter: Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool> + Send>> =
-            None;
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool> + Send>> {
+        let mut filter: Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool> + Send>> = None;
         for item in self.into_iter() {
             if let Some(item) = item.as_expression() {
                 filter = Some(if let Some(filter_) = filter {

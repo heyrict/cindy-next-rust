@@ -4,6 +4,9 @@ use futures::{Stream, StreamExt};
 //use std::sync::Arc;
 use std::time::Duration;
 
+mod award;
+mod bookmark;
+mod chatmessage;
 mod chatroom;
 mod dialogue;
 mod hint;
@@ -11,6 +14,9 @@ mod puzzle;
 mod puzzle_log;
 mod user;
 
+use award::{AwardMutation, AwardQuery};
+use bookmark::{BookmarkMutation, BookmarkQuery};
+use chatmessage::{ChatmessageMutation, ChatmessageQuery};
 use chatroom::{ChatroomMutation, ChatroomQuery};
 use dialogue::{DialogueMutation, DialogueQuery};
 use hint::{HintMutation, HintQuery};
@@ -22,6 +28,9 @@ pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
 #[derive(MergedObject, Default)]
 pub struct QueryRoot(
+    AwardQuery,
+    BookmarkQuery,
+    ChatmessageQuery,
     ChatroomQuery,
     DialogueQuery,
     HintQuery,
@@ -32,6 +41,9 @@ pub struct QueryRoot(
 
 #[derive(MergedObject, Default)]
 pub struct MutationRoot(
+    AwardMutation,
+    BookmarkMutation,
+    ChatmessageMutation,
     ChatroomMutation,
     DialogueMutation,
     HintMutation,
