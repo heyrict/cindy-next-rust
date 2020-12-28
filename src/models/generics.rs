@@ -4,7 +4,7 @@ use diesel::{
     backend::Backend,
     expression::BoxableExpression,
     prelude::*,
-    sql_types::{Bool, Nullable},
+    sql_types::{Bool},
 };
 
 use crate::auth::Role;
@@ -249,7 +249,7 @@ impl<T> MaybeUndefinedExt<T> for MaybeUndefined<T> {
 pub trait CindyFilter<Table: Send, DB> {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Nullable<Bool>> + Send>>;
+    ) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool> + Send>>;
 }
 
 impl<T: 'static, DB: 'static, F> CindyFilter<T, DB> for Vec<F>
@@ -260,8 +260,8 @@ where
 {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<T, DB, SqlType = Nullable<Bool>> + Send>> {
-        let mut filter: Option<Box<dyn BoxableExpression<T, DB, SqlType = Nullable<Bool>> + Send>> =
+    ) -> Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool> + Send>> {
+        let mut filter: Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool> + Send>> =
             None;
         for item in self.into_iter() {
             if let Some(item) = item.as_expression() {
@@ -356,9 +356,9 @@ macro_rules! gen_bool_filter {
     ($obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
             $filt = Some(if let Some(filt_) = $filt {
-                Box::new(filt_.and($field.eq($obj).nullable()))
+                Box::new(filt_.and($field.eq($obj)))
             } else {
-                Box::new($field.eq($obj).nullable())
+                Box::new($field.eq($obj))
             });
         }
     };
@@ -394,9 +394,9 @@ macro_rules! gen_nullable_number_filter {
             } = $obj;
             if let Some(is_null) = is_null {
                 $filt = Some(if is_null {
-                    Box::new($field.is_null().nullable())
+                    Box::new($field.is_null())
                 } else {
-                    Box::new($field.is_not_null().nullable())
+                    Box::new($field.is_not_null())
                 });
             };
             apply_filter!(eq, $field, $filt);
@@ -424,17 +424,17 @@ macro_rules! gen_enum_filter {
             // eq_any
             if let Some(eq_any) = eq_any {
                 $filt = Some(if let Some(filt_) = $filt {
-                    Box::new(filt_.and($field.eq(diesel::dsl::any(eq_any)).nullable()))
+                    Box::new(filt_.and($field.eq(diesel::dsl::any(eq_any))))
                 } else {
-                    Box::new($field.eq(diesel::dsl::any(eq_any)).nullable())
+                    Box::new($field.eq(diesel::dsl::any(eq_any)))
                 });
             };
             // ne_all
             if let Some(ne_all) = ne_all {
                 $filt = Some(if let Some(filt_) = $filt {
-                    Box::new(filt_.and($field.ne(diesel::dsl::all(ne_all)).nullable()))
+                    Box::new(filt_.and($field.ne(diesel::dsl::all(ne_all))))
                 } else {
-                    Box::new($field.ne(diesel::dsl::all(ne_all)).nullable())
+                    Box::new($field.ne(diesel::dsl::all(ne_all)))
                 });
             };
         }
@@ -450,18 +450,18 @@ macro_rules! apply_filter {
     ($obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
             $filt = Some(if let Some(filt_) = $filt {
-                Box::new(filt_.and($field.$obj($obj).nullable()))
+                Box::new(filt_.and($field.$obj($obj)))
             } else {
-                Box::new($field.$obj($obj).nullable())
+                Box::new($field.$obj($obj))
             });
         };
     };
     (($ty:ty) $obj:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
             $filt = Some(if let Some(filt_) = $filt {
-                Box::new(filt_.and($field.$obj($obj as $ty).nullable()))
+                Box::new(filt_.and($field.$obj($obj as $ty)))
             } else {
-                Box::new($field.$obj($obj as $ty).nullable())
+                Box::new($field.$obj($obj as $ty))
             });
         };
     };

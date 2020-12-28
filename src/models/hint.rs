@@ -2,7 +2,7 @@ use async_graphql::{self, Context, InputObject, Object};
 use diesel::{
     prelude::*,
     query_dsl::QueryDsl,
-    sql_types::{Bool, Nullable},
+    sql_types::{Bool},
 };
 
 use crate::context::GlobalCtx;
@@ -63,11 +63,11 @@ pub struct HintFilter {
 impl CindyFilter<hint::table, DB> for HintFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Nullable<Bool>> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool> + Send>> {
         use crate::schema::hint::dsl::*;
 
         let mut filter: Option<
-            Box<dyn BoxableExpression<hint, DB, SqlType = Nullable<Bool>> + Send>,
+            Box<dyn BoxableExpression<hint, DB, SqlType = Bool> + Send>,
         > = None;
         let HintFilter {
             id: obj_id,

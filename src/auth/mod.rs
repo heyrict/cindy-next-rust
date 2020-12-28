@@ -109,8 +109,8 @@ fn get_jwt(user: &User) -> String {
     let exp: OffsetDateTime = iat + Duration::days(30);
     let header = json!({});
     let payload = json!({
-        "iat": iat.timestamp(),
-        "exp": exp.timestamp(),
+        "iat": iat.unix_timestamp(),
+        "exp": exp.unix_timestamp(),
         "user": {
             "id": user.id,
             "icon": user.icon,

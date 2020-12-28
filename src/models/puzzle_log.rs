@@ -1,6 +1,6 @@
 use async_graphql::{InputObject, Interface, Object};
 use diesel::prelude::*;
-use diesel::sql_types::{Bool, Nullable};
+use diesel::sql_types::{Bool};
 
 use crate::schema::{dialogue, hint};
 
@@ -28,7 +28,7 @@ pub struct PuzzleLogFilter {
 impl CindyFilter<hint::table, DB> for PuzzleLogFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Nullable<Bool>> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool> + Send>> {
         use crate::schema::hint::dsl::*;
 
         let PuzzleLogFilter {
@@ -39,7 +39,7 @@ impl CindyFilter<hint::table, DB> for PuzzleLogFilter {
         } = self;
 
         let mut filter: Option<
-            Box<dyn BoxableExpression<hint, DB, SqlType = Nullable<Bool>> + Send>,
+            Box<dyn BoxableExpression<hint, DB, SqlType = Bool> + Send>,
         > = Some(if let Some(user_id_val) = obj_user_id {
             Box::new(
                 puzzle_id
@@ -59,7 +59,7 @@ impl CindyFilter<hint::table, DB> for PuzzleLogFilter {
 impl CindyFilter<dialogue::table, DB> for PuzzleLogFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Nullable<Bool>> + Send>>
+    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool> + Send>>
     {
         use crate::schema::dialogue::dsl::*;
 
@@ -71,7 +71,7 @@ impl CindyFilter<dialogue::table, DB> for PuzzleLogFilter {
         } = self;
 
         let mut filter: Option<
-            Box<dyn BoxableExpression<dialogue, DB, SqlType = Nullable<Bool>> + Send>,
+            Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool> + Send>,
         > = Some(if let Some(user_id_val) = obj_user_id {
             Box::new(
                 puzzle_id

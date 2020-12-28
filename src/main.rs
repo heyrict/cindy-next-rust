@@ -11,10 +11,8 @@ extern crate lazy_static;
 extern crate log;
 
 use actix_web::{guard, web, App, HttpRequest, HttpResponse, HttpServer, Result};
-use actix_web_actors::ws;
 use async_graphql::Schema;
 use async_graphql_actix_web::{Request, Response, WSSubscription};
-use futures::StreamExt;
 use std::convert::TryInto;
 use std::io::Write;
 use time::Duration;
@@ -107,12 +105,7 @@ async fn index_ws(
     req: HttpRequest,
     payload: web::Payload,
 ) -> Result<HttpResponse> {
-    ws::start_with_protocols(
-        WSSubscription::new(Schema::clone(&*schema)),
-        &["graphql-ws"],
-        &req,
-        payload,
-    )
+    WSSubscription::start(Schema::clone(&*schema), &req, payload)
 }
 
 #[actix_rt::main]
@@ -122,9 +115,10 @@ async fn main() -> std::io::Result<()> {
         loop {
             tokio::time::delay_for(
                 Duration::day()
-                .try_into()
-                .expect("Error converting a day to std::Duration"),
-            ).await;
+                    .try_into()
+                    .expect("Error converting a day to std::Duration"),
+            )
+            .await;
             debug!("Cleaning up cache");
             broker::cleanup();
         }

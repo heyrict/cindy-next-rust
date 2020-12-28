@@ -362,10 +362,10 @@ impl PuzzleMutation {
     }
 
     // Delete puzzle (admin only)
-    #[graphql(guard(
+    #[graphql(guard(and(
         DenyRoleGuard(role = "Role::User"),
         DenyRoleGuard(role = "Role::Guest")
-    ))]
+    )))]
     pub async fn delete_puzzle(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Puzzle> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 

@@ -1,12 +1,12 @@
 use anyhow::{anyhow, Context as _, Result};
-use async_graphql::{self, guard::Guard, Context, InputObject};
+use async_graphql::{self, guard::Guard, Context, InputObject, Object};
 use chrono::Utc;
 use diesel::{
     expression::BoxableExpression,
     prelude::*,
     query_dsl::QueryDsl,
     r2d2::{ConnectionManager, PooledConnection},
-    sql_types::{Bool, Nullable},
+    sql_types::Bool,
 };
 use rand::{distributions::Alphanumeric, Rng};
 use ring::pbkdf2;
@@ -75,12 +75,10 @@ pub struct UserFilter {
 impl CindyFilter<user::table, DB> for UserFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Nullable<Bool>> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool> + Send>> {
         use crate::schema::user::dsl::*;
 
-        let mut filter: Option<
-            Box<dyn BoxableExpression<user, DB, SqlType = Nullable<Bool>> + Send>,
-        > = None;
+        let mut filter: Option<Box<dyn BoxableExpression<user, DB, SqlType = Bool> + Send>> = None;
         let UserFilter {
             username: obj_username,
             nickname: obj_nickname,
@@ -114,7 +112,7 @@ pub struct User {
     pub icon: Option<String>,
 }
 
-#[async_graphql::Object]
+#[Object]
 impl User {
     async fn id(&self) -> ID {
         self.id
@@ -122,10 +120,10 @@ impl User {
     async fn username(&self) -> &str {
         &self.username
     }
-    #[graphql(guard(
+    #[graphql(guard(and(
         DenyRoleGuard(role = "Role::User"),
         DenyRoleGuard(role = "Role::Guest")
-    ))]
+    )))]
     async fn password(&self) -> &str {
         &self.password
     }
