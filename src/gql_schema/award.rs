@@ -133,11 +133,7 @@ impl AwardMutation {
         DenyRoleGuard(role = "Role::User"),
         DenyRoleGuard(role = "Role::Guest")
     )))]
-    pub async fn delete_award(
-        &self,
-        ctx: &Context<'_>,
-        id: ID,
-    ) -> async_graphql::Result<Award> {
+    pub async fn delete_award(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Award> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let award = diesel::delete(award::table.filter(award::id.eq(id)))

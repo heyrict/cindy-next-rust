@@ -1,9 +1,5 @@
 use async_graphql::{self, Context, InputObject, Object};
-use diesel::{
-    prelude::*,
-    query_dsl::QueryDsl,
-    sql_types::Bool,
-};
+use diesel::{prelude::*, query_dsl::QueryDsl, sql_types::Bool};
 
 use crate::context::GlobalCtx;
 use crate::schema::chatroom;
@@ -64,13 +60,11 @@ pub struct ChatroomFilter {
 impl CindyFilter<chatroom::table, DB> for ChatroomFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<chatroom::table, DB, SqlType = Bool> + Send>>
-    {
+    ) -> Option<Box<dyn BoxableExpression<chatroom::table, DB, SqlType = Bool> + Send>> {
         use crate::schema::chatroom::dsl::*;
 
-        let mut filter: Option<
-            Box<dyn BoxableExpression<chatroom, DB, SqlType = Bool> + Send>,
-        > = None;
+        let mut filter: Option<Box<dyn BoxableExpression<chatroom, DB, SqlType = Bool> + Send>> =
+            None;
         let ChatroomFilter {
             id: obj_id,
             name: obj_name,
