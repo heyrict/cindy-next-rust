@@ -83,6 +83,29 @@ impl CindyFilter<chatmessage::table, DB> for ChatmessageFilter {
     }
 }
 
+#[derive(Clone)]
+pub enum ChatmessageSub {
+    Created(Chatmessage),
+    Updated(Chatmessage, Chatmessage),
+}
+
+#[Object]
+impl ChatmessageSub {
+    async fn op(&self) -> DbOp {
+        match &self {
+            ChatmessageSub::Created(_) => DbOp::Created,
+            ChatmessageSub::Updated(_, _) => DbOp::Updated,
+        }
+    }
+
+    async fn data(&self) -> Chatmessage {
+        match &self {
+            ChatmessageSub::Created(cm) => cm.clone(),
+            ChatmessageSub::Updated(_, cm) => cm.clone(),
+        }
+    }
+}
+
 /// Object for chatmessage table
 #[derive(Queryable, Identifiable, Clone, Debug)]
 #[table_name = "chatmessage"]
@@ -119,5 +142,18 @@ impl Chatmessage {
     }
     async fn modified(&self) -> Timestamptz {
         self.modified
+    }
+
+    async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
+        use crate::schema::user;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let user = user::table
+            .filter(user::id.eq(self.user_id))
+            .limit(1)
+            .first(&conn)?;
+
+        Ok(user)
     }
 }

@@ -1,8 +1,12 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, MaybeUndefined, Object};
+use async_graphql::{
+    self, guard::Guard, Context, InputObject, MaybeUndefined, Object, Subscription,
+};
 use chrono::Utc;
 use diesel::prelude::*;
+use futures::{Stream, StreamExt};
 
 use crate::auth::Role;
+use crate::broker::CindyBroker;
 use crate::context::{GlobalCtx, RequestCtx};
 use crate::models::chatmessage::*;
 use crate::models::*;
@@ -12,6 +16,8 @@ use crate::schema::chatmessage;
 pub struct ChatmessageQuery;
 #[derive(Default)]
 pub struct ChatmessageMutation;
+#[derive(Default)]
+pub struct ChatmessageSubscription;
 
 #[Object]
 impl ChatmessageQuery {
@@ -131,14 +137,15 @@ impl ChatmessageMutation {
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
+        let cm_inst: Chatmessage = chatmessage::table
+            .filter(chatmessage::id.eq(id))
+            .limit(1)
+            .first(&conn)?;
+
         match role {
             Role::User => {
                 // User should be the owner on update mutation
-                let chatmessage_inst: Chatmessage = chatmessage::table
-                    .filter(chatmessage::id.eq(id))
-                    .limit(1)
-                    .first(&conn)?;
-                user_id_guard(ctx, chatmessage_inst.user_id)?;
+                user_id_guard(ctx, cm_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
             _ => {}
@@ -149,6 +156,8 @@ impl ChatmessageMutation {
             .set(UpdateChatmessageData::from(set))
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
+
+        CindyBroker::publish(ChatmessageSub::Updated(cm_inst, chatmessage.clone()));
 
         Ok(chatmessage)
     }
@@ -180,6 +189,8 @@ impl ChatmessageMutation {
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
+        CindyBroker::publish(ChatmessageSub::Created(chatmessage.clone()));
+
         Ok(chatmessage)
     }
 
@@ -200,5 +211,45 @@ impl ChatmessageMutation {
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(chatmessage)
+    }
+}
+
+#[derive(InputObject, Eq, PartialEq, Clone)]
+pub struct ChatmessageSubFilter {
+    id: Option<I32Filtering>,
+    chatroom_id: Option<I32Filtering>,
+}
+
+impl RawFilter<Chatmessage> for ChatmessageSubFilter {
+    fn check(&self, item: &Chatmessage) -> bool {
+        if let Some(filter) = self.id.as_ref() {
+            filter.check(&item.id)
+        } else if let Some(filter) = self.chatroom_id.as_ref() {
+            filter.check(&item.chatroom_id)
+        } else {
+            true
+        }
+    }
+}
+
+#[Subscription]
+impl ChatmessageSubscription {
+    pub async fn chatmessage_sub(
+        &self,
+        filter: Option<ChatmessageSubFilter>,
+    ) -> impl Stream<Item = Option<ChatmessageSub>> {
+        CindyBroker::<ChatmessageSub>::subscribe().filter(move |cm_sub| {
+            let check = if let Some(filter) = filter.as_ref() {
+                match cm_sub {
+                    Some(ChatmessageSub::Created(cm)) => filter.check(&cm),
+                    Some(ChatmessageSub::Updated(orig, _)) => filter.check(&orig),
+                    None => false,
+                }
+            } else {
+                cm_sub.is_some()
+            };
+
+            async move { check }
+        })
     }
 }

@@ -16,7 +16,7 @@ mod user;
 
 use award::{AwardMutation, AwardQuery};
 use bookmark::{BookmarkMutation, BookmarkQuery};
-use chatmessage::{ChatmessageMutation, ChatmessageQuery};
+use chatmessage::{ChatmessageMutation, ChatmessageQuery, ChatmessageSubscription};
 use chatroom::{ChatroomMutation, ChatroomQuery};
 use dialogue::{DialogueMutation, DialogueQuery};
 use hint::{HintMutation, HintQuery};
@@ -52,7 +52,12 @@ pub struct MutationRoot(
 );
 
 #[derive(MergedSubscription, Default)]
-pub struct SubscriptionRoot(BaseSubscription, PuzzleSubscription, PuzzleLogSubscription);
+pub struct SubscriptionRoot(
+    BaseSubscription,
+    ChatmessageSubscription,
+    PuzzleLogSubscription,
+    PuzzleSubscription,
+);
 
 #[derive(Clone, Default, SimpleObject)]
 struct IntervalMsg {
