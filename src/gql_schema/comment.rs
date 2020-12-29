@@ -3,43 +3,43 @@ use diesel::prelude::*;
 
 use crate::auth::Role;
 use crate::context::{GlobalCtx, RequestCtx};
-use crate::models::bookmark::*;
+use crate::models::comment::*;
 use crate::models::*;
-use crate::schema::bookmark;
+use crate::schema::comment;
 
 #[derive(Default)]
-pub struct BookmarkQuery;
+pub struct CommentQuery;
 #[derive(Default)]
-pub struct BookmarkMutation;
+pub struct CommentMutation;
 
 #[Object]
-impl BookmarkQuery {
-    pub async fn bookmark(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Bookmark> {
+impl CommentQuery {
+    pub async fn comment(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Comment> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let bookmark = bookmark::table
-            .filter(bookmark::id.eq(id))
+        let comment = comment::table
+            .filter(comment::id.eq(id))
             .limit(1)
             .first(&conn)?;
 
-        Ok(bookmark)
+        Ok(comment)
     }
 
-    pub async fn bookmarks(
+    pub async fn comments(
         &self,
         ctx: &Context<'_>,
         limit: Option<i64>,
         offset: Option<i64>,
-        filter: Option<Vec<BookmarkFilter>>,
-        order: Option<Vec<BookmarkOrder>>,
-    ) -> async_graphql::Result<Vec<Bookmark>> {
-        use crate::schema::bookmark::dsl::*;
+        filter: Option<Vec<CommentFilter>>,
+        order: Option<Vec<CommentOrder>>,
+    ) -> async_graphql::Result<Vec<Comment>> {
+        use crate::schema::comment::dsl::*;
 
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let mut query = bookmark.into_boxed();
+        let mut query = comment.into_boxed();
         if let Some(order) = order {
-            query = BookmarkOrders::new(order).apply_order(query);
+            query = CommentOrders::new(order).apply_order(query);
         }
         if let Some(filter) = filter {
             if let Some(filter_exp) = filter.as_expression() {
@@ -53,38 +53,43 @@ impl BookmarkQuery {
             query = query.offset(offset);
         }
 
-        let bookmarks = query.load::<Bookmark>(&conn)?;
+        let comments = query.load::<Comment>(&conn)?;
 
-        Ok(bookmarks)
+        Ok(comments)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "bookmark"]
-pub struct UpdateBookmarkInput {
+#[table_name = "comment"]
+pub struct UpdateCommentInput {
     pub id: Option<ID>,
-    pub value: Option<i16>,
+    pub content: Option<String>,
+    pub spoiler: Option<bool>,
     pub puzzle_id: Option<ID>,
     pub user_id: Option<ID>,
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "bookmark"]
-pub struct CreateBookmarkInput {
-    pub id: Option<ID>,
-    pub value: i16,
+#[table_name = "comment"]
+pub struct CreateCommentInput {
+    pub id: ID,
+    pub content: String,
+    #[graphql(default = false)]
+    pub spoiler: bool,
     pub puzzle_id: ID,
     pub user_id: Option<ID>,
 }
 
 #[Object]
-impl BookmarkMutation {
-    pub async fn update_bookmark(
+impl CommentMutation {
+    // Update comment
+    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    pub async fn update_comment(
         &self,
         ctx: &Context<'_>,
         id: ID,
-        set: UpdateBookmarkInput,
-    ) -> async_graphql::Result<Bookmark> {
+        set: UpdateCommentInput,
+    ) -> async_graphql::Result<Comment> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
@@ -92,30 +97,32 @@ impl BookmarkMutation {
         match role {
             Role::User => {
                 // User should be the owner on update mutation
-                let bookmark_inst: Bookmark = bookmark::table
-                    .filter(bookmark::id.eq(id))
+                let comment_inst: Comment = comment::table
+                    .filter(comment::id.eq(id))
                     .limit(1)
                     .first(&conn)?;
-                user_id_guard(ctx, bookmark_inst.user_id)?;
+                user_id_guard(ctx, comment_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
             _ => {}
         };
 
-        let bookmark: Bookmark = diesel::update(bookmark::table)
-            .filter(bookmark::id.eq(id))
+        let comment: Comment = diesel::update(comment::table)
+            .filter(comment::id.eq(id))
             .set(set)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
-        Ok(bookmark)
+        Ok(comment)
     }
 
-    pub async fn create_bookmark(
+    // Create comment
+    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    pub async fn create_comment(
         &self,
         ctx: &Context<'_>,
-        mut data: CreateBookmarkInput,
-    ) -> async_graphql::Result<Bookmark> {
+        mut data: CreateCommentInput,
+    ) -> async_graphql::Result<Comment> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
@@ -133,42 +140,30 @@ impl BookmarkMutation {
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
         };
 
-        let bookmark: Bookmark = diesel::insert_into(bookmark::table)
+        let comment: Comment = diesel::insert_into(comment::table)
             .values(&data)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
-        Ok(bookmark)
+        Ok(comment)
     }
 
-    // Delete bookmark
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
-    pub async fn delete_bookmark(
+    // Delete comment (admin only)
+    #[graphql(guard(and(
+        DenyRoleGuard(role = "Role::User"),
+        DenyRoleGuard(role = "Role::Guest")
+    )))]
+    pub async fn delete_comment(
         &self,
         ctx: &Context<'_>,
         id: ID,
-    ) -> async_graphql::Result<Bookmark> {
+    ) -> async_graphql::Result<Comment> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
-        let reqctx = ctx.data::<RequestCtx>()?;
-        let role = reqctx.get_role();
 
-        match role {
-            Role::User => {
-                // User should be the owner
-                let bookmark_inst: Bookmark = bookmark::table
-                    .filter(bookmark::id.eq(id))
-                    .limit(1)
-                    .first(&conn)?;
-                user_id_guard(ctx, bookmark_inst.user_id)?;
-            }
-            Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
-            _ => {}
-        };
-
-        let bookmark = diesel::delete(bookmark::table.filter(bookmark::id.eq(id)))
+        let comment = diesel::delete(comment::table.filter(comment::id.eq(id)))
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
-        Ok(bookmark)
+        Ok(comment)
     }
 }

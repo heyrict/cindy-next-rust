@@ -8,21 +8,31 @@ mod award;
 mod bookmark;
 mod chatmessage;
 mod chatroom;
+mod comment;
 mod dialogue;
 mod hint;
 mod puzzle;
 mod puzzle_log;
+mod puzzle_tag;
+mod star;
+mod tag;
 mod user;
+mod user_award;
 
 use award::{AwardMutation, AwardQuery};
 use bookmark::{BookmarkMutation, BookmarkQuery};
 use chatmessage::{ChatmessageMutation, ChatmessageQuery, ChatmessageSubscription};
 use chatroom::{ChatroomMutation, ChatroomQuery};
+use comment::{CommentMutation, CommentQuery};
 use dialogue::{DialogueMutation, DialogueQuery};
 use hint::{HintMutation, HintQuery};
 use puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription};
 use puzzle_log::{PuzzleLogQuery, PuzzleLogSubscription};
+use puzzle_tag::{PuzzleTagMutation, PuzzleTagQuery};
+use star::{StarMutation, StarQuery};
+use tag::{TagMutation, TagQuery};
 use user::{UserMutation, UserQuery};
+use user_award::{UserAwardMutation, UserAwardQuery};
 
 pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
@@ -32,11 +42,16 @@ pub struct QueryRoot(
     BookmarkQuery,
     ChatmessageQuery,
     ChatroomQuery,
+    CommentQuery,
     DialogueQuery,
     HintQuery,
     PuzzleLogQuery,
     PuzzleQuery,
+    PuzzleTagQuery,
+    StarQuery,
+    TagQuery,
     UserQuery,
+    UserAwardQuery,
 );
 
 #[derive(MergedObject, Default)]
@@ -45,10 +60,15 @@ pub struct MutationRoot(
     BookmarkMutation,
     ChatmessageMutation,
     ChatroomMutation,
+    CommentMutation,
     DialogueMutation,
     HintMutation,
     PuzzleMutation,
+    PuzzleTagMutation,
+    StarMutation,
+    TagMutation,
     UserMutation,
+    UserAwardMutation,
 );
 
 #[derive(MergedSubscription, Default)]

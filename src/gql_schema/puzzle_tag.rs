@@ -3,43 +3,43 @@ use diesel::prelude::*;
 
 use crate::auth::Role;
 use crate::context::{GlobalCtx, RequestCtx};
-use crate::models::bookmark::*;
+use crate::models::puzzle_tag::*;
 use crate::models::*;
-use crate::schema::bookmark;
+use crate::schema::puzzle_tag;
 
 #[derive(Default)]
-pub struct BookmarkQuery;
+pub struct PuzzleTagQuery;
 #[derive(Default)]
-pub struct BookmarkMutation;
+pub struct PuzzleTagMutation;
 
 #[Object]
-impl BookmarkQuery {
-    pub async fn bookmark(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Bookmark> {
+impl PuzzleTagQuery {
+    pub async fn puzzle_tag(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<PuzzleTag> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let bookmark = bookmark::table
-            .filter(bookmark::id.eq(id))
+        let puzzle_tag = puzzle_tag::table
+            .filter(puzzle_tag::id.eq(id))
             .limit(1)
             .first(&conn)?;
 
-        Ok(bookmark)
+        Ok(puzzle_tag)
     }
 
-    pub async fn bookmarks(
+    pub async fn puzzle_tags(
         &self,
         ctx: &Context<'_>,
         limit: Option<i64>,
         offset: Option<i64>,
-        filter: Option<Vec<BookmarkFilter>>,
-        order: Option<Vec<BookmarkOrder>>,
-    ) -> async_graphql::Result<Vec<Bookmark>> {
-        use crate::schema::bookmark::dsl::*;
+        filter: Option<Vec<PuzzleTagFilter>>,
+        order: Option<Vec<PuzzleTagOrder>>,
+    ) -> async_graphql::Result<Vec<PuzzleTag>> {
+        use crate::schema::puzzle_tag::dsl::*;
 
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let mut query = bookmark.into_boxed();
+        let mut query = puzzle_tag.into_boxed();
         if let Some(order) = order {
-            query = BookmarkOrders::new(order).apply_order(query);
+            query = PuzzleTagOrders::new(order).apply_order(query);
         }
         if let Some(filter) = filter {
             if let Some(filter_exp) = filter.as_expression() {
@@ -53,38 +53,39 @@ impl BookmarkQuery {
             query = query.offset(offset);
         }
 
-        let bookmarks = query.load::<Bookmark>(&conn)?;
+        let puzzle_tags = query.load::<PuzzleTag>(&conn)?;
 
-        Ok(bookmarks)
+        Ok(puzzle_tags)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "bookmark"]
-pub struct UpdateBookmarkInput {
+#[table_name = "puzzle_tag"]
+pub struct UpdatePuzzleTagInput {
     pub id: Option<ID>,
-    pub value: Option<i16>,
     pub puzzle_id: Option<ID>,
+    pub tag_id: Option<ID>,
     pub user_id: Option<ID>,
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "bookmark"]
-pub struct CreateBookmarkInput {
+#[table_name = "puzzle_tag"]
+pub struct CreatePuzzleTagInput {
     pub id: Option<ID>,
-    pub value: i16,
     pub puzzle_id: ID,
+    pub tag_id: ID,
     pub user_id: Option<ID>,
 }
 
 #[Object]
-impl BookmarkMutation {
-    pub async fn update_bookmark(
+impl PuzzleTagMutation {
+    // Update puzzle_tag
+    pub async fn update_puzzle_tag(
         &self,
         ctx: &Context<'_>,
         id: ID,
-        set: UpdateBookmarkInput,
-    ) -> async_graphql::Result<Bookmark> {
+        set: UpdatePuzzleTagInput,
+    ) -> async_graphql::Result<PuzzleTag> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
@@ -92,30 +93,31 @@ impl BookmarkMutation {
         match role {
             Role::User => {
                 // User should be the owner on update mutation
-                let bookmark_inst: Bookmark = bookmark::table
-                    .filter(bookmark::id.eq(id))
+                let puzzle_tag_inst: PuzzleTag = puzzle_tag::table
+                    .filter(puzzle_tag::id.eq(id))
                     .limit(1)
                     .first(&conn)?;
-                user_id_guard(ctx, bookmark_inst.user_id)?;
+                user_id_guard(ctx, puzzle_tag_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
             _ => {}
         };
 
-        let bookmark: Bookmark = diesel::update(bookmark::table)
-            .filter(bookmark::id.eq(id))
+        let puzzle_tag: PuzzleTag = diesel::update(puzzle_tag::table)
+            .filter(puzzle_tag::id.eq(id))
             .set(set)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
-        Ok(bookmark)
+        Ok(puzzle_tag)
     }
 
-    pub async fn create_bookmark(
+    // Create puzzle_tag
+    pub async fn create_puzzle_tag(
         &self,
         ctx: &Context<'_>,
-        mut data: CreateBookmarkInput,
-    ) -> async_graphql::Result<Bookmark> {
+        mut data: CreatePuzzleTagInput,
+    ) -> async_graphql::Result<PuzzleTag> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
@@ -133,42 +135,51 @@ impl BookmarkMutation {
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
         };
 
-        let bookmark: Bookmark = diesel::insert_into(bookmark::table)
+        let puzzle_tag: PuzzleTag = diesel::insert_into(puzzle_tag::table)
             .values(&data)
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
-        Ok(bookmark)
+        Ok(puzzle_tag)
     }
 
-    // Delete bookmark
+    // Delete puzzle_tag
     #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
-    pub async fn delete_bookmark(
+    pub async fn delete_puzzle_tag(
         &self,
         ctx: &Context<'_>,
         id: ID,
-    ) -> async_graphql::Result<Bookmark> {
+    ) -> async_graphql::Result<PuzzleTag> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
         match role {
             Role::User => {
-                // User should be the owner
-                let bookmark_inst: Bookmark = bookmark::table
-                    .filter(bookmark::id.eq(id))
+                use crate::schema::puzzle;
+                let user_id = reqctx
+                    .get_user_id()
+                    .ok_or(async_graphql::Error::new("No user"))?;
+                // User should be the owner of the puzzle or the puzzle_tag
+                let puzzle_tag_inst: PuzzleTag = puzzle_tag::table
+                    .filter(puzzle_tag::id.eq(id))
                     .limit(1)
                     .first(&conn)?;
-                user_id_guard(ctx, bookmark_inst.user_id)?;
+                let puzzle_inst: Puzzle = puzzle::table
+                    .filter(puzzle::id.eq(puzzle_tag_inst.puzzle_id))
+                    .limit(1)
+                    .first(&conn)?;
+                assert_eq_guard(puzzle_tag_inst.user_id, user_id)
+                    .or_else(|_| assert_eq_guard(puzzle_inst.user_id, user_id))?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
             _ => {}
         };
 
-        let bookmark = diesel::delete(bookmark::table.filter(bookmark::id.eq(id)))
+        let puzzle_tag = diesel::delete(puzzle_tag::table.filter(puzzle_tag::id.eq(id)))
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
-        Ok(bookmark)
+        Ok(puzzle_tag)
     }
 }
