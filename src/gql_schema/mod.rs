@@ -20,21 +20,21 @@ mod tag;
 mod user;
 mod user_award;
 
-use award::{AwardMutation, AwardQuery};
-use bookmark::{BookmarkMutation, BookmarkQuery};
-use chatmessage::{ChatmessageMutation, ChatmessageQuery, ChatmessageSubscription};
-use chatroom::{ChatroomMutation, ChatroomQuery};
-use comment::{CommentMutation, CommentQuery};
-use dialogue::{DialogueMutation, DialogueQuery};
-use favchat::{FavchatMutation, FavchatQuery};
-use hint::{HintMutation, HintQuery};
-use puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription};
-use puzzle_log::{PuzzleLogQuery, PuzzleLogSubscription};
-use puzzle_tag::{PuzzleTagMutation, PuzzleTagQuery};
-use star::{StarMutation, StarQuery};
-use tag::{TagMutation, TagQuery};
-use user::{UserMutation, UserQuery};
-use user_award::{UserAwardMutation, UserAwardQuery};
+pub use award::{AwardMutation, AwardQuery};
+pub use bookmark::{BookmarkMutation, BookmarkQuery};
+pub use chatmessage::{ChatmessageMutation, ChatmessageQuery, ChatmessageSubscription};
+pub use chatroom::{ChatroomMutation, ChatroomQuery};
+pub use comment::{CommentMutation, CommentQuery};
+pub use dialogue::{DialogueMutation, DialogueQuery};
+pub use favchat::{FavchatMutation, FavchatQuery};
+pub use hint::{HintMutation, HintQuery};
+pub use puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription};
+pub use puzzle_log::{PuzzleLogQuery, PuzzleLogSubscription};
+pub use puzzle_tag::{PuzzleTagMutation, PuzzleTagQuery};
+pub use star::{StarMutation, StarQuery};
+pub use tag::{TagMutation, TagQuery};
+pub use user::{UserMutation, UserQuery};
+pub use user_award::{UserAwardMutation, UserAwardQuery};
 
 pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 

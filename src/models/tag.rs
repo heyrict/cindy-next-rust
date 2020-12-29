@@ -1,10 +1,11 @@
-use async_graphql::{self, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use diesel::sql_types::Bool;
 use diesel::{prelude::*, query_dsl::QueryDsl};
 
 use crate::schema::tag;
 
-use super::generics::*;
+use super::puzzle_tag::{PuzzleTagFilter, PuzzleTagOrder};
+use super::*;
 
 /// Available orders for tag query
 #[derive(InputObject, Clone)]
@@ -89,5 +90,31 @@ impl Tag {
     }
     async fn created(&self) -> Timestamptz {
         self.created
+    }
+
+    async fn puzzle_tags(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<PuzzleTagFilter>,
+        order: Option<Vec<PuzzleTagOrder>>,
+    ) -> async_graphql::Result<Vec<PuzzleTag>> {
+        use crate::gql_schema::PuzzleTagQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.tag_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| PuzzleTagFilter {
+                puzzle_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = PuzzleTagQuery::default();
+        query
+            .puzzle_tags(ctx, limit, offset, Some(vec![filter]), order)
+            .await
     }
 }

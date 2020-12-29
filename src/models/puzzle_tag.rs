@@ -45,12 +45,12 @@ impl PuzzleTagOrders {
 }
 
 /// Available filters for puzzle_tag query
-#[derive(InputObject, Clone)]
+#[derive(InputObject, Clone, Default)]
 pub struct PuzzleTagFilter {
-    id: Option<I32Filtering>,
-    puzzle_id: Option<I32Filtering>,
-    tag_id: Option<I32Filtering>,
-    user_id: Option<I32Filtering>,
+    pub id: Option<I32Filtering>,
+    pub puzzle_id: Option<I32Filtering>,
+    pub tag_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
 }
 
 impl CindyFilter<puzzle_tag::table, DB> for PuzzleTagFilter {

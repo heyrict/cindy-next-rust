@@ -47,13 +47,13 @@ impl CommentOrders {
 }
 
 /// Available filters for comment query
-#[derive(InputObject, Clone)]
+#[derive(InputObject, Clone, Default)]
 pub struct CommentFilter {
-    id: Option<I32Filtering>,
-    content: Option<StringFiltering>,
-    spoiler: Option<bool>,
-    puzzle_id: Option<I32Filtering>,
-    user_id: Option<I32Filtering>,
+    pub id: Option<I32Filtering>,
+    pub content: Option<StringFiltering>,
+    pub spoiler: Option<bool>,
+    pub puzzle_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
 }
 
 impl CindyFilter<comment::table, DB> for CommentFilter {

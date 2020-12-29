@@ -45,11 +45,11 @@ impl FavchatOrders {
 }
 
 /// Available filters for favchat query
-#[derive(InputObject, Clone)]
+#[derive(InputObject, Clone, Default)]
 pub struct FavchatFilter {
-    id: Option<I32Filtering>,
-    chatroom_id: Option<I32Filtering>,
-    user_id: Option<I32Filtering>,
+    pub id: Option<I32Filtering>,
+    pub chatroom_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
 }
 
 impl CindyFilter<favorite_chatroom::table, DB> for FavchatFilter {

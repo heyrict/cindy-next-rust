@@ -47,13 +47,14 @@ impl HintOrders {
 }
 
 /// Available filters for hint query
-#[derive(InputObject, Clone)]
+#[derive(InputObject, Clone, Default)]
 pub struct HintFilter {
-    id: Option<I32Filtering>,
-    content: Option<StringFiltering>,
-    created: Option<TimestamptzFiltering>,
-    receiver_id: Option<NullableI32Filtering>,
-    modified: Option<TimestamptzFiltering>,
+    pub id: Option<I32Filtering>,
+    pub content: Option<StringFiltering>,
+    pub created: Option<TimestamptzFiltering>,
+    pub puzzle_id: Option<I32Filtering>,
+    pub receiver_id: Option<NullableI32Filtering>,
+    pub modified: Option<TimestamptzFiltering>,
 }
 
 impl CindyFilter<hint::table, DB> for HintFilter {
@@ -68,12 +69,14 @@ impl CindyFilter<hint::table, DB> for HintFilter {
             content: obj_content,
             created: obj_created,
             modified: obj_modified,
+            puzzle_id: obj_puzzle_id,
             receiver_id: obj_receiver_id,
         } = self;
         gen_number_filter!(obj_id: I32Filtering, id, filter);
         gen_string_filter!(obj_content, content, filter);
         gen_number_filter!(obj_created: TimestamptzFiltering, created, filter);
         gen_number_filter!(obj_modified: TimestamptzFiltering, modified, filter);
+        gen_number_filter!(obj_puzzle_id: I32Filtering, puzzle_id, filter);
         gen_nullable_number_filter!(obj_receiver_id: NullableI32Filtering, receiver_id, filter);
         filter
     }

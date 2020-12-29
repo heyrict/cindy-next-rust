@@ -14,8 +14,13 @@ use std::io;
 use crate::context::GlobalCtx;
 use crate::schema::puzzle;
 
-use super::generics::*;
-use super::user::*;
+use super::bookmark::{BookmarkFilter, BookmarkOrder};
+use super::comment::{CommentFilter, CommentOrder};
+use super::dialogue::{DialogueFilter, DialogueOrder};
+use super::hint::{HintFilter, HintOrder};
+use super::puzzle_tag::{PuzzleTagFilter, PuzzleTagOrder};
+use super::star::{StarFilter, StarOrder};
+use super::*;
 
 /// Available orders for puzzle query
 #[derive(InputObject, Clone)]
@@ -64,15 +69,15 @@ impl PuzzleOrders {
 }
 
 /// Available filters for puzzle query
-#[derive(InputObject, Clone)]
+#[derive(InputObject, Clone, Default)]
 pub struct PuzzleFilter {
-    title: Option<StringFiltering>,
-    genre: Option<GenreFiltering>,
-    yami: Option<YamiFiltering>,
-    status: Option<StatusFiltering>,
-    content: Option<StringFiltering>,
-    solution: Option<StringFiltering>,
-    user_id: Option<I32Filtering>,
+    pub title: Option<StringFiltering>,
+    pub genre: Option<GenreFiltering>,
+    pub yami: Option<YamiFiltering>,
+    pub status: Option<StatusFiltering>,
+    pub content: Option<StringFiltering>,
+    pub solution: Option<StringFiltering>,
+    pub user_id: Option<I32Filtering>,
 }
 
 impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
@@ -400,5 +405,161 @@ impl Puzzle {
             .first(&conn)?;
 
         Ok(user)
+    }
+
+    async fn bookmarks(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<BookmarkFilter>,
+        order: Option<Vec<BookmarkOrder>>,
+    ) -> async_graphql::Result<Vec<Bookmark>> {
+        use crate::gql_schema::BookmarkQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.puzzle_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| BookmarkFilter {
+                puzzle_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = BookmarkQuery::default();
+        query
+            .bookmarks(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn comments(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<CommentFilter>,
+        order: Option<Vec<CommentOrder>>,
+    ) -> async_graphql::Result<Vec<Comment>> {
+        use crate::gql_schema::CommentQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.puzzle_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| CommentFilter {
+                puzzle_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = CommentQuery::default();
+        query
+            .comments(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn dialogues(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<DialogueFilter>,
+        order: Option<Vec<DialogueOrder>>,
+    ) -> async_graphql::Result<Vec<Dialogue>> {
+        use crate::gql_schema::DialogueQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.puzzle_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| DialogueFilter {
+                puzzle_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = DialogueQuery::default();
+        query
+            .dialogues(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn hints(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<HintFilter>,
+        order: Option<Vec<HintOrder>>,
+    ) -> async_graphql::Result<Vec<Hint>> {
+        use crate::gql_schema::HintQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.puzzle_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| HintFilter {
+                puzzle_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = HintQuery::default();
+        query
+            .hints(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn puzzle_tags(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<PuzzleTagFilter>,
+        order: Option<Vec<PuzzleTagOrder>>,
+    ) -> async_graphql::Result<Vec<PuzzleTag>> {
+        use crate::gql_schema::PuzzleTagQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.puzzle_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| PuzzleTagFilter {
+                puzzle_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = PuzzleTagQuery::default();
+        query
+            .puzzle_tags(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn stars(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<StarFilter>,
+        order: Option<Vec<StarOrder>>,
+    ) -> async_graphql::Result<Vec<Star>> {
+        use crate::gql_schema::StarQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.puzzle_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| StarFilter {
+                puzzle_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = StarQuery::default();
+        query
+            .stars(ctx, limit, offset, Some(vec![filter]), order)
+            .await
     }
 }

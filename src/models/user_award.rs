@@ -51,12 +51,12 @@ impl UserAwardOrders {
 }
 
 /// Available filters for user_award query
-#[derive(InputObject, Clone)]
+#[derive(InputObject, Clone, Default)]
 pub struct UserAwardFilter {
-    id: Option<I32Filtering>,
-    created: Option<DateFiltering>,
-    award_id: Option<I32Filtering>,
-    user_id: Option<I32Filtering>,
+    pub id: Option<I32Filtering>,
+    pub created: Option<DateFiltering>,
+    pub award_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
 }
 
 impl CindyFilter<user_award::table, DB> for UserAwardFilter {

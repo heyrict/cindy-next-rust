@@ -1,10 +1,10 @@
 use async_graphql::{self, Context, InputObject, Object};
 use diesel::{prelude::*, query_dsl::QueryDsl, sql_types::Bool};
 
-use crate::context::GlobalCtx;
+use super::*;
 use crate::schema::award;
 
-use super::*;
+use super::user_award::{UserAward, UserAwardFilter, UserAwardOrder};
 
 /// Available orders for award query
 #[derive(InputObject, Clone)]
@@ -102,5 +102,31 @@ impl Award {
     }
     async fn requisition(&self) -> &str {
         &self.requisition
+    }
+
+    async fn user_awards(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<UserAwardFilter>,
+        order: Option<Vec<UserAwardOrder>>,
+    ) -> async_graphql::Result<Vec<UserAward>> {
+        use crate::gql_schema::UserAwardQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.award_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| UserAwardFilter {
+                award_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = UserAwardQuery::default();
+        query
+            .user_awards(ctx, limit, offset, Some(vec![filter]), order)
+            .await
     }
 }

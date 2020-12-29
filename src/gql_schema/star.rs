@@ -17,10 +17,7 @@ impl StarQuery {
     pub async fn star(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Star> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let star = star::table
-            .filter(star::id.eq(id))
-            .limit(1)
-            .first(&conn)?;
+        let star = star::table.filter(star::id.eq(id)).limit(1).first(&conn)?;
 
         Ok(star)
     }
@@ -92,10 +89,7 @@ impl StarMutation {
         match role {
             Role::User => {
                 // User should be the owner on update mutation
-                let star_inst: Star = star::table
-                    .filter(star::id.eq(id))
-                    .limit(1)
-                    .first(&conn)?;
+                let star_inst: Star = star::table.filter(star::id.eq(id)).limit(1).first(&conn)?;
                 user_id_guard(ctx, star_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -143,11 +137,7 @@ impl StarMutation {
 
     // Delete star
     #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
-    pub async fn delete_star(
-        &self,
-        ctx: &Context<'_>,
-        id: ID,
-    ) -> async_graphql::Result<Star> {
+    pub async fn delete_star(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Star> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
@@ -155,10 +145,7 @@ impl StarMutation {
         match role {
             Role::User => {
                 // User should be the owner
-                let star_inst: Star = star::table
-                    .filter(star::id.eq(id))
-                    .limit(1)
-                    .first(&conn)?;
+                let star_inst: Star = star::table.filter(star::id.eq(id)).limit(1).first(&conn)?;
                 user_id_guard(ctx, star_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),

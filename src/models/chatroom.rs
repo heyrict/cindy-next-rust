@@ -4,6 +4,7 @@ use diesel::{prelude::*, query_dsl::QueryDsl, sql_types::Bool};
 use crate::context::GlobalCtx;
 use crate::schema::chatroom;
 
+use super::chatmessage::{ChatmessageFilter, ChatmessageOrder};
 use super::*;
 
 /// Available orders for chatroom query
@@ -127,5 +128,31 @@ impl Chatroom {
             .first(&conn)?;
 
         Ok(user_inst)
+    }
+
+    async fn chatmessages(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<ChatmessageFilter>,
+        order: Option<Vec<ChatmessageOrder>>,
+    ) -> async_graphql::Result<Vec<Chatmessage>> {
+        use crate::gql_schema::ChatmessageQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.chatroom_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| ChatmessageFilter {
+                chatroom_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = ChatmessageQuery::default();
+        query
+            .chatmessages(ctx, limit, offset, Some(vec![filter]), order)
+            .await
     }
 }

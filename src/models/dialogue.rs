@@ -52,19 +52,20 @@ impl DialogueOrders {
 }
 
 /// Available filters for dialogue query
-#[derive(InputObject, Clone)]
+#[derive(InputObject, Clone, Default)]
 pub struct DialogueFilter {
-    id: Option<I32Filtering>,
-    question: Option<StringFiltering>,
-    answer: Option<StringFiltering>,
+    pub id: Option<I32Filtering>,
+    pub question: Option<StringFiltering>,
+    pub answer: Option<StringFiltering>,
     #[graphql(name = "good")]
-    is_good: Option<bool>,
+    pub is_good: Option<bool>,
     #[graphql(name = "true")]
-    is_true: Option<bool>,
-    created: Option<TimestamptzFiltering>,
-    answered_time: Option<NullableTimestamptzFiltering>,
-    modified: Option<TimestamptzFiltering>,
-    puzzle_id: Option<I32Filtering>,
+    pub is_true: Option<bool>,
+    pub created: Option<TimestamptzFiltering>,
+    pub answered_time: Option<NullableTimestamptzFiltering>,
+    pub modified: Option<TimestamptzFiltering>,
+    pub puzzle_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
 }
 
 impl CindyFilter<dialogue::table, DB> for DialogueFilter {
@@ -85,9 +86,11 @@ impl CindyFilter<dialogue::table, DB> for DialogueFilter {
             answered_time: obj_answered_time,
             modified: obj_modified,
             puzzle_id: obj_puzzle_id,
+            user_id: obj_user_id,
         } = self;
         gen_number_filter!(obj_id: I32Filtering, id, filter);
         gen_number_filter!(obj_puzzle_id: I32Filtering, puzzle_id, filter);
+        gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
         gen_string_filter!(obj_question, question, filter);
         gen_string_filter!(obj_answer, answer, filter);
         gen_bool_filter!(obj_is_good, good, filter);

@@ -45,12 +45,12 @@ impl StarOrders {
 }
 
 /// Available filters for star query
-#[derive(InputObject, Clone)]
+#[derive(InputObject, Clone, Default)]
 pub struct StarFilter {
-    id: Option<I32Filtering>,
-    value: Option<I16Filtering>,
-    puzzle_id: Option<I32Filtering>,
-    user_id: Option<I32Filtering>,
+    pub id: Option<I32Filtering>,
+    pub value: Option<I16Filtering>,
+    pub puzzle_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
 }
 
 impl CindyFilter<star::table, DB> for StarFilter {

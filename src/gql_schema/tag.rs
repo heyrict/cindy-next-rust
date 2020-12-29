@@ -18,10 +18,7 @@ impl TagQuery {
     pub async fn tag(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Tag> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let tag = tag::table
-            .filter(tag::id.eq(id))
-            .limit(1)
-            .first(&conn)?;
+        let tag = tag::table.filter(tag::id.eq(id)).limit(1).first(&conn)?;
 
         Ok(tag)
     }
@@ -80,9 +77,9 @@ pub struct CreateTagInput {
 #[Object]
 impl TagMutation {
     #[graphql(guard(and(
-                DenyRoleGuard(role = "Role::User"),
-                DenyRoleGuard(role = "Role::Guest")
-                )))]
+        DenyRoleGuard(role = "Role::User"),
+        DenyRoleGuard(role = "Role::Guest")
+    )))]
     pub async fn update_tag(
         &self,
         ctx: &Context<'_>,
@@ -118,14 +115,10 @@ impl TagMutation {
 
     // Delete tag
     #[graphql(guard(and(
-                DenyRoleGuard(role = "Role::User"),
-                DenyRoleGuard(role = "Role::Guest")
-                )))]
-    pub async fn delete_tag(
-        &self,
-        ctx: &Context<'_>,
-        id: ID,
-    ) -> async_graphql::Result<Tag> {
+        DenyRoleGuard(role = "Role::User"),
+        DenyRoleGuard(role = "Role::Guest")
+    )))]
+    pub async fn delete_tag(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Tag> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let tag = diesel::delete(tag::table.filter(tag::id.eq(id)))

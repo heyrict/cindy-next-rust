@@ -79,7 +79,7 @@ impl RawFilter<i16> for I16Filtering {
     }
 }
 
-#[derive(InputObject, Clone, Debug, Eq, PartialEq)]
+#[derive(InputObject, Clone, Debug, Eq, PartialEq, Default)]
 pub struct I32Filtering {
     pub eq: Option<i32>,
     pub gt: Option<i32>,
@@ -102,6 +102,43 @@ impl RawFilter<i32> for I32Filtering {
             item <= le
         } else {
             true
+        }
+    }
+}
+
+impl I32Filtering {
+    pub fn eq(value: i32) -> Self {
+        Self {
+            eq: Some(value),
+            ..Default::default()
+        }
+    }
+
+    pub fn gt(value: i32) -> Self {
+        Self {
+            gt: Some(value),
+            ..Default::default()
+        }
+    }
+
+    pub fn ge(value: i32) -> Self {
+        Self {
+            ge: Some(value),
+            ..Default::default()
+        }
+    }
+
+    pub fn lt(value: i32) -> Self {
+        Self {
+            lt: Some(value),
+            ..Default::default()
+        }
+    }
+
+    pub fn le(value: i32) -> Self {
+        Self {
+            le: Some(value),
+            ..Default::default()
         }
     }
 }

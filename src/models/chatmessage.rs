@@ -47,14 +47,14 @@ impl ChatmessageOrders {
 }
 
 /// Available filters for chatmessage query
-#[derive(InputObject, Clone)]
+#[derive(InputObject, Clone, Default)]
 pub struct ChatmessageFilter {
-    id: Option<I32Filtering>,
-    content: Option<StringFiltering>,
-    created: Option<NullableTimestamptzFiltering>,
-    chatroom_id: Option<I32Filtering>,
-    user_id: Option<I32Filtering>,
-    modified: Option<TimestamptzFiltering>,
+    pub id: Option<I32Filtering>,
+    pub content: Option<StringFiltering>,
+    pub created: Option<NullableTimestamptzFiltering>,
+    pub chatroom_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
+    pub modified: Option<TimestamptzFiltering>,
 }
 
 impl CindyFilter<chatmessage::table, DB> for ChatmessageFilter {
@@ -155,5 +155,18 @@ impl Chatmessage {
             .first(&conn)?;
 
         Ok(user)
+    }
+
+    async fn chatroom(&self, ctx: &Context<'_>) -> async_graphql::Result<Chatroom> {
+        use crate::schema::chatroom;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let chatroom = chatroom::table
+            .filter(chatroom::id.eq(self.chatroom_id))
+            .limit(1)
+            .first(&conn)?;
+
+        Ok(chatroom)
     }
 }

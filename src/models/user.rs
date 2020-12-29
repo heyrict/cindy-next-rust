@@ -12,8 +12,14 @@ use rand::{distributions::Alphanumeric, Rng};
 use ring::pbkdf2;
 use std::num::NonZeroU32;
 
-use super::generics::*;
-use super::puzzle::*;
+use super::bookmark::{BookmarkFilter, BookmarkOrder};
+use super::comment::{CommentFilter, CommentOrder};
+use super::favchat::{FavchatFilter, FavchatOrder};
+use super::puzzle::{PuzzleFilter, PuzzleOrder};
+use super::puzzle_tag::{PuzzleTagFilter, PuzzleTagOrder};
+use super::star::{StarFilter, StarOrder};
+use super::user_award::{UserAwardFilter, UserAwardOrder};
+use super::*;
 
 use crate::auth::Role;
 use crate::context::GlobalCtx;
@@ -164,37 +170,204 @@ impl User {
         self.date_joined.to_string()
     }
 
-    async fn puzzles<'ctx>(
-        &self,
-        ctx: &'ctx Context<'_>,
-        limit: Option<i64>,
-        offset: Option<i64>,
-        filter: Option<Vec<PuzzleFilter>>,
-        order: Option<Vec<PuzzleOrder>>,
-    ) -> async_graphql::Result<Vec<Puzzle>> {
-        use crate::schema::puzzle::dsl::*;
+    async fn current_award(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<UserAward>> {
+        use crate::schema::user_award;
 
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let mut query = puzzle.filter(user_id.eq(self.id)).into_boxed();
-        if let Some(order) = order {
-            query = PuzzleOrders::new(order).apply_order(query);
-        }
-        if let Some(filter) = filter {
-            if let Some(filter_exp) = filter.as_expression() {
-                query = query.filter(filter_exp)
-            }
-        }
-        if let Some(limit) = limit {
-            query = query.limit(limit);
-        }
-        if let Some(offset) = offset {
-            query = query.offset(offset);
-        }
+        let current_award_inst = if let Some(id) = self.current_award_id {
+            user_award::table
+                .filter(user_award::id.eq(id))
+                .limit(1)
+                .first(&conn)
+                .ok()
+        } else {
+            None
+        };
 
-        let puzzles = query.load::<Puzzle>(&conn)?;
+        Ok(current_award_inst)
+    }
 
-        Ok(puzzles)
+    async fn bookmarks(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<BookmarkFilter>,
+        order: Option<Vec<BookmarkOrder>>,
+    ) -> async_graphql::Result<Vec<Bookmark>> {
+        use crate::gql_schema::BookmarkQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.user_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| BookmarkFilter {
+                user_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = BookmarkQuery::default();
+        query
+            .bookmarks(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn comments(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<CommentFilter>,
+        order: Option<Vec<CommentOrder>>,
+    ) -> async_graphql::Result<Vec<Comment>> {
+        use crate::gql_schema::CommentQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.user_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| CommentFilter {
+                user_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = CommentQuery::default();
+        query
+            .comments(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn puzzles(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<PuzzleFilter>,
+        order: Option<Vec<PuzzleOrder>>,
+    ) -> async_graphql::Result<Vec<Puzzle>> {
+        use crate::gql_schema::PuzzleQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.user_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| PuzzleFilter {
+                user_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = PuzzleQuery::default();
+        query
+            .puzzles(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn stars(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<StarFilter>,
+        order: Option<Vec<StarOrder>>,
+    ) -> async_graphql::Result<Vec<Star>> {
+        use crate::gql_schema::StarQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.user_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| StarFilter {
+                user_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = StarQuery::default();
+        query
+            .stars(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn favchats(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<FavchatFilter>,
+        order: Option<Vec<FavchatOrder>>,
+    ) -> async_graphql::Result<Vec<Favchat>> {
+        use crate::gql_schema::FavchatQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.user_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| FavchatFilter {
+                user_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = FavchatQuery::default();
+        query
+            .favchats(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn puzzle_tags(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<PuzzleTagFilter>,
+        order: Option<Vec<PuzzleTagOrder>>,
+    ) -> async_graphql::Result<Vec<PuzzleTag>> {
+        use crate::gql_schema::PuzzleTagQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.user_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| PuzzleTagFilter {
+                user_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = PuzzleTagQuery::default();
+        query
+            .puzzle_tags(ctx, limit, offset, Some(vec![filter]), order)
+            .await
+    }
+
+    async fn user_awards(
+        &self,
+        ctx: &Context<'_>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        filter: Option<UserAwardFilter>,
+        order: Option<Vec<UserAwardOrder>>,
+    ) -> async_graphql::Result<Vec<UserAward>> {
+        use crate::gql_schema::UserAwardQuery;
+
+        let filter = filter
+            .map(|mut filter| {
+                filter.user_id = Some(I32Filtering::eq(self.id));
+                filter
+            })
+            .unwrap_or_else(|| UserAwardFilter {
+                user_id: Some(I32Filtering::eq(self.id)),
+                ..Default::default()
+            });
+
+        let query = UserAwardQuery::default();
+        query
+            .user_awards(ctx, limit, offset, Some(vec![filter]), order)
+            .await
     }
 }
 
