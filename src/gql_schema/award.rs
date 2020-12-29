@@ -1,9 +1,8 @@
 use async_graphql::{self, guard::Guard, Context, InputObject, Object};
-use chrono::Utc;
 use diesel::prelude::*;
 
 use crate::auth::Role;
-use crate::context::{GlobalCtx, RequestCtx};
+use crate::context::GlobalCtx;
 use crate::models::award::*;
 use crate::models::*;
 use crate::schema::award;

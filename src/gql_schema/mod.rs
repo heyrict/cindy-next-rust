@@ -10,6 +10,7 @@ mod chatmessage;
 mod chatroom;
 mod comment;
 mod dialogue;
+mod favchat;
 mod hint;
 mod puzzle;
 mod puzzle_log;
@@ -25,6 +26,7 @@ use chatmessage::{ChatmessageMutation, ChatmessageQuery, ChatmessageSubscription
 use chatroom::{ChatroomMutation, ChatroomQuery};
 use comment::{CommentMutation, CommentQuery};
 use dialogue::{DialogueMutation, DialogueQuery};
+use favchat::{FavchatMutation, FavchatQuery};
 use hint::{HintMutation, HintQuery};
 use puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription};
 use puzzle_log::{PuzzleLogQuery, PuzzleLogSubscription};
@@ -44,6 +46,7 @@ pub struct QueryRoot(
     ChatroomQuery,
     CommentQuery,
     DialogueQuery,
+    FavchatQuery,
     HintQuery,
     PuzzleLogQuery,
     PuzzleQuery,
@@ -62,6 +65,7 @@ pub struct MutationRoot(
     ChatroomMutation,
     CommentMutation,
     DialogueMutation,
+    FavchatMutation,
     HintMutation,
     PuzzleMutation,
     PuzzleTagMutation,
