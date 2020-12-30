@@ -2,6 +2,7 @@ use anyhow::{anyhow, Context as _, Result};
 use async_graphql::{self, guard::Guard, Context, InputObject, Object};
 use chrono::Utc;
 use diesel::{
+    dsl::{not, sum},
     expression::BoxableExpression,
     prelude::*,
     query_dsl::QueryDsl,
@@ -240,6 +241,35 @@ impl User {
             .await
     }
 
+    async fn received_comment_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::{comment, puzzle};
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = comment::table
+            .inner_join(puzzle::table)
+            .filter(puzzle::user_id.eq(self.id))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
+    async fn comment_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::comment::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = comment
+            .filter(user_id.eq(self.id))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
     async fn puzzles(
         &self,
         ctx: &Context<'_>,
@@ -266,6 +296,35 @@ impl User {
             .await
     }
 
+    async fn puzzle_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::puzzle::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = puzzle
+            .filter(user_id.eq(self.id))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
+    async fn yami_puzzle_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::puzzle::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = puzzle
+            .filter(user_id.eq(self.id))
+            .filter(not(yami.eq(0)))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
     async fn stars(
         &self,
         ctx: &Context<'_>,
@@ -290,6 +349,64 @@ impl User {
         query
             .stars(ctx, limit, offset, Some(vec![filter]), order)
             .await
+    }
+
+    async fn received_star_sum(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<i64>> {
+        use crate::schema::{puzzle, star};
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = star::table
+            .inner_join(puzzle::table)
+            .filter(puzzle::user_id.eq(self.id))
+            .select(sum(star::value))
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
+    async fn star_sum(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<i64>> {
+        use crate::schema::star::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = star
+            .filter(user_id.eq(self.id))
+            .select(sum(value))
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
+    async fn received_star_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::{puzzle, star};
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = star::table
+            .inner_join(puzzle::table)
+            .filter(puzzle::user_id.eq(self.id))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
+    async fn star_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::star::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = star
+            .filter(user_id.eq(self.id))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
     }
 
     async fn favchats(
@@ -368,6 +485,36 @@ impl User {
         query
             .user_awards(ctx, limit, offset, Some(vec![filter]), order)
             .await
+    }
+
+    async fn good_question_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::dialogue::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = dialogue
+            .filter(user_id.eq(self.id))
+            .filter(good.eq(true))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
+    async fn true_answer_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::dialogue::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = dialogue
+            .filter(user_id.eq(self.id))
+            .filter(true_.eq(true))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
     }
 }
 

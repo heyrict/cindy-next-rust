@@ -83,6 +83,32 @@ impl CindyFilter<comment::table, DB> for CommentFilter {
     }
 }
 
+/// Available filters for comment_count query
+#[derive(InputObject, Clone, Default)]
+pub struct CommentCountFilter {
+    pub puzzle_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
+}
+
+impl CindyFilter<comment::table, DB> for CommentCountFilter {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<comment::table, DB, SqlType = Bool> + Send>> {
+        use crate::schema::comment::dsl::*;
+
+        let mut filter: Option<Box<dyn BoxableExpression<comment, DB, SqlType = Bool> + Send>> =
+            None;
+        let CommentCountFilter {
+            puzzle_id: obj_puzzle_id,
+            user_id: obj_user_id,
+        } = self;
+        gen_number_filter!(obj_puzzle_id: I32Filtering, puzzle_id, filter);
+        gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
+
+        filter
+    }
+}
+
 /// Object for comment table
 #[derive(Queryable, Identifiable, Clone, Debug)]
 #[table_name = "comment"]

@@ -1,5 +1,5 @@
 use async_graphql::{self, guard::Guard, Context, InputObject, Object};
-use diesel::prelude::*;
+use diesel::{dsl::sum, prelude::*};
 
 use crate::auth::Role;
 use crate::context::{GlobalCtx, RequestCtx};
@@ -53,6 +53,45 @@ impl StarQuery {
         let stars = query.load::<Star>(&conn)?;
 
         Ok(stars)
+    }
+
+    pub async fn star_count(
+        &self,
+        ctx: &Context<'_>,
+        filter: Option<StarCountFilter>,
+    ) -> async_graphql::Result<i64> {
+        use crate::schema::star::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let mut query = star.into_boxed();
+        if let Some(filter) = filter {
+            if let Some(filter_exp) = filter.as_expression() {
+                query = query.filter(filter_exp)
+            }
+        }
+
+        let result = query.count().get_result::<i64>(&conn)?;
+
+        Ok(result)
+    }
+
+    pub async fn star_sum_by_puzzle(
+        &self,
+        ctx: &Context<'_>,
+        puzzle_id: ID,
+    ) -> async_graphql::Result<Option<i64>> {
+        use crate::schema::{puzzle, star};
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = star::table
+            .inner_join(puzzle::table)
+            .filter(puzzle::id.eq(puzzle_id))
+            .select(sum(star::value))
+            .get_result(&conn)?;
+
+        Ok(result)
     }
 }
 

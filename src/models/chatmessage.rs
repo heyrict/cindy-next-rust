@@ -106,6 +106,32 @@ impl ChatmessageSub {
     }
 }
 
+/// Available filters for chatmessage_count query
+#[derive(InputObject, Clone, Default)]
+pub struct ChatmessageCountFilter {
+    pub chatroom_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
+}
+
+impl CindyFilter<chatmessage::table, DB> for ChatmessageCountFilter {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<chatmessage::table, DB, SqlType = Bool> + Send>> {
+        use crate::schema::chatmessage::dsl::*;
+
+        let mut filter: Option<Box<dyn BoxableExpression<chatmessage, DB, SqlType = Bool> + Send>> =
+            None;
+        let ChatmessageCountFilter {
+            chatroom_id: obj_chatroom_id,
+            user_id: obj_user_id,
+        } = self;
+        gen_number_filter!(obj_chatroom_id: I32Filtering, chatroom_id, filter);
+        gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
+
+        filter
+    }
+}
+
 /// Object for chatmessage table
 #[derive(Queryable, Identifiable, Clone, Debug)]
 #[table_name = "chatmessage"]

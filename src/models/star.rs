@@ -75,6 +75,31 @@ impl CindyFilter<star::table, DB> for StarFilter {
     }
 }
 
+/// Available filters for star_count query
+#[derive(InputObject, Clone, Default)]
+pub struct StarCountFilter {
+    pub puzzle_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
+}
+
+impl CindyFilter<star::table, DB> for StarCountFilter {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<star::table, DB, SqlType = Bool> + Send>> {
+        use crate::schema::star::dsl::*;
+
+        let mut filter: Option<Box<dyn BoxableExpression<star, DB, SqlType = Bool> + Send>> = None;
+        let StarCountFilter {
+            puzzle_id: obj_puzzle_id,
+            user_id: obj_user_id,
+        } = self;
+        gen_number_filter!(obj_puzzle_id: I32Filtering, puzzle_id, filter);
+        gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
+
+        filter
+    }
+}
+
 /// Object for star table
 #[derive(Queryable, Identifiable, Clone, Debug)]
 #[table_name = "star"]

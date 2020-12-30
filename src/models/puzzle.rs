@@ -3,6 +3,7 @@ use diesel::sql_types::Bool;
 use diesel::{
     backend::Backend,
     deserialize::{self, FromSql},
+    dsl::{sum, max},
     expression::{helper_types::AsExprOf, AsExpression},
     prelude::*,
     query_dsl::QueryDsl,
@@ -433,6 +434,20 @@ impl Puzzle {
             .await
     }
 
+    async fn bookmark_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::bookmark::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = bookmark
+            .filter(puzzle_id.eq(self.id))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
     async fn comments(
         &self,
         ctx: &Context<'_>,
@@ -459,6 +474,20 @@ impl Puzzle {
             .await
     }
 
+    async fn comment_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::comment::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = comment
+            .filter(puzzle_id.eq(self.id))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
     async fn dialogues(
         &self,
         ctx: &Context<'_>,
@@ -483,6 +512,59 @@ impl Puzzle {
         query
             .dialogues(ctx, limit, offset, Some(vec![filter]), order)
             .await
+    }
+
+    async fn dialogue_count(
+        &self,
+        ctx: &Context<'_>,
+        answered: Option<bool>,
+    ) -> async_graphql::Result<i64> {
+        use crate::schema::dialogue::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = if let Some(value) = answered {
+            if value {
+                dialogue
+                    .filter(puzzle_id.eq(self.id))
+                    .filter(answeredtime.is_not_null())
+                    .count()
+                    .get_result(&conn)
+                    .map_err(|err| async_graphql::Error::from(err))?
+            } else {
+                dialogue
+                    .filter(puzzle_id.eq(self.id))
+                    .filter(answeredtime.is_null())
+                    .count()
+                    .get_result(&conn)
+                    .map_err(|err| async_graphql::Error::from(err))?
+            }
+        } else {
+            dialogue
+                .filter(puzzle_id.eq(self.id))
+                .count()
+                .get_result(&conn)
+                .map_err(|err| async_graphql::Error::from(err))?
+        };
+
+        Ok(result)
+    }
+
+    async fn dialogue_max_answeredtime(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<Option<Timestamptz>> {
+        use crate::schema::dialogue::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = dialogue
+            .filter(puzzle_id.eq(self.id))
+            .select(max(answeredtime))
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
     }
 
     async fn hints(
@@ -561,5 +643,34 @@ impl Puzzle {
         query
             .stars(ctx, limit, offset, Some(vec![filter]), order)
             .await
+    }
+
+    async fn star_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::star::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = star
+            .filter(puzzle_id.eq(self.id))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
+    async fn star_sum(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::star::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = star
+            .filter(puzzle_id.eq(self.id))
+            .select(sum(value))
+            .get_result::<Option<i64>>(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?
+            .unwrap_or(0i64);
+
+        Ok(result)
     }
 }

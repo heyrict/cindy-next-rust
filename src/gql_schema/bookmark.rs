@@ -57,6 +57,27 @@ impl BookmarkQuery {
 
         Ok(bookmarks)
     }
+
+    pub async fn bookmark_count(
+        &self,
+        ctx: &Context<'_>,
+        filter: Option<BookmarkCountFilter>,
+    ) -> async_graphql::Result<i64> {
+        use crate::schema::bookmark::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let mut query = bookmark.into_boxed();
+        if let Some(filter) = filter {
+            if let Some(filter_exp) = filter.as_expression() {
+                query = query.filter(filter_exp)
+            }
+        }
+
+        let result = query.count().get_result::<i64>(&conn)?;
+
+        Ok(result)
+    }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]

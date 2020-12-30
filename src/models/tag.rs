@@ -2,6 +2,7 @@ use async_graphql::{self, Context, InputObject, Object};
 use diesel::sql_types::Bool;
 use diesel::{prelude::*, query_dsl::QueryDsl};
 
+use crate::context::GlobalCtx;
 use crate::schema::tag;
 
 use super::puzzle_tag::{PuzzleTagFilter, PuzzleTagOrder};
@@ -108,7 +109,7 @@ impl Tag {
                 filter
             })
             .unwrap_or_else(|| PuzzleTagFilter {
-                puzzle_id: Some(I32Filtering::eq(self.id)),
+                tag_id: Some(I32Filtering::eq(self.id)),
                 ..Default::default()
             });
 
@@ -116,5 +117,18 @@ impl Tag {
         query
             .puzzle_tags(ctx, limit, offset, Some(vec![filter]), order)
             .await
+    }
+
+    async fn puzzle_tag_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::puzzle_tag::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = puzzle_tag
+            .filter(tag_id.eq(self.id))
+            .count()
+            .get_result::<i64>(&conn)?;
+
+        Ok(result)
     }
 }

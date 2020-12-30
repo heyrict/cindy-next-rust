@@ -57,6 +57,27 @@ impl CommentQuery {
 
         Ok(comments)
     }
+
+    pub async fn comment_count(
+        &self,
+        ctx: &Context<'_>,
+        filter: Option<CommentCountFilter>,
+    ) -> async_graphql::Result<i64> {
+        use crate::schema::comment::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let mut query = comment.into_boxed();
+        if let Some(filter) = filter {
+            if let Some(filter_exp) = filter.as_expression() {
+                query = query.filter(filter_exp)
+            }
+        }
+
+        let result = query.count().get_result::<i64>(&conn)?;
+
+        Ok(result)
+    }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]

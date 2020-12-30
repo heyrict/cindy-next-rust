@@ -77,6 +77,31 @@ impl CindyFilter<bookmark::table, DB> for BookmarkFilter {
     }
 }
 
+/// Available filters for bookmark_count query
+#[derive(InputObject, Clone, Default)]
+pub struct BookmarkCountFilter {
+    pub puzzle_id: Option<I32Filtering>,
+    pub user_id: Option<I32Filtering>,
+}
+
+impl CindyFilter<bookmark::table, DB> for BookmarkCountFilter {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<bookmark::table, DB, SqlType = Bool> + Send>> {
+        use crate::schema::bookmark::dsl::*;
+
+        let mut filter: Option<Box<dyn BoxableExpression<bookmark, DB, SqlType = Bool> + Send>> =
+            None;
+        let BookmarkCountFilter {
+            puzzle_id: obj_puzzle_id,
+            user_id: obj_user_id,
+        } = self;
+        gen_number_filter!(obj_puzzle_id: I32Filtering, puzzle_id, filter);
+        gen_number_filter!(obj_user_id: I32Filtering, id, filter);
+        filter
+    }
+}
+
 /// Object for bookmark table
 #[derive(Queryable, Identifiable, Clone, Debug)]
 #[table_name = "bookmark"]
