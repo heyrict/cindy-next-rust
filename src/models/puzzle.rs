@@ -1,14 +1,13 @@
 use async_graphql::{self, Context, Enum, InputObject, Object};
-use diesel::sql_types::Bool;
 use diesel::{
     backend::Backend,
     deserialize::{self, FromSql},
-    dsl::{sum, max},
+    dsl::{max, sum},
     expression::{helper_types::AsExprOf, AsExpression},
     prelude::*,
     query_dsl::QueryDsl,
     serialize::{self, Output, ToSql},
-    sql_types::Integer,
+    sql_types::{BigInt, Bool, Int4, Integer, Text},
 };
 use std::io;
 
@@ -327,6 +326,46 @@ impl PuzzleSub {
             PuzzleSub::Created(puzzle) => puzzle.clone(),
             PuzzleSub::Updated(_, puzzle) => puzzle.clone(),
         }
+    }
+}
+
+#[derive(QueryableByName, Clone, Debug)]
+pub struct PuzzleParticipant {
+    /// User ID
+    #[sql_type = "Int4"]
+    pub id: ID,
+    #[sql_type = "Text"]
+    pub nickname: String,
+    /// Whether user got at least one true answer.
+    #[sql_type = "Bool"]
+    pub true_answer: bool,
+    #[sql_type = "BigInt"]
+    pub dialogue_count: i64,
+}
+
+#[Object]
+impl PuzzleParticipant {
+    async fn id(&self) -> ID {
+        self.id
+    }
+    async fn true_answer(&self) -> bool {
+        self.true_answer
+    }
+    async fn dialogue_count(&self) -> i64 {
+        self.dialogue_count
+    }
+
+    async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
+        use crate::schema::user;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let user = user::table
+            .filter(user::id.eq(self.id))
+            .limit(1)
+            .first(&conn)?;
+
+        Ok(user)
     }
 }
 

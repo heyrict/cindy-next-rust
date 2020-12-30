@@ -1,6 +1,6 @@
 use async_graphql::{self, guard::Guard, Context, InputObject, Object, Subscription};
 use chrono::{Duration, Utc};
-use diesel::prelude::*;
+use diesel::{prelude::*, sql_types::Integer};
 use futures::{Stream, StreamExt};
 
 use crate::auth::Role;
@@ -82,6 +82,21 @@ impl PuzzleQuery {
         let result = query.count().get_result(&conn)?;
 
         Ok(result)
+    }
+
+    pub async fn puzzle_participants(
+        &self,
+        ctx: &Context<'_>,
+        puzzle_id: ID,
+    ) -> async_graphql::Result<Vec<PuzzleParticipant>> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let results: Vec<PuzzleParticipant> =
+            diesel::sql_query(include_str!("../sql/puzzle_participants.sql"))
+                .bind::<Integer, _>(puzzle_id)
+                .get_results(&conn)?;
+
+        Ok(results)
     }
 }
 
