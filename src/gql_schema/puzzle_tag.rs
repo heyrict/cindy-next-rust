@@ -57,6 +57,27 @@ impl PuzzleTagQuery {
 
         Ok(puzzle_tags)
     }
+
+    pub async fn puzzle_tag_count(
+        &self,
+        ctx: &Context<'_>,
+        filter: Option<Vec<PuzzleTagFilter>>,
+    ) -> async_graphql::Result<i64> {
+        use crate::schema::puzzle_tag::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let mut query = puzzle_tag.into_boxed();
+        if let Some(filter) = filter {
+            if let Some(filter_exp) = filter.as_expression() {
+                query = query.filter(filter_exp)
+            }
+        }
+
+        let result = query.count().get_result(&conn)?;
+
+        Ok(result)
+    }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]

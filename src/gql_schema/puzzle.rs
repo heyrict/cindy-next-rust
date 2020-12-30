@@ -98,6 +98,52 @@ impl PuzzleQuery {
 
         Ok(results)
     }
+
+    pub async fn puzzle_footprints(
+        &self,
+        ctx: &Context<'_>,
+        user_id: ID,
+        limit: i64,
+        offset: i64,
+    ) -> async_graphql::Result<Vec<Puzzle>> {
+        use crate::schema::{dialogue, puzzle};
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let results: Vec<Puzzle> = dialogue::table
+            .inner_join(puzzle::table)
+            .distinct_on(dialogue::puzzle_id)
+            .filter(dialogue::user_id.eq(user_id))
+            .order(dialogue::modified.desc())
+            .limit(limit)
+            .offset(offset)
+            .load::<(Dialogue, Puzzle)>(&conn)?
+            .into_iter()
+            .map(|(_, puzzle)| puzzle)
+            .collect();
+
+        Ok(results)
+    }
+
+    pub async fn puzzle_footprints_count(
+        &self,
+        ctx: &Context<'_>,
+        user_id: ID,
+    ) -> async_graphql::Result<i64> {
+        use crate::schema::{dialogue, puzzle};
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let results = dialogue::table
+            .inner_join(puzzle::table)
+            .distinct_on(dialogue::puzzle_id)
+            .filter(dialogue::user_id.eq(user_id))
+            .order(dialogue::modified.desc())
+            .count()
+            .get_result(&conn)?;
+
+        Ok(results)
+    }
 }
 
 #[derive(InputObject)]

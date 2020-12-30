@@ -341,6 +341,8 @@ pub struct PuzzleParticipant {
     pub true_answer: bool,
     #[sql_type = "BigInt"]
     pub dialogue_count: i64,
+    #[sql_type = "BigInt"]
+    pub answered_dialogue_count: i64,
 }
 
 #[Object]
