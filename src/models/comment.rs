@@ -75,9 +75,7 @@ impl CindyFilter<comment::table, DB> for CommentFilter {
         gen_string_filter!(obj_content, content, filter);
         gen_number_filter!(obj_puzzle_id: I32Filtering, puzzle_id, filter);
         gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
-
-        let eq = obj_spoiler;
-        apply_filter!(eq, spoiler, filter);
+        gen_bool_filter!(obj_spoiler, spoiler, filter);
 
         filter
     }

@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context as _, Result};
 use async_graphql::{self, guard::Guard, Context, InputObject, Object};
 use chrono::Utc;
 use diesel::{
-    dsl::{not, sum},
+    dsl::{max, not, sum},
     expression::BoxableExpression,
     prelude::*,
     query_dsl::QueryDsl,
@@ -318,6 +318,37 @@ impl User {
         let result = puzzle
             .filter(user_id.eq(self.id))
             .filter(not(yami.eq(0)))
+            .count()
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
+    async fn puzzle_max_created(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<Option<Timestamptz>> {
+        use crate::schema::puzzle::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = puzzle
+            .filter(user_id.eq(self.id))
+            .select(max(created))
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(result)
+    }
+
+    async fn dialogue_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
+        use crate::schema::dialogue::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = dialogue
+            .filter(user_id.eq(self.id))
             .count()
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;

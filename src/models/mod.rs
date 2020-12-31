@@ -27,7 +27,7 @@ pub use comment::Comment;
 pub use dialogue::Dialogue;
 pub use favchat::Favchat;
 pub use hint::Hint;
-pub use puzzle::Puzzle;
+pub use puzzle::{Genre, Puzzle, Status, Yami};
 pub use puzzle_tag::PuzzleTag;
 pub use star::Star;
 pub use tag::Tag;

@@ -54,6 +54,27 @@ impl UserQuery {
 
         Ok(users)
     }
+
+    pub async fn user_count(
+        &self,
+        ctx: &Context<'_>,
+        filter: Option<Vec<UserFilter>>,
+    ) -> async_graphql::Result<i64> {
+        use crate::schema::user::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let mut query = user.into_boxed();
+        if let Some(filter) = filter {
+            if let Some(filter_exp) = filter.as_expression() {
+                query = query.filter(filter_exp)
+            }
+        }
+
+        let result = query.count().get_result(&conn)?;
+
+        Ok(result)
+    }
 }
 
 #[derive(InputObject, Debug)]

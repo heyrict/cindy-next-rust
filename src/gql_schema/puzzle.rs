@@ -117,15 +117,13 @@ impl PuzzleQuery {
             .order(dialogue::modified.desc())
             .limit(limit)
             .offset(offset)
-            .load::<(Dialogue, Puzzle)>(&conn)?
-            .into_iter()
-            .map(|(_, puzzle)| puzzle)
-            .collect();
+            .select(puzzle::all_columns)
+            .load::<Puzzle>(&conn)?;
 
         Ok(results)
     }
 
-    pub async fn puzzle_footprints_count(
+    pub async fn puzzle_footprint_count(
         &self,
         ctx: &Context<'_>,
         user_id: ID,

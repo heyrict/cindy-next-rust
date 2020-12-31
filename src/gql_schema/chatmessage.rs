@@ -152,7 +152,7 @@ impl ChatmessageMutation {
         &self,
         ctx: &Context<'_>,
         id: ID,
-        set: UpdateChatmessageInput,
+        mut set: UpdateChatmessageInput,
     ) -> async_graphql::Result<Chatmessage> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
@@ -167,6 +167,8 @@ impl ChatmessageMutation {
             Role::User => {
                 // User should be the owner on update mutation
                 user_id_guard(ctx, cm_inst.user_id)?;
+                // Increase edit_times for user
+                set.edit_times = Some(cm_inst.edit_times + 1);
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
             _ => {}

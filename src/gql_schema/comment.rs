@@ -58,6 +58,27 @@ impl CommentQuery {
         Ok(comments)
     }
 
+    pub async fn comments_in_solved_puzzle(
+        &self,
+        ctx: &Context<'_>,
+        limit: i64,
+        offset: i64,
+    ) -> async_graphql::Result<Vec<Comment>> {
+        use crate::schema::{comment, puzzle};
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let comments = comment::table
+            .inner_join(puzzle::table)
+            .filter(puzzle::status.ne(Status::Undergoing))
+            .limit(limit)
+            .offset(offset)
+            .select(comment::all_columns)
+            .get_results::<Comment>(&conn)?;
+
+        Ok(comments)
+    }
+
     pub async fn comment_count(
         &self,
         ctx: &Context<'_>,
@@ -78,6 +99,46 @@ impl CommentQuery {
 
         Ok(result)
     }
+
+    pub async fn user_received_comments(
+        &self,
+        ctx: &Context<'_>,
+        user_id: ID,
+        limit: i64,
+        offset: i64,
+    ) -> async_graphql::Result<Vec<Comment>> {
+        use crate::schema::{comment, puzzle};
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let comments: Vec<Comment> = comment::table
+            .inner_join(puzzle::table)
+            .filter(puzzle::user_id.eq(user_id))
+            .limit(limit)
+            .offset(offset)
+            .select(comment::all_columns)
+            .get_results::<Comment>(&conn)?;
+
+        Ok(comments)
+    }
+
+    pub async fn user_received_comment_count(
+        &self,
+        ctx: &Context<'_>,
+        user_id: ID,
+    ) -> async_graphql::Result<i64> {
+        use crate::schema::{comment, puzzle};
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result = comment::table
+            .inner_join(puzzle::table)
+            .filter(puzzle::user_id.eq(user_id))
+            .count()
+            .get_result(&conn)?;
+
+        Ok(result)
+    }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
@@ -93,7 +154,7 @@ pub struct UpdateCommentInput {
 #[derive(InputObject, Insertable)]
 #[table_name = "comment"]
 pub struct CreateCommentInput {
-    pub id: ID,
+    pub id: Option<ID>,
     pub content: String,
     #[graphql(default = false)]
     pub spoiler: bool,

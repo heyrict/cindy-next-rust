@@ -71,6 +71,8 @@ impl PuzzleOrders {
 /// Available filters for puzzle query
 #[derive(InputObject, Clone, Default)]
 pub struct PuzzleFilter {
+    pub id: Option<I32Filtering>,
+    pub anonymous: Option<bool>,
     pub title: Option<StringFiltering>,
     pub genre: Option<GenreFiltering>,
     pub yami: Option<YamiFiltering>,
@@ -89,6 +91,8 @@ impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
         let mut filter: Option<Box<dyn BoxableExpression<puzzle, DB, SqlType = Bool> + Send>> =
             None;
         let PuzzleFilter {
+            id: obj_id,
+            anonymous: obj_anonymous,
             title: obj_title,
             genre: obj_genre,
             yami: obj_yami,
@@ -97,6 +101,8 @@ impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
             solution: obj_solution,
             user_id: obj_user_id,
         } = self;
+        gen_number_filter!(obj_id: I32Filtering, id, filter);
+        gen_bool_filter!(obj_anonymous, anonymous, filter);
         gen_string_filter!(obj_title, title, filter);
         gen_enum_filter!(obj_genre: GenreFiltering, genre, filter);
         gen_enum_filter!(obj_yami: YamiFiltering, yami, filter);
@@ -350,11 +356,17 @@ impl PuzzleParticipant {
     async fn id(&self) -> ID {
         self.id
     }
+    async fn nickname(&self) -> &str {
+        &self.nickname
+    }
     async fn true_answer(&self) -> bool {
         self.true_answer
     }
     async fn dialogue_count(&self) -> i64 {
         self.dialogue_count
+    }
+    async fn answered_dialogue_count(&self) -> i64 {
+        self.answered_dialogue_count
     }
 
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
@@ -591,7 +603,7 @@ impl Puzzle {
         Ok(result)
     }
 
-    async fn dialogue_max_answeredtime(
+    async fn dialogue_max_answered_time(
         &self,
         ctx: &Context<'_>,
     ) -> async_graphql::Result<Option<Timestamptz>> {
