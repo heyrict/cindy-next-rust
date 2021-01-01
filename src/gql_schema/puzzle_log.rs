@@ -100,7 +100,7 @@ impl PuzzleLogQuery {
                     b_value.partial_cmp(&a_value).unwrap()
                 }
             };
-        };
+        }
 
         if let Some(ordering) = order.id {
             match ordering {
