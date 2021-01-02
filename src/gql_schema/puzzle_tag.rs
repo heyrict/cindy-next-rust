@@ -7,6 +7,8 @@ use crate::models::puzzle_tag::*;
 use crate::models::*;
 use crate::schema::puzzle_tag;
 
+use super::tag::{CreateTagInput, TagMutation};
+
 #[derive(Default)]
 pub struct PuzzleTagQuery;
 #[derive(Default)]
@@ -98,6 +100,14 @@ pub struct CreatePuzzleTagInput {
     pub user_id: Option<ID>,
 }
 
+#[derive(InputObject)]
+pub struct CreatePuzzleTagWithTagInput {
+    pub id: Option<ID>,
+    pub puzzle_id: ID,
+    pub tag: CreateTagInput,
+    pub user_id: Option<ID>,
+}
+
 #[Object]
 impl PuzzleTagMutation {
     // Update puzzle_tag
@@ -154,6 +164,46 @@ impl PuzzleTagMutation {
             }
             Role::Admin => {}
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
+        };
+
+        let puzzle_tag: PuzzleTag = diesel::insert_into(puzzle_tag::table)
+            .values(&data)
+            .get_result(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(puzzle_tag)
+    }
+
+    // A sequential mutation that creates tag first, then create a puzzle_tag
+    // with tag_id associated to that tag.
+    pub async fn create_puzzle_tag_with_tag(
+        &self,
+        ctx: &Context<'_>,
+        mut data: CreatePuzzleTagWithTagInput,
+    ) -> async_graphql::Result<PuzzleTag> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let reqctx = ctx.data::<RequestCtx>()?;
+        let role = reqctx.get_role();
+
+        match role {
+            Role::User => {
+                // Assert the user is the owner of the puzzle.
+                if let Some(user_id) = data.user_id {
+                    user_id_guard(ctx, user_id)?;
+                } else {
+                    data.user_id = reqctx.get_user_id();
+                };
+            }
+            Role::Admin => {}
+            Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
+        };
+
+        let tag: Tag = TagMutation.create_tag(ctx, data.tag).await?;
+        let data = CreatePuzzleTagInput {
+            id: data.id,
+            puzzle_id: data.puzzle_id,
+            user_id: data.user_id,
+            tag_id: tag.id,
         };
 
         let puzzle_tag: PuzzleTag = diesel::insert_into(puzzle_tag::table)

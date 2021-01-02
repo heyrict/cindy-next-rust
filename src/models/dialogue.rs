@@ -1,6 +1,6 @@
 use async_graphql::{self, Context, InputObject, Object};
 use diesel::sql_types::Bool;
-use diesel::{prelude::*, query_dsl::QueryDsl};
+use diesel::{prelude::*, query_dsl::QueryDsl, sql_types::{BigInt, Int4}};
 
 use crate::context::GlobalCtx;
 use crate::schema::dialogue;
@@ -103,6 +103,38 @@ impl CindyFilter<dialogue::table, DB> for DialogueFilter {
             filter
         );
         filter
+    }
+}
+
+#[derive(QueryableByName, Clone, Debug)]
+pub struct UserMaxYamiDialogueCountResult {
+    /// Puzzle ID
+    #[sql_type = "Int4"]
+    pub id: ID,
+    #[sql_type = "BigInt"]
+    pub dialogue_count: i64,
+}
+
+#[Object]
+impl UserMaxYamiDialogueCountResult {
+    async fn id(&self) -> ID {
+        self.id
+    }
+    async fn dialogue_count(&self) -> i64 {
+        self.dialogue_count
+    }
+
+    async fn puzzle(&self, ctx: &Context<'_>) -> async_graphql::Result<Puzzle> {
+        use crate::schema::puzzle;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let puzzle = puzzle::table
+            .filter(puzzle::id.eq(self.id))
+            .limit(1)
+            .first(&conn)?;
+
+        Ok(puzzle)
     }
 }
 

@@ -84,6 +84,51 @@ impl PuzzleQuery {
         Ok(result)
     }
 
+    pub async fn puzzle_count_by_genre(
+        &self,
+        ctx: &Context<'_>,
+        user_id: ID,
+    ) -> async_graphql::Result<Vec<PuzzleCountByGenre>> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let results: Vec<PuzzleCountByGenre> =
+            diesel::sql_query(include_str!("../sql/puzzle_count_by_genre.sql"))
+                .bind::<Integer, _>(user_id)
+                .get_results(&conn)?;
+
+        Ok(results)
+    }
+
+    pub async fn puzzle_star_count_groups(
+        &self,
+        ctx: &Context<'_>,
+        user_id: ID,
+    ) -> async_graphql::Result<Vec<PuzzleStarAggrGroup>> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let results: Vec<PuzzleStarAggrGroup> =
+            diesel::sql_query(include_str!("../sql/puzzle_star_count_groups.sql"))
+                .bind::<Integer, _>(user_id)
+                .get_results(&conn)?;
+
+        Ok(results)
+    }
+
+    pub async fn puzzle_star_sum_groups(
+        &self,
+        ctx: &Context<'_>,
+        user_id: ID,
+    ) -> async_graphql::Result<Vec<PuzzleStarAggrGroup>> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let results: Vec<PuzzleStarAggrGroup> =
+            diesel::sql_query(include_str!("../sql/puzzle_star_sum_groups.sql"))
+                .bind::<Integer, _>(user_id)
+                .get_results(&conn)?;
+
+        Ok(results)
+    }
+
     pub async fn puzzle_participants(
         &self,
         ctx: &Context<'_>,

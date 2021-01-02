@@ -342,6 +342,42 @@ impl PuzzleSub {
 }
 
 #[derive(QueryableByName, Clone, Debug)]
+pub struct PuzzleCountByGenre {
+    #[sql_type = "Integer"]
+    pub genre: Genre,
+    #[sql_type = "BigInt"]
+    pub puzzle_count: i64,
+}
+
+#[Object]
+impl PuzzleCountByGenre {
+    async fn genre(&self) -> Genre {
+        self.genre
+    }
+    async fn puzzle_count(&self) -> i64 {
+        self.puzzle_count
+    }
+}
+
+#[derive(QueryableByName, Clone, Debug)]
+pub struct PuzzleStarAggrGroup {
+    #[sql_type = "BigInt"]
+    pub group: i64,
+    #[sql_type = "BigInt"]
+    pub puzzle_count: i64,
+}
+
+#[Object]
+impl PuzzleStarAggrGroup {
+    async fn group(&self) -> i64 {
+        self.group
+    }
+    async fn puzzle_count(&self) -> i64 {
+        self.puzzle_count
+    }
+}
+
+#[derive(QueryableByName, Clone, Debug)]
 pub struct PuzzleParticipant {
     /// User ID
     #[sql_type = "Int4"]

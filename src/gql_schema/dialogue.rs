@@ -1,6 +1,6 @@
 use async_graphql::{self, guard::Guard, Context, InputObject, MaybeUndefined, Object};
 use chrono::Utc;
-use diesel::prelude::*;
+use diesel::{prelude::*, sql_types::Integer};
 
 use crate::auth::Role;
 use crate::broker::CindyBroker;
@@ -57,6 +57,21 @@ impl DialogueQuery {
         let dialogues = query.load::<Dialogue>(&conn)?;
 
         Ok(dialogues)
+    }
+
+    pub async fn user_max_yami_dialogue_count(
+        &self,
+        ctx: &Context<'_>,
+        user_id: ID,
+    ) -> async_graphql::Result<UserMaxYamiDialogueCountResult> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let result: UserMaxYamiDialogueCountResult =
+            diesel::sql_query(include_str!("../sql/user_max_yami_dialogue_count.sql"))
+                .bind::<Integer, _>(user_id)
+                .get_result(&conn)?;
+
+        Ok(result)
     }
 }
 
