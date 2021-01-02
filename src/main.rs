@@ -10,6 +10,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
+use actix_cors::Cors;
 use actix_web::{guard, web, App, HttpRequest, HttpResponse, HttpServer, Result};
 use async_graphql::Schema;
 use async_graphql_actix_web::{Request, Response, WSSubscription};
@@ -153,6 +154,13 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::default()
+                    .allowed_origin("http://localhost:3000")
+                    .allowed_methods(vec!["GET", "POST", "OPTIONS"])
+                    .allow_any_header()
+                    .max_age(3600),
+            )
             .data(schema.clone())
             .data(ctx.clone())
             .service(web::resource("/graphql").guard(guard::Post()).to(index))
