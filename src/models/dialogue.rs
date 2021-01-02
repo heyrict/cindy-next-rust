@@ -1,6 +1,10 @@
 use async_graphql::{self, Context, InputObject, Object};
 use diesel::sql_types::Bool;
-use diesel::{prelude::*, query_dsl::QueryDsl, sql_types::{BigInt, Int4}};
+use diesel::{
+    prelude::*,
+    query_dsl::QueryDsl,
+    sql_types::{BigInt, Int4},
+};
 
 use crate::context::GlobalCtx;
 use crate::schema::dialogue;

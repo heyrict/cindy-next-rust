@@ -104,7 +104,7 @@ pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {
         .and_then(|val| serde_json::from_value(val).map_err(anyhow::Error::from))
 }
 
-fn get_jwt(user: &User) -> String {
+pub fn get_jwt(user: &User) -> String {
     let iat = OffsetDateTime::now_utc();
     let exp: OffsetDateTime = iat + Duration::days(30);
     let header = json!({});

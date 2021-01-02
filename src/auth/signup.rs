@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::context::GlobalCtx;
 use crate::models::User;
 
-use super::{error_response, gen_cookie, AuthResponse};
+use super::{error_response, get_jwt, AuthResponse};
 
 #[derive(Deserialize)]
 pub struct SignupBody {
@@ -36,6 +36,7 @@ impl AuthResponse for SignupResponse {
 pub struct SignupResponseData {
     id: i32,
     username: String,
+    auth_token: String,
 }
 
 pub async fn signup(
@@ -125,10 +126,13 @@ pub async fn signup(
         &usr.nickname
     );
 
+    let jwt = get_jwt(&usr);
+
     Ok(HttpResponse::Ok()
-        .cookie(gen_cookie(&usr))
+        //.cookie(gen_cookie(&usr))
         .json(SignupResponse::default().data(SignupResponseData {
             id: usr.id,
             username: usr.username,
+            auth_token: jwt,
         })))
 }

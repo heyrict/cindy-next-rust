@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::context::GlobalCtx;
 use crate::models::User;
 
-use super::{error_response, gen_cookie, AuthResponse};
+use super::{error_response, get_jwt, AuthResponse};
 
 #[derive(Deserialize)]
 pub struct LoginBody {
@@ -34,6 +34,7 @@ impl AuthResponse for LoginResponse {
 pub struct LoginResponseData {
     id: i32,
     username: String,
+    auth_token: String,
 }
 
 pub async fn login(
@@ -73,10 +74,13 @@ pub async fn login(
         &user.nickname
     );
 
+    let jwt = get_jwt(&user);
+
     Ok(HttpResponse::Ok()
-        .cookie(gen_cookie(&user))
+        //.cookie(gen_cookie(&user))
         .json(LoginResponse::default().data(LoginResponseData {
             id: user.id,
             username: user.username,
+            auth_token: jwt,
         })))
 }
