@@ -126,7 +126,7 @@ async fn main() -> std::io::Result<()> {
     });
 
     // Setup logger
-    env_logger::builder()
+    env_logger::Builder::from_default_env()
         .format(|buf, record| {
             writeln!(
                 buf,
@@ -137,7 +137,6 @@ async fn main() -> std::io::Result<()> {
                 record.args()
             )
         })
-        .filter(None, log::LevelFilter::Info)
         .init();
 
     let endpoint = dotenv::var("ENDPOINT").unwrap_or("127.0.0.1:8000".to_string());
@@ -153,14 +152,56 @@ async fn main() -> std::io::Result<()> {
     info!("Server started on: http://{}/graphql", &endpoint);
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allowed_origin_fn(|origin, _req_head| {
+                let allowed_origins = dotenv::var("ALLOWED_ORIGINS").unwrap_or(String::new());
+                let mut allowed_origins = allowed_origins.split(",");
+
+                let origin: &str = if let Ok(origin) = std::str::from_utf8(origin.as_bytes()) {
+                    origin
+                } else {
+                    return false;
+                };
+
+                allowed_origins
+                    .find(|allowed| {
+                        if allowed.len() == 0 {
+                            return false;
+                        };
+                        let bytes = allowed.as_bytes();
+                        let head_match = bytes[0] == b'*';
+                        let tail_match = bytes[allowed.len() - 1] == b'*';
+
+                        if head_match && tail_match {
+                            if let Some(contents) = allowed.get(1..allowed.len() - 1) {
+                                origin.contains(contents)
+                            } else {
+                                false
+                            }
+                        } else if head_match {
+                            if let Some(contents) = allowed.get(1..) {
+                                origin.ends_with(contents)
+                            } else {
+                                false
+                            }
+                        } else if tail_match {
+                            if let Some(contents) = allowed.get(1..) {
+                                origin.starts_with(contents)
+                            } else {
+                                false
+                            }
+                        } else {
+                            allowed == &origin
+                        }
+                    })
+                    .is_some()
+            })
+            .allowed_methods(vec!["GET", "POST", "OPTIONS"])
+            .allow_any_header()
+            .max_age(3600);
+
         App::new()
-            .wrap(
-                Cors::default()
-                    .allowed_origin("http://localhost:3000")
-                    .allowed_methods(vec!["GET", "POST", "OPTIONS"])
-                    .allow_any_header()
-                    .max_age(3600),
-            )
+            .wrap(cors)
             .data(schema.clone())
             .data(ctx.clone())
             .service(web::resource("/graphql").guard(guard::Post()).to(index))

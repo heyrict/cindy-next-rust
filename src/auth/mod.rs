@@ -82,7 +82,7 @@ impl JwtPayload {
 }
 
 pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {
-    let result = if let Some(keypath) = dotenv::var("KEYPATH").ok() {
+    let result = if let Some(keypath) = dotenv::var("PUBLIC_KEY_PATH").ok() {
         decode(
             &token,
             &PathBuf::from(keypath),
@@ -120,7 +120,7 @@ pub fn get_jwt(user: &User) -> String {
         "role": Role::User
     });
 
-    if let Some(keypath) = dotenv::var("KEYPATH").ok() {
+    if let Some(keypath) = dotenv::var("PRIVATE_KEY_PATH").ok() {
         encode(header, &PathBuf::from(keypath), &payload, Algorithm::RS256)
             .expect("Error encoding jwt with RS256.")
     } else {
