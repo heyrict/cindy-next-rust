@@ -70,9 +70,7 @@ impl CindyFilter<dialogue::table, DB> for PuzzleLogFilter {
 
         let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool> + Send>> =
             Some(if let Some(user_id_val) = obj_user_id {
-                Box::new(
-                    puzzle_id.eq(obj_puzzle_id).and(user_id.eq(user_id_val)),
-                )
+                Box::new(puzzle_id.eq(obj_puzzle_id).and(user_id.eq(user_id_val)))
             } else {
                 Box::new(puzzle_id.eq(obj_puzzle_id))
             });
@@ -119,5 +117,29 @@ impl PuzzleLogSub {
             PuzzleLogSub::DialogueUpdated(_, obj) => PuzzleLog::Dialogue(obj.clone()),
             PuzzleLogSub::HintUpdated(_, obj) => PuzzleLog::Hint(obj.clone()),
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct UnsolvedPuzzleStatsSub {
+    pub puzzle_id: i32,
+    pub dialogue_count: i64,
+    pub dialogue_count_answered: i64,
+    pub dialogue_max_answered_time: Timestamptz,
+}
+
+#[Object]
+impl UnsolvedPuzzleStatsSub {
+    async fn puzzle_id(&self) -> i32 {
+        self.puzzle_id
+    }
+    async fn dialogue_count(&self) -> i64 {
+        self.dialogue_count
+    }
+    async fn dialogue_count_answered(&self) -> i64 {
+        self.dialogue_count_answered
+    }
+    async fn dialogue_max_answered_time(&self) -> Timestamptz {
+        self.dialogue_max_answered_time
     }
 }

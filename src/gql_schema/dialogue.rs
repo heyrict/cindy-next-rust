@@ -5,7 +5,11 @@ use diesel::{prelude::*, sql_types::Integer};
 use crate::auth::Role;
 use crate::broker::CindyBroker;
 use crate::context::{GlobalCtx, RequestCtx};
-use crate::models::{dialogue::*, puzzle_log::PuzzleLogSub, *};
+use crate::models::{
+    dialogue::*,
+    puzzle_log::{PuzzleLogSub, UnsolvedPuzzleStatsSub},
+    *,
+};
 use crate::schema::dialogue;
 
 #[derive(Default)]
@@ -249,15 +253,39 @@ impl DialogueMutation {
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
-        let key_starts_with = format!("puzzleLog<{}", dialogue.puzzle_id);
-        CindyBroker::publish(PuzzleLogSub::DialogueUpdated(
-            dialogue_inst.clone(),
-            dialogue.clone(),
-        ));
-        CindyBroker::publish_to_all(
-            |key| key.starts_with(&key_starts_with),
-            PuzzleLogSub::DialogueUpdated(dialogue_inst, dialogue.clone()),
-        );
+        // Update PuzzleLogs
+        let puzzle_id = dialogue.puzzle_id;
+        let sub = PuzzleLogSub::DialogueUpdated(dialogue_inst, dialogue.clone());
+        tokio::spawn(async move {
+            let key_starts_with = format!("puzzleLog<{}", puzzle_id);
+            CindyBroker::publish(sub.clone());
+            CindyBroker::publish_to_all(|key| key.starts_with(&key_starts_with), sub);
+        });
+
+        // Update PuzzleLog count in unsolved puzzles
+        let puzzle_id = dialogue.puzzle_id;
+        if let Ok(puzzle) = dialogue.puzzle(ctx).await {
+            if puzzle.status == Status::Undergoing {
+                let dialogue_count = puzzle.dialogue_count(&ctx, None).await.unwrap_or(0);
+                let dialogue_count_answered =
+                    puzzle.dialogue_count(&ctx, Some(true)).await.unwrap_or(0);
+                let dialogue_max_answered_time = dialogue.modified;
+
+                if dialogue_count > 0 {
+                    tokio::spawn(async move {
+                        let sub = UnsolvedPuzzleStatsSub {
+                            puzzle_id,
+                            dialogue_count,
+                            dialogue_count_answered,
+                            dialogue_max_answered_time,
+                        };
+
+                        CindyBroker::publish(sub.clone());
+                        CindyBroker::publish_to("puzzlePuzzleLogs".to_string(), sub);
+                    });
+                }
+            }
+        };
 
         Ok(dialogue)
     }

@@ -609,7 +609,7 @@ impl Puzzle {
             .await
     }
 
-    async fn dialogue_count(
+    pub async fn dialogue_count(
         &self,
         ctx: &Context<'_>,
         answered: Option<bool>,
@@ -645,7 +645,7 @@ impl Puzzle {
         Ok(result)
     }
 
-    async fn dialogue_max_answered_time(
+    pub async fn dialogue_max_answered_time(
         &self,
         ctx: &Context<'_>,
     ) -> async_graphql::Result<Option<Timestamptz>> {

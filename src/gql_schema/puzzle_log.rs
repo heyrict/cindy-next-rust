@@ -183,4 +183,10 @@ impl PuzzleLogSubscription {
             async move { check }
         })
     }
+
+    pub async fn unsolved_puzzle_stats_sub(
+        &self,
+    ) -> impl Stream<Item = Option<UnsolvedPuzzleStatsSub>> {
+        CindyBroker::<UnsolvedPuzzleStatsSub>::subscribe_to("puzzlePuzzleLogs".to_string())
+    }
 }
