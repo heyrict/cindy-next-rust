@@ -1,6 +1,6 @@
 [package]
 name = "cindy-next-rust"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["heyrict <xiezh0831@yahoo.co.jp>"]
 edition = "2018"
 
