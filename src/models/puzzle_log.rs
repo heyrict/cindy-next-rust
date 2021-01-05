@@ -71,12 +71,10 @@ impl CindyFilter<dialogue::table, DB> for PuzzleLogFilter {
         let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool> + Send>> =
             Some(if let Some(user_id_val) = obj_user_id {
                 Box::new(
-                    puzzle_id
-                        .eq(obj_puzzle_id)
-                        .and(user_id.is_null().or(user_id.eq(user_id_val))),
+                    puzzle_id.eq(obj_puzzle_id).and(user_id.eq(user_id_val)),
                 )
             } else {
-                Box::new(puzzle_id.eq(obj_puzzle_id).and(user_id.is_null()))
+                Box::new(puzzle_id.eq(obj_puzzle_id))
             });
 
         gen_number_filter!(obj_created: TimestamptzFiltering, created, filter);
