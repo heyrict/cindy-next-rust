@@ -72,7 +72,7 @@ impl CindyFilter<bookmark::table, DB> for BookmarkFilter {
         gen_number_filter!(obj_id: I32Filtering, id, filter);
         gen_number_filter!(obj_value: I16Filtering, value, filter);
         gen_number_filter!(obj_puzzle_id: I32Filtering, puzzle_id, filter);
-        gen_number_filter!(obj_user_id: I32Filtering, id, filter);
+        gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
         filter
     }
 }

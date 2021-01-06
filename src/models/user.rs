@@ -164,11 +164,11 @@ impl User {
     async fn is_active(&self) -> bool {
         self.is_active
     }
-    async fn last_login(&self) -> Option<String> {
-        self.last_login.map(|ts| ts.to_string())
+    async fn last_login(&self) -> Option<&Timestamptz> {
+        self.last_login.as_ref()
     }
-    async fn date_joined(&self) -> String {
-        self.date_joined.to_string()
+    async fn date_joined(&self) -> &Timestamptz {
+        &self.date_joined
     }
 
     async fn current_award(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<UserAward>> {
