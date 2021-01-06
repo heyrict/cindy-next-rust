@@ -159,7 +159,7 @@ impl PuzzleQuery {
             .inner_join(puzzle::table)
             .distinct_on(dialogue::puzzle_id)
             .filter(dialogue::user_id.eq(user_id))
-            .order(dialogue::modified.desc())
+            .order(dialogue::puzzle_id.desc())
             .limit(limit)
             .offset(offset)
             .select(puzzle::all_columns)
@@ -173,19 +173,14 @@ impl PuzzleQuery {
         ctx: &Context<'_>,
         user_id: ID,
     ) -> async_graphql::Result<i64> {
-        use crate::schema::{dialogue, puzzle};
-
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let results = dialogue::table
-            .inner_join(puzzle::table)
-            .distinct_on(dialogue::puzzle_id)
-            .filter(dialogue::user_id.eq(user_id))
-            .order(dialogue::modified.desc())
-            .count()
-            .get_result(&conn)?;
+        let result: PuzzleFootprintCount =
+            diesel::sql_query(include_str!("../sql/puzzle_footprint_count.sql"))
+                .bind::<Integer, _>(user_id)
+                .get_result(&conn)?;
 
-        Ok(results)
+        Ok(result.count)
     }
 }
 

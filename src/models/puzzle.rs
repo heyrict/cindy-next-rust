@@ -378,6 +378,12 @@ impl PuzzleStarAggrGroup {
 }
 
 #[derive(QueryableByName, Clone, Debug)]
+pub struct PuzzleFootprintCount {
+    #[sql_type = "BigInt"]
+    pub count: i64,
+}
+
+#[derive(QueryableByName, Clone, Debug)]
 pub struct PuzzleParticipant {
     /// User ID
     #[sql_type = "Int4"]

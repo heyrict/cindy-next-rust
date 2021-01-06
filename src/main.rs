@@ -126,6 +126,7 @@ async fn main() -> std::io::Result<()> {
     });
 
     // Setup logger
+    dotenv::dotenv().expect("Unable to setup dotenv");
     env_logger::Builder::from_default_env()
         .format(|buf, record| {
             writeln!(
