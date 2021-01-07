@@ -1,5 +1,12 @@
-use async_graphql::{self, Context, InputObject, MaybeUndefined, Object};
-use diesel::prelude::*;
+use async_graphql::{
+    self,
+    validators::{IntGreaterThan, IntLessThan},
+    Context, InputObject, MaybeUndefined, Object,
+};
+use diesel::{
+    prelude::*,
+    sql_types::{self, Integer},
+};
 
 use crate::auth::Role;
 use crate::context::{GlobalCtx, RequestCtx};
@@ -74,6 +81,64 @@ impl UserQuery {
         let result = query.count().get_result(&conn)?;
 
         Ok(result)
+    }
+
+    pub async fn user_dialogue_ranking(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(validator(IntGreaterThan(value = "1990")))] year: i32,
+        #[graphql(validator(IntLessThan(value = "13")))] month: u32,
+        limit: i32,
+        offset: i32,
+    ) -> async_graphql::Result<Vec<UserRankingRow>> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        // The range of the time puzzles are created
+        let start_time = Date::from_ymd(year, month, 1);
+        let end_time = if month == 12 {
+            Date::from_ymd(year + 1, 1, 1)
+        } else {
+            Date::from_ymd(year, month + 1, 1)
+        };
+
+        let results: Vec<UserRankingRow> =
+            diesel::sql_query(include_str!("../sql/user_dialogue_ranking.sql"))
+                .bind::<sql_types::Date, _>(start_time)
+                .bind::<sql_types::Date, _>(end_time)
+                .bind::<Integer, _>(limit)
+                .bind::<Integer, _>(offset)
+                .get_results(&conn)?;
+
+        Ok(results)
+    }
+
+    pub async fn user_puzzle_ranking(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(validator(IntGreaterThan(value = "1990")))] year: i32,
+        #[graphql(validator(IntLessThan(value = "13")))] month: u32,
+        limit: i32,
+        offset: i32,
+    ) -> async_graphql::Result<Vec<UserRankingRow>> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        // The range of the time puzzles are created
+        let start_time = Date::from_ymd(year, month, 1);
+        let end_time = if month == 12 {
+            Date::from_ymd(year + 1, 1, 1)
+        } else {
+            Date::from_ymd(year, month + 1, 1)
+        };
+
+        let results: Vec<UserRankingRow> =
+            diesel::sql_query(include_str!("../sql/user_puzzle_ranking.sql"))
+                .bind::<sql_types::Date, _>(start_time)
+                .bind::<sql_types::Date, _>(end_time)
+                .bind::<Integer, _>(limit)
+                .bind::<Integer, _>(offset)
+                .get_results(&conn)?;
+
+        Ok(results)
     }
 }
 

@@ -7,7 +7,7 @@ use diesel::{
     prelude::*,
     query_dsl::QueryDsl,
     r2d2::{ConnectionManager, PooledConnection},
-    sql_types::Bool,
+    sql_types::{BigInt, Bool, Int4},
 };
 use rand::{distributions::Alphanumeric, Rng};
 use ring::pbkdf2;
@@ -93,6 +93,39 @@ impl CindyFilter<user::table, DB> for UserFilter {
         gen_string_filter!(obj_username, username, filter);
         gen_string_filter!(obj_nickname, nickname, filter);
         filter
+    }
+}
+
+#[derive(QueryableByName, Debug)]
+pub struct UserRankingRow {
+    /// User ID
+    #[sql_type = "Int4"]
+    pub id: ID,
+    /// The aggregated value of given user
+    #[sql_type = "BigInt"]
+    pub value_count: i64,
+}
+
+#[Object]
+impl UserRankingRow {
+    async fn id(&self) -> ID {
+        self.id
+    }
+    async fn value_count(&self) -> i64 {
+        self.value_count
+    }
+
+    async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
+        use crate::schema::user;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let user = user::table
+            .filter(user::id.eq(self.id))
+            .limit(1)
+            .first(&conn)?;
+
+        Ok(user)
     }
 }
 
