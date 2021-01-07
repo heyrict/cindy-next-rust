@@ -115,6 +115,7 @@ table! {
         receiver_id -> Int4,
         sender_id -> Int4,
         editTimes -> Int4,
+        modified -> Timestamptz,
     }
 }
 
@@ -153,6 +154,15 @@ table! {
         session_key -> Varchar,
         session_data -> Text,
         expire_date -> Timestamptz,
+    }
+}
+
+table! {
+    dm_read (id) {
+        id -> Int4,
+        user_id -> Int4,
+        with_user_id -> Int4,
+        dm_id -> Int4,
     }
 }
 
@@ -341,7 +351,6 @@ table! {
         profile -> Text,
         current_award_id -> Nullable<Int4>,
         hide_bookmark -> Bool,
-        last_read_dm_id -> Nullable<Int4>,
         icon -> Nullable<Varchar>,
     }
 }
@@ -370,6 +379,7 @@ joinable!(dialogue -> puzzle (puzzle_id));
 joinable!(dialogue -> user (user_id));
 joinable!(django_admin_log -> django_content_type (content_type_id));
 joinable!(django_admin_log -> user (user_id));
+joinable!(dm_read -> direct_message (dm_id));
 joinable!(event -> user (user_id));
 joinable!(event_award -> award (award_id));
 joinable!(event_award -> event (event_id));
@@ -412,6 +422,7 @@ allow_tables_to_appear_in_same_query!(
     django_content_type,
     django_migrations,
     django_session,
+    dm_read,
     event,
     event_award,
     favorite_chatroom,

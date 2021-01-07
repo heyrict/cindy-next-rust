@@ -10,6 +10,8 @@ mod chatmessage;
 mod chatroom;
 mod comment;
 mod dialogue;
+mod direct_message;
+mod dm_read;
 mod favchat;
 mod hint;
 mod puzzle;
@@ -26,6 +28,8 @@ pub use chatmessage::{ChatmessageMutation, ChatmessageQuery, ChatmessageSubscrip
 pub use chatroom::{ChatroomMutation, ChatroomQuery};
 pub use comment::{CommentMutation, CommentQuery};
 pub use dialogue::{DialogueMutation, DialogueQuery};
+pub use direct_message::{DirectMessageMutation, DirectMessageQuery};
+pub use dm_read::{DmReadMutation, DmReadQuery};
 pub use favchat::{FavchatMutation, FavchatQuery};
 pub use hint::{HintMutation, HintQuery};
 pub use puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription};
@@ -46,6 +50,8 @@ pub struct QueryRoot(
     ChatroomQuery,
     CommentQuery,
     DialogueQuery,
+    DirectMessageQuery,
+    DmReadQuery,
     FavchatQuery,
     HintQuery,
     PuzzleLogQuery,
@@ -65,6 +71,8 @@ pub struct MutationRoot(
     ChatroomMutation,
     CommentMutation,
     DialogueMutation,
+    DirectMessageMutation,
+    DmReadMutation,
     FavchatMutation,
     HintMutation,
     PuzzleMutation,

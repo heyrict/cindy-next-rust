@@ -179,7 +179,6 @@ pub struct UpdateUserData {
     pub profile: Option<String>,
     pub current_award_id: Option<Option<i32>>,
     pub hide_bookmark: Option<bool>,
-    pub last_read_dm_id: Option<Option<i32>>,
     pub icon: Option<Option<String>>,
 }
 
@@ -200,7 +199,6 @@ impl From<UpdateUserSet> for UpdateUserData {
             profile: x.profile,
             current_award_id: x.current_award_id.as_options(),
             hide_bookmark: x.hide_bookmark,
-            last_read_dm_id: x.last_read_dm_id.as_options(),
             icon: x.icon,
         }
     }

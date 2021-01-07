@@ -148,7 +148,6 @@ pub struct User {
     pub profile: String,
     pub current_award_id: Option<i32>,
     pub hide_bookmark: bool,
-    pub last_read_dm_id: Option<i32>,
     pub icon: Option<String>,
 }
 
