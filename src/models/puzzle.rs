@@ -432,7 +432,7 @@ impl PuzzleParticipant {
 }
 
 /// Object for user table
-#[derive(Queryable, Identifiable, Clone, Debug)]
+#[derive(Queryable, QueryableByName, Identifiable, Clone, Debug)]
 #[table_name = "puzzle"]
 pub struct Puzzle {
     pub id: ID,
