@@ -132,7 +132,20 @@ impl DirectMessageMutation {
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
-        CindyBroker::publish(DirectMessageSub::Updated(cm_inst, direct_message.clone()));
+        let dm = direct_message.clone();
+
+        tokio::spawn(async move {
+            CindyBroker::publish(DirectMessageSub::Updated(cm_inst.clone(), dm.clone()));
+
+            CindyBroker::publish_to(
+                format!("dm<{}>", dm.sender_id),
+                DirectMessageSub::Updated(cm_inst.clone(), dm.clone()),
+            );
+            CindyBroker::publish_to(
+                format!("dm<{}>", dm.receiver_id),
+                DirectMessageSub::Updated(cm_inst, dm),
+            );
+        });
 
         Ok(direct_message)
     }
@@ -164,7 +177,19 @@ impl DirectMessageMutation {
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
-        CindyBroker::publish(DirectMessageSub::Created(direct_message.clone()));
+        let dm = direct_message.clone();
+        tokio::spawn(async move {
+            CindyBroker::publish(DirectMessageSub::Created(dm.clone()));
+
+            CindyBroker::publish_to(
+                format!("dm<{}>", dm.sender_id),
+                DirectMessageSub::Created(dm.clone()),
+            );
+            CindyBroker::publish_to(
+                format!("dm<{}>", dm.receiver_id),
+                DirectMessageSub::Created(dm),
+            );
+        });
 
         Ok(direct_message)
     }
@@ -196,18 +221,8 @@ impl DirectMessageSubscription {
         &self,
         user_id: ID,
     ) -> impl Stream<Item = Option<DirectMessageSub>> {
-        CindyBroker::<DirectMessageSub>::subscribe().filter(move |dm_sub| {
-            let check = match dm_sub {
-                Some(DirectMessageSub::Created(dm)) => {
-                    dm.sender_id == user_id || dm.receiver_id == user_id
-                }
-                Some(DirectMessageSub::Updated(orig, _)) => {
-                    orig.sender_id == user_id || orig.receiver_id == user_id
-                }
-                None => false,
-            };
+        let key = format!("dm<{}>", &user_id);
 
-            async move { check }
-        })
+        CindyBroker::<DirectMessageSub>::subscribe_to(key)
     }
 }

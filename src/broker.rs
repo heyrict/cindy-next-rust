@@ -57,6 +57,32 @@ where
     f(tx, rx)
 }
 
+fn with_senders_to_if_exists<T, SP, F>(key: Key, f: F) -> Option<SP>
+where
+    T: Sync + Send + Clone + 'static,
+    F: FnOnce(&watch::Sender<Option<T>>, &watch::Receiver<Option<T>>) -> SP,
+{
+    let mut map = SUBSCRIPTIONS.lock().unwrap();
+    let type_id = TypeId::of::<T>();
+    if map.contains_key(&type_id) {
+        let submap = map.get_mut(&type_id).unwrap();
+        if submap.contains_key(&key) {
+            let sp = submap.get_mut(&key).unwrap();
+            let today = Local::today();
+            if sp.updated != today {
+                sp.updated = today;
+            };
+            let tx = sp.tx.downcast_ref::<watch::Sender<Option<T>>>().unwrap();
+            let rx = sp.rx.downcast_ref::<watch::Receiver<Option<T>>>().unwrap();
+            Some(f(tx, rx))
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
 impl<T: Sync + Send + Clone + 'static> Stream for BrokerStream<T> {
     type Item = Option<T>;
 
@@ -71,7 +97,7 @@ pub struct CindyBroker<T>(PhantomData<T>);
 impl<T: Sync + Send + Clone + 'static> CindyBroker<T> {
     /// Publish a message that all subscription streams can receive.
     pub fn publish(msg: T) {
-        with_senders_to::<T, _, _>(Key::default(), |tx, _| {
+        with_senders_to_if_exists::<T, _, _>(Key::default(), |tx, _| {
             tx.broadcast(Some(msg.clone())).ok();
         });
     }
@@ -83,7 +109,7 @@ impl<T: Sync + Send + Clone + 'static> CindyBroker<T> {
 
     /// Publish a message that all subscription streams can receive with a given key.
     pub fn publish_to(key: Key, msg: T) {
-        with_senders_to::<T, _, _>(key, |tx, _| {
+        with_senders_to_if_exists::<T, _, _>(key, |tx, _| {
             tx.broadcast(Some(msg.clone())).ok();
         });
     }
