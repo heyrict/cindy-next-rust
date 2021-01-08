@@ -28,7 +28,7 @@ pub use chatmessage::{ChatmessageMutation, ChatmessageQuery, ChatmessageSubscrip
 pub use chatroom::{ChatroomMutation, ChatroomQuery};
 pub use comment::{CommentMutation, CommentQuery};
 pub use dialogue::{DialogueMutation, DialogueQuery};
-pub use direct_message::{DirectMessageMutation, DirectMessageQuery};
+pub use direct_message::{DirectMessageMutation, DirectMessageQuery, DirectMessageSubscription};
 pub use dm_read::{DmReadMutation, DmReadQuery};
 pub use favchat::{FavchatMutation, FavchatQuery};
 pub use hint::{HintMutation, HintQuery};
@@ -87,6 +87,7 @@ pub struct MutationRoot(
 pub struct SubscriptionRoot(
     BaseSubscription,
     ChatmessageSubscription,
+    DirectMessageSubscription,
     PuzzleLogSubscription,
     PuzzleSubscription,
 );
