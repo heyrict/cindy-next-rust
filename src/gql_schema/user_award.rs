@@ -3,7 +3,7 @@ use chrono::Utc;
 use diesel::prelude::*;
 
 use crate::auth::Role;
-use crate::context::GlobalCtx;
+use crate::context::{GlobalCtx, RequestCtx};
 use crate::models::user_award::*;
 use crate::models::*;
 use crate::schema::user_award;
@@ -104,16 +104,29 @@ impl UserAwardMutation {
     }
 
     // Create user_award
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
     pub async fn create_user_award(
         &self,
         ctx: &Context<'_>,
-        data: CreateUserAwardInput,
+        mut data: CreateUserAwardInput,
     ) -> async_graphql::Result<UserAward> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let reqctx = ctx.data::<RequestCtx>()?;
+        let user_id = reqctx.get_user_id();
+        let role = reqctx.get_role();
+
+        match role {
+            Role::User => {
+                // Assert user_id is set to the user
+                if let Some(user_id) = data.user_id {
+                    user_id_guard(ctx, user_id)?;
+                } else {
+                    data.user_id = user_id
+                };
+            }
+            Role::Admin => {}
+            Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
+        };
 
         let user_award: UserAward = diesel::insert_into(user_award::table)
             .values(&data)

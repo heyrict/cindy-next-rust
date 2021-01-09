@@ -1,5 +1,8 @@
 use async_graphql::{self, guard::Guard, Context, InputObject, Object};
-use diesel::prelude::*;
+use diesel::{
+    prelude::*,
+    sql_types::{BigInt, Integer},
+};
 
 use crate::auth::Role;
 use crate::context::{GlobalCtx, RequestCtx};
@@ -70,6 +73,8 @@ impl DmReadQuery {
         let results: Vec<DmReadAllEntry> =
             diesel::sql_query(include_str!("../sql/dm_read_all.sql"))
                 .bind::<Integer, _>(user_id)
+                .bind::<BigInt, _>(limit)
+                .bind::<BigInt, _>(offset)
                 .get_results(&conn)?;
 
         Ok(results)

@@ -1,9 +1,11 @@
 SELECT
   DISTINCT with_users.with_user_id,
+  with_users.direct_message_id,
   dm_read.dm_id
 from
   (
     SELECT
+      id as direct_message_id,
       (
         CASE
           WHEN direct_message.sender_id = $1 THEN direct_message.receiver_id

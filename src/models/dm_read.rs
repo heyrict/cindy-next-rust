@@ -1,5 +1,9 @@
 use async_graphql::{self, Context, InputObject, Object};
-use diesel::{prelude::*, query_dsl::QueryDsl, sql_types::{Bool, Integer}};
+use diesel::{
+    prelude::*,
+    query_dsl::QueryDsl,
+    sql_types::{Bool, Integer, Nullable},
+};
 
 use super::*;
 use crate::context::GlobalCtx;
@@ -60,7 +64,8 @@ impl CindyFilter<dm_read::table, DB> for DmReadFilter {
     ) -> Option<Box<dyn BoxableExpression<dm_read::table, DB, SqlType = Bool> + Send>> {
         use crate::schema::dm_read::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<dm_read, DB, SqlType = Bool> + Send>> = None;
+        let mut filter: Option<Box<dyn BoxableExpression<dm_read, DB, SqlType = Bool> + Send>> =
+            None;
         let DmReadFilter {
             id: obj_id,
             user_id: obj_user_id,
@@ -73,10 +78,17 @@ impl CindyFilter<dm_read::table, DB> for DmReadFilter {
 
 #[derive(QueryableByName, Debug)]
 pub struct DmReadAllEntry {
+    /// ID of the user with whom the conversation is
     #[sql_type = "Integer"]
     pub with_user_id: ID,
+
+    /// ID of the last message of the conversation
     #[sql_type = "Integer"]
-    pub dm_id: ID,
+    pub direct_message_id: ID,
+
+    /// ID of the last viewed message (short for dm_read_dm_id)
+    #[sql_type = "Nullable<Integer>"]
+    pub dm_id: Option<ID>,
 }
 
 #[Object]
@@ -84,7 +96,10 @@ impl DmReadAllEntry {
     async fn with_user_id(&self) -> ID {
         self.with_user_id
     }
-    async fn dm_id(&self) -> ID {
+    async fn direct_message_id(&self) -> ID {
+        self.direct_message_id
+    }
+    async fn dm_id(&self) -> Option<ID> {
         self.dm_id
     }
 
@@ -101,19 +116,37 @@ impl DmReadAllEntry {
         Ok(user)
     }
 
-    async fn direct_message(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
+    async fn last_direct_message(&self, ctx: &Context<'_>) -> async_graphql::Result<DirectMessage> {
         use crate::schema::direct_message;
 
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = direct_message::table
-            .filter(direct_message::id.eq(self.dm_id))
+            .filter(direct_message::id.eq(self.direct_message_id))
             .limit(1)
             .first(&conn)?;
 
         Ok(user)
     }
 
+    async fn last_viewed_direct_message(
+        &self,
+        ctx: &Context<'_>,
+    ) -> async_graphql::Result<Option<DirectMessage>> {
+        use crate::schema::direct_message;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        if let Some(dm_id) = self.dm_id {
+            let direct_message = direct_message::table
+                .filter(direct_message::id.eq(dm_id))
+                .limit(1)
+                .first(&conn)?;
+            Ok(Some(direct_message))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 /// Object for dm_read table

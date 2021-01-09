@@ -444,7 +444,7 @@ impl PuzzleMutation {
         &self,
         ctx: &Context<'_>,
         id: ID,
-        mut set: UpdatePuzzleInput,
+        set: UpdatePuzzleInput,
     ) -> async_graphql::Result<Puzzle> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
@@ -464,9 +464,11 @@ impl PuzzleMutation {
 
         // Set `modified` to the current time when puzzle is solved
         // TODO rename `modified` -> `time_solved`
-        if puzzle_inst.status == Status::Undergoing && set.status != Some(Status::Undergoing) {
-            set.modified = Some(Utc::now());
-        };
+        //
+        // This is redundant as it is already set by postgresql function
+        //if puzzle_inst.status == Status::Undergoing && set.status != Some(Status::Undergoing) {
+        //    set.modified = Some(Utc::now());
+        //};
 
         let puzzle: Puzzle = diesel::update(puzzle::table)
             .filter(puzzle::id.eq(id))
