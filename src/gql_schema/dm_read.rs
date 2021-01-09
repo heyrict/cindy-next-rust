@@ -57,6 +57,23 @@ impl DmReadQuery {
 
         Ok(dm_reads)
     }
+
+    pub async fn dm_read_all(
+        &self,
+        ctx: &Context<'_>,
+        user_id: ID,
+        limit: i64,
+        offset: i64,
+    ) -> async_graphql::Result<Vec<DmReadAllEntry>> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let results: Vec<DmReadAllEntry> =
+            diesel::sql_query(include_str!("../sql/dm_read_all.sql"))
+                .bind::<Integer, _>(user_id)
+                .get_results(&conn)?;
+
+        Ok(results)
+    }
 }
 
 #[derive(AsChangeset, InputObject, Debug)]

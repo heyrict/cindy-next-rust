@@ -1,5 +1,5 @@
 use async_graphql::{self, Context, InputObject, Object};
-use diesel::{prelude::*, query_dsl::QueryDsl, sql_types::Bool};
+use diesel::{prelude::*, query_dsl::QueryDsl, sql_types::{Bool, Integer}};
 
 use super::*;
 use crate::context::GlobalCtx;
@@ -69,6 +69,51 @@ impl CindyFilter<dm_read::table, DB> for DmReadFilter {
         gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
         filter
     }
+}
+
+#[derive(QueryableByName, Debug)]
+pub struct DmReadAllEntry {
+    #[sql_type = "Integer"]
+    pub with_user_id: ID,
+    #[sql_type = "Integer"]
+    pub dm_id: ID,
+}
+
+#[Object]
+impl DmReadAllEntry {
+    async fn with_user_id(&self) -> ID {
+        self.with_user_id
+    }
+    async fn dm_id(&self) -> ID {
+        self.dm_id
+    }
+
+    async fn with_user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
+        use crate::schema::user;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let user = user::table
+            .filter(user::id.eq(self.with_user_id))
+            .limit(1)
+            .first(&conn)?;
+
+        Ok(user)
+    }
+
+    async fn direct_message(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
+        use crate::schema::direct_message;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let user = direct_message::table
+            .filter(direct_message::id.eq(self.dm_id))
+            .limit(1)
+            .first(&conn)?;
+
+        Ok(user)
+    }
+
 }
 
 /// Object for dm_read table
