@@ -215,9 +215,9 @@ CREATE FUNCTION public.maybe_delete_tag_after_puzzle_tag_delete() RETURNS trigge
 DECLARE
   puzzle_tag_count INTEGER;
 BEGIN
-  SELECT count(id) FROM sui_hei_puzzle_tag WHERE tag_id = OLD.tag_id INTO puzzle_tag_count;
+  SELECT count(id) FROM puzzle_tag WHERE tag_id = OLD.tag_id INTO puzzle_tag_count;
   IF puzzle_tag_count = 0 THEN
-    DELETE from sui_hei_tag WHERE id = OLD.tag_id;
+    DELETE from tag WHERE id = OLD.tag_id;
   END IF;
   RETURN OLD;
 END;
