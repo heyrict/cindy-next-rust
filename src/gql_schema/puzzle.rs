@@ -423,7 +423,7 @@ impl From<CreatePuzzleInput> for CreatePuzzleData {
         Self {
             title: data.title,
             yami: data.yami.map(|yami| yami as i32),
-            genre: data.yami.map(|genre| genre as i32),
+            genre: data.genre.map(|genre| genre as i32),
             content: data.content,
             solution: data.solution,
             created: data.created,
