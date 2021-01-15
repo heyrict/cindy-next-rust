@@ -67,13 +67,14 @@ impl DialogueQuery {
         &self,
         ctx: &Context<'_>,
         user_id: ID,
-    ) -> async_graphql::Result<UserMaxYamiDialogueCountResult> {
+    ) -> async_graphql::Result<Option<UserMaxYamiDialogueCountResult>> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let result: UserMaxYamiDialogueCountResult =
+        let result: Option<UserMaxYamiDialogueCountResult> =
             diesel::sql_query(include_str!("../sql/user_max_yami_dialogue_count.sql"))
                 .bind::<Integer, _>(user_id)
-                .get_result(&conn)?;
+                .get_result(&conn)
+                .ok();
 
         Ok(result)
     }
