@@ -59,6 +59,7 @@ pub struct I16Filtering {
     pub lt: Option<i16>,
     pub ge: Option<i16>,
     pub le: Option<i16>,
+    pub eq_any: Option<Vec<i16>>,
 }
 
 impl RawFilter<i16> for I16Filtering {
@@ -73,6 +74,8 @@ impl RawFilter<i16> for I16Filtering {
             item >= ge
         } else if let Some(le) = self.le.as_ref() {
             item <= le
+        } else if let Some(eq_any) = self.eq_any.as_ref() {
+            eq_any.iter().any(|el| el == item)
         } else {
             true
         }
@@ -86,6 +89,7 @@ pub struct I32Filtering {
     pub lt: Option<i32>,
     pub ge: Option<i32>,
     pub le: Option<i32>,
+    pub eq_any: Option<Vec<i32>>,
 }
 
 impl RawFilter<i32> for I32Filtering {
@@ -100,6 +104,8 @@ impl RawFilter<i32> for I32Filtering {
             item >= ge
         } else if let Some(le) = self.le.as_ref() {
             item <= le
+        } else if let Some(eq_any) = self.eq_any.as_ref() {
+            eq_any.iter().any(|el| el == item)
         } else {
             true
         }
@@ -141,6 +147,13 @@ impl I32Filtering {
             ..Default::default()
         }
     }
+
+    pub fn eq_any(value: Vec<i32>) -> Self {
+        Self {
+            eq_any: Some(value),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(InputObject, Clone, Debug)]
@@ -151,6 +164,7 @@ pub struct NullableI32Filtering {
     pub lt: Option<i32>,
     pub ge: Option<i32>,
     pub le: Option<i32>,
+    pub eq_any: Option<Vec<i32>>,
 }
 
 impl RawFilter<Option<i32>> for NullableI32Filtering {
@@ -168,6 +182,8 @@ impl RawFilter<Option<i32>> for NullableI32Filtering {
                 item >= ge
             } else if let Some(le) = self.le.as_ref() {
                 item <= le
+            } else if let Some(eq_any) = self.eq_any.as_ref() {
+                eq_any.iter().any(|el| el == item)
             } else {
                 true
             }
@@ -178,6 +194,7 @@ impl RawFilter<Option<i32>> for NullableI32Filtering {
                 || self.lt.is_some()
                 || self.ge.is_some()
                 || self.le.is_some()
+                || self.eq_any.is_some()
             {
                 false
             } else {
@@ -194,6 +211,7 @@ pub struct TimestamptzFiltering {
     pub lt: Option<Timestamptz>,
     pub ge: Option<Timestamptz>,
     pub le: Option<Timestamptz>,
+    pub eq_any: Option<Vec<Timestamptz>>,
 }
 
 impl RawFilter<Timestamptz> for TimestamptzFiltering {
@@ -208,6 +226,8 @@ impl RawFilter<Timestamptz> for TimestamptzFiltering {
             item >= ge
         } else if let Some(le) = self.le.as_ref() {
             item <= le
+        } else if let Some(eq_any) = self.eq_any.as_ref() {
+            eq_any.iter().any(|el| el == item)
         } else {
             true
         }
@@ -221,6 +241,7 @@ pub struct DateFiltering {
     pub lt: Option<Date>,
     pub ge: Option<Date>,
     pub le: Option<Date>,
+    pub eq_any: Option<Vec<Date>>,
 }
 
 impl RawFilter<Date> for DateFiltering {
@@ -235,6 +256,8 @@ impl RawFilter<Date> for DateFiltering {
             item >= ge
         } else if let Some(le) = self.le.as_ref() {
             item <= le
+        } else if let Some(eq_any) = self.eq_any.as_ref() {
+            eq_any.iter().any(|el| el == item)
         } else {
             true
         }
@@ -249,6 +272,7 @@ pub struct NullableTimestamptzFiltering {
     pub lt: Option<Timestamptz>,
     pub ge: Option<Timestamptz>,
     pub le: Option<Timestamptz>,
+    pub eq_any: Option<Vec<Timestamptz>>,
 }
 
 impl RawFilter<Option<Timestamptz>> for NullableTimestamptzFiltering {
@@ -266,6 +290,8 @@ impl RawFilter<Option<Timestamptz>> for NullableTimestamptzFiltering {
                 item >= ge
             } else if let Some(le) = self.le.as_ref() {
                 item <= le
+            } else if let Some(eq_any) = self.eq_any.as_ref() {
+                eq_any.iter().any(|el| el == item)
             } else {
                 true
             }
@@ -276,6 +302,7 @@ impl RawFilter<Option<Timestamptz>> for NullableTimestamptzFiltering {
                 || self.lt.is_some()
                 || self.ge.is_some()
                 || self.le.is_some()
+                || self.eq_any.is_some()
             {
                 false
             } else {
@@ -423,12 +450,13 @@ macro_rules! gen_bool_filter {
 macro_rules! gen_number_filter {
     ($obj:ident: $ty:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
-            let $ty { eq, gt, ge, lt, le } = $obj;
+            let $ty { eq, gt, ge, lt, le, eq_any } = $obj;
             apply_filter!(eq, $field, $filt);
             apply_filter!(gt, $field, $filt);
             apply_filter!(ge, $field, $filt);
             apply_filter!(lt, $field, $filt);
             apply_filter!(le, $field, $filt);
+            apply_filter!(eq_any, $field, $filt);
         }
     };
 }
@@ -445,6 +473,7 @@ macro_rules! gen_nullable_number_filter {
                 ge,
                 lt,
                 le,
+                eq_any
             } = $obj;
             if let Some(is_null) = is_null {
                 $filt = Some(if is_null {
@@ -458,6 +487,7 @@ macro_rules! gen_nullable_number_filter {
             apply_filter!(ge, $field, $filt);
             apply_filter!(lt, $field, $filt);
             apply_filter!(le, $field, $filt);
+            apply_filter!(eq_any, $field, $filt);
         }
     };
 }
