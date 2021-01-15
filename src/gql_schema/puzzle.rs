@@ -447,23 +447,33 @@ impl PuzzleMutation {
         set: UpdatePuzzleInput,
     ) -> async_graphql::Result<Puzzle> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let reqctx = ctx.data::<RequestCtx>()?;
+        let role = reqctx.get_role();
 
         // User should be the owner on update mutation
         let puzzle_inst: Puzzle = puzzle::table
             .filter(puzzle::id.eq(id))
             .limit(1)
             .first(&conn)?;
-        user_id_guard(ctx, puzzle_inst.user_id)?;
 
-        // Prevent further edit from user if its status is forced hidden
-        if let Status::ForceHidden = puzzle_inst.status {
-            return Err(async_graphql::Error::new(
-                "Further edits are blocked from a forced hidden puzzle",
-            ));
+        match role {
+            Role::User => {
+                // Assert that time-related are unset
+                user_id_guard(ctx, puzzle_inst.user_id)?;
+
+                // Prevent further edit from user if its status is forced hidden
+                if let Status::ForceHidden = puzzle_inst.status {
+                    return Err(async_graphql::Error::new(
+                        "Further edits are blocked from a forced hidden puzzle",
+                    ));
+                };
+            }
+            Role::Admin => {}
+            Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
         };
 
         // Set `modified` to the current time when puzzle is solved
-        // TODO rename `modified` -> `time_solved`
+        // TODO separate `modified` from `time_solved`
         //
         // This is redundant as it is already set by postgresql function
         //if puzzle_inst.status == Status::Undergoing && set.status != Some(Status::Undergoing) {
@@ -479,6 +489,37 @@ impl PuzzleMutation {
         CindyBroker::publish(PuzzleSub::Updated(puzzle_inst, puzzle.clone()));
 
         Ok(puzzle)
+    }
+
+    // Update many puzzle (admin only)
+    #[graphql(guard(and(
+        DenyRoleGuard(role = "Role::User"),
+        DenyRoleGuard(role = "Role::Guest")
+    )))]
+    pub async fn update_many_puzzle(
+        &self,
+        ctx: &Context<'_>,
+        filter: Option<Vec<PuzzleFilter>>,
+        set: UpdatePuzzleInput,
+    ) -> async_graphql::Result<Vec<Puzzle>> {
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let puzzles: Vec<Puzzle> =
+            if let Some(filter_exp) = filter.and_then(|filter| filter.as_expression()) {
+                diesel::update(puzzle::table)
+                    .filter(filter_exp)
+                    .set(UpdatePuzzleData::from(set))
+                    .get_results(&conn)
+                    .map_err(|err| async_graphql::Error::from(err))?
+            } else {
+                diesel::update(puzzle::table)
+                    .set(UpdatePuzzleData::from(set))
+                    .get_results(&conn)
+                    .map_err(|err| async_graphql::Error::from(err))?
+            };
+
+        // TODO Publish to subscriptions
+        Ok(puzzles)
     }
 
     pub async fn create_puzzle(
