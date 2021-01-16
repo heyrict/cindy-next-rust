@@ -71,6 +71,7 @@ impl CommentQuery {
         let comments = comment::table
             .inner_join(puzzle::table)
             .filter(puzzle::status.ne(Status::Undergoing))
+            .order_by(comment::id.desc())
             .limit(limit)
             .offset(offset)
             .select(comment::all_columns)
