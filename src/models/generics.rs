@@ -450,7 +450,14 @@ macro_rules! gen_bool_filter {
 macro_rules! gen_number_filter {
     ($obj:ident: $ty:ident, $field:ident, $filt:ident) => {
         if let Some($obj) = $obj {
-            let $ty { eq, gt, ge, lt, le, eq_any } = $obj;
+            let $ty {
+                eq,
+                gt,
+                ge,
+                lt,
+                le,
+                eq_any,
+            } = $obj;
             apply_filter!(eq, $field, $filt);
             apply_filter!(gt, $field, $filt);
             apply_filter!(ge, $field, $filt);
@@ -473,7 +480,7 @@ macro_rules! gen_nullable_number_filter {
                 ge,
                 lt,
                 le,
-                eq_any
+                eq_any,
             } = $obj;
             if let Some(is_null) = is_null {
                 $filt = Some(if is_null {

@@ -20,8 +20,7 @@ from
     ORDER BY
       direct_message_id DESC
   ) AS with_users
-LEFT JOIN dm_read ON dm_read.with_user_id = with_users.with_user_id
-WHERE dm_read.user_id = $1
+LEFT JOIN dm_read ON dm_read.with_user_id = with_users.with_user_id AND dm_read.user_id = $1
 GROUP BY with_users.with_user_id, dm_read.dm_id
 ORDER BY direct_message_id DESC
 LIMIT $2

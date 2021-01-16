@@ -82,6 +82,7 @@ pub struct PuzzleFilter {
     pub user_id: Option<I32Filtering>,
     pub created: Option<TimestamptzFiltering>,
     pub modified: Option<TimestamptzFiltering>,
+    pub dazed_on: Option<DateFiltering>,
 }
 
 impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
@@ -104,6 +105,7 @@ impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
             user_id: obj_user_id,
             created: obj_created,
             modified: obj_modified,
+            dazed_on: obj_dazed_on,
         } = self;
         gen_number_filter!(obj_id: I32Filtering, id, filter);
         gen_bool_filter!(obj_anonymous, anonymous, filter);
@@ -116,6 +118,7 @@ impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
         gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
         gen_number_filter!(obj_created: TimestamptzFiltering, created, filter);
         gen_number_filter!(obj_modified: TimestamptzFiltering, modified, filter);
+        gen_number_filter!(obj_dazed_on: DateFiltering, dazed_on, filter);
         filter
     }
 }
