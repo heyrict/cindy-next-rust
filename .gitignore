@@ -6,3 +6,6 @@
 
 # key file
 *.pem
+
+# graphql config
+.graphqlconfig
