@@ -1,6 +1,6 @@
 # cindy-next-rust
 
-An experimental graphql backend for [cindy-next](https://github.com/heyrict/cindy-next).
+Graphql backend for [cindy-next](https://github.com/heyrict/cindy-next).
 
 It is based on `async-graphql`, `actix-web`, `diesel`, powered by Rust.
 
@@ -13,7 +13,7 @@ It is based on `async-graphql`, `actix-web`, `diesel`, powered by Rust.
 - [x] Access control
 - [ ] Relay-like pagination (not included)
 
-## Dependencies
+## Dev-Dependencies
 
 - **Rust**, first of all. Follow the instructions on rustup.rs if you don't have one. The minimum supported version is v1.46.
 
@@ -45,11 +45,9 @@ It is based on `async-graphql`, `actix-web`, `diesel`, powered by Rust.
     cargo install just
     ```
 
-- **Graphql Playground** (optional), to check the graphql API.
-
-    Download the application at https://www.electronjs.org/apps/graphql-playground
-
 ## Quickstart
+
+Basically only two binaries (`cindy-next-rust` and `diesel`) are required in the server. Currently we do not provide compiled binaries. It is recommended to compile them yourself and push the binaries to the server.
 
 - Clone the repo with `git clone https://github.com/heyrict/cindy-next-rust`.
 - Create an empty database for *Cindy* with `sudo -u postgres psql`
@@ -63,11 +61,15 @@ It is based on `async-graphql`, `actix-web`, `diesel`, powered by Rust.
     GRANT ALL ON DATABASE cindy-db TO cindy;
     ```
 
-- Setup the database with `diesel database setup`.
-
 - Copy `.env.example` to `.env` and edit it based on your flavor.
 
   Make sure `DATABASE_URL` in the config file points to your postgres instance.
   If you followed the steps above, it is `postgres://cindy:cindy-password@127.0.0.1:5432/cindy-db`.
 
-- Run server with `./target/release/cindy-next-rust` (or `cargo run --release` if the binary doesn't exist)
+- Setup the database with `diesel database setup`.
+
+- Create an admin account with `just signup`.
+
+- Load initial data to the database with `psql cindy < setup/jp/initdb.up.sql`.
+
+- Run `cargo run --release` to start the server. Once compiled, it can be found in `./target/release/cindy-next-rust`.
