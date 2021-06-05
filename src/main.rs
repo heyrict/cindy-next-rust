@@ -91,7 +91,7 @@ async fn index(schema: web::Data<CindySchema>, req: HttpRequest, gql_req: Reques
             }
         }
     };
-    info!(
+    debug!(
         "({}) /graphql: {}: {}({})",
         ip_addr.unwrap_or_default(),
         user,

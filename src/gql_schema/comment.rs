@@ -115,6 +115,7 @@ impl CommentQuery {
         let comments: Vec<Comment> = comment::table
             .inner_join(puzzle::table)
             .filter(puzzle::user_id.eq(user_id))
+            .order_by(comment::id.desc())
             .limit(limit)
             .offset(offset)
             .select(comment::all_columns)

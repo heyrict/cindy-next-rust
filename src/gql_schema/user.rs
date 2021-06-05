@@ -159,7 +159,7 @@ pub struct UpdateUserSet {
     pub current_award_id: MaybeUndefined<i32>,
     pub hide_bookmark: Option<bool>,
     pub last_read_dm_id: MaybeUndefined<i32>,
-    pub icon: Option<Option<String>>,
+    pub icon: MaybeUndefined<String>,
 }
 
 #[derive(AsChangeset, Debug)]
@@ -199,7 +199,7 @@ impl From<UpdateUserSet> for UpdateUserData {
             profile: x.profile,
             current_award_id: x.current_award_id.as_options(),
             hide_bookmark: x.hide_bookmark,
-            icon: x.icon,
+            icon: x.icon.as_options(),
         }
     }
 }
