@@ -1,8 +1,9 @@
-use async_graphql::{MergedObject, MergedSubscription, Schema, SimpleObject, Subscription};
+use async_graphql::{MergedObject, MergedSubscription, Object, Schema, SimpleObject, Subscription};
 //use futures::lock::Mutex;
 use futures::{Stream, StreamExt};
 //use std::sync::Arc;
 use std::time::Duration;
+use tokio_stream::wrappers::IntervalStream;
 
 mod award;
 mod bookmark;
@@ -45,6 +46,7 @@ pub type CindySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 #[derive(MergedObject, Default)]
 pub struct QueryRoot(
     AwardQuery,
+    BaseQuery,
     BookmarkQuery,
     ChatmessageQuery,
     ChatroomQuery,
@@ -92,6 +94,17 @@ pub struct SubscriptionRoot(
     PuzzleSubscription,
 );
 
+#[derive(Default)]
+struct BaseQuery;
+
+#[Object]
+impl BaseQuery {
+    async fn online_users_count(&self) -> i32 {
+        use crate::broker::online_users_count;
+        online_users_count()
+    }
+}
+
 #[derive(Clone, Default, SimpleObject)]
 struct IntervalMsg {
     msg: String,
@@ -115,11 +128,11 @@ impl BaseSubscription {
         use crate::broker::CindyBroker;
 
         tokio::spawn(async move {
-            let mut stream = tokio::time::interval(Duration::from_secs(n as u64)).map(move |_| {
-                CindyBroker::publish(IntervalMsg::new("hello, world!".to_string()));
-            });
+            let mut stream =
+                IntervalStream::new(tokio::time::interval(Duration::from_secs(n as u64)));
             loop {
                 stream.next().await;
+                CindyBroker::publish(IntervalMsg::new("hello, world!".to_string()));
             }
         });
 

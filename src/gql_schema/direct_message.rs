@@ -1,7 +1,7 @@
 use async_graphql::{self, guard::Guard, Context, InputObject, Object, Subscription};
 use chrono::Utc;
 use diesel::prelude::*;
-use futures::{Stream, StreamExt};
+use futures::Stream;
 
 use crate::auth::Role;
 use crate::broker::CindyBroker;

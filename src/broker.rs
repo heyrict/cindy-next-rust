@@ -1,14 +1,11 @@
 use chrono::{Date, Duration, Local};
-use futures::{
-    task::{Context, Poll},
-    Stream, StreamExt,
-};
+use futures::Stream;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
-use std::marker::PhantomData;
-use std::pin::Pin;
+use std::marker::{PhantomData, Unpin};
 use std::sync::Mutex;
 use tokio::sync::watch;
+use tokio_stream::wrappers::WatchStream;
 
 pub struct SubscribePair {
     pub tx: Box<dyn Any + Send>,
@@ -33,11 +30,9 @@ lazy_static! {
         Default::default();
 }
 
-struct BrokerStream<T: Sync + Send + Clone + 'static>(watch::Receiver<Option<T>>);
-
 fn with_senders_to<T, SP, F>(key: Key, f: F) -> SP
 where
-    T: Sync + Send + Clone + 'static,
+    T: Sync + Send + Unpin + Clone + 'static,
     F: FnOnce(&watch::Sender<Option<T>>, &watch::Receiver<Option<T>>) -> SP,
 {
     let mut map = SUBSCRIPTIONS.lock().unwrap();
@@ -59,7 +54,7 @@ where
 
 fn with_senders_to_if_exists<T, SP, F>(key: Key, f: F) -> Option<SP>
 where
-    T: Sync + Send + Clone + 'static,
+    T: Sync + Send + Unpin + Clone + 'static,
     F: FnOnce(&watch::Sender<Option<T>>, &watch::Receiver<Option<T>>) -> SP,
 {
     let mut map = SUBSCRIPTIONS.lock().unwrap();
@@ -83,34 +78,26 @@ where
     }
 }
 
-impl<T: Sync + Send + Clone + 'static> Stream for BrokerStream<T> {
-    type Item = Option<T>;
-
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        self.0.poll_next_unpin(cx)
-    }
-}
-
 /// A simple broker based on memory
 pub struct CindyBroker<T>(PhantomData<T>);
 
-impl<T: Sync + Send + Clone + 'static> CindyBroker<T> {
+impl<T: Sync + Unpin + Send + Clone + 'static> CindyBroker<T> {
     /// Publish a message that all subscription streams can receive.
     pub fn publish(msg: T) {
         with_senders_to_if_exists::<T, _, _>(Key::default(), |tx, _| {
-            tx.broadcast(Some(msg.clone())).ok();
+            tx.send(Some(msg.clone())).ok();
         });
     }
 
     /// Subscribe to the message of the specified type and returns a `Stream`.
     pub fn subscribe() -> impl Stream<Item = Option<T>> {
-        with_senders_to::<T, _, _>(Key::default(), |_, rx| BrokerStream(rx.clone()))
+        with_senders_to::<T, _, _>(Key::default(), |_, rx| WatchStream::new(rx.clone()))
     }
 
     /// Publish a message that all subscription streams can receive with a given key.
     pub fn publish_to(key: Key, msg: T) {
         with_senders_to_if_exists::<T, _, _>(key, |tx, _| {
-            tx.broadcast(Some(msg.clone())).ok();
+            tx.send(Some(msg.clone())).ok();
         });
     }
 
@@ -129,14 +116,37 @@ impl<T: Sync + Send + Clone + 'static> CindyBroker<T> {
                     sp.updated = today;
                 };
                 let tx = sp.tx.downcast_ref::<watch::Sender<Option<T>>>().unwrap();
-                tx.broadcast(Some(msg.clone())).ok();
+                tx.send(Some(msg.clone())).ok();
             });
     }
 
     /// Subscribe to the message of the specified type with a given key and returns a `Stream`.
     pub fn subscribe_to(key: Key) -> impl Stream<Item = Option<T>> {
-        with_senders_to::<T, _, _>(key, |_, rx| BrokerStream(rx.clone()))
+        with_senders_to::<T, _, _>(key, |_, rx| WatchStream::new(rx.clone()))
     }
+}
+
+/// Number of online users
+pub fn online_users_count() -> i32 {
+    type DmType = crate::models::direct_message::DirectMessageSub;
+
+    let mut count = 0;
+    let mut map = SUBSCRIPTIONS.lock().unwrap();
+    let submap = map
+        .entry(TypeId::of::<DmType>())
+        .or_insert_with(|| Default::default());
+
+    for (_, sp) in submap.iter() {
+        let tx = sp
+            .tx
+            .downcast_ref::<watch::Sender<Option<DmType>>>()
+            .unwrap();
+        if tx.is_closed() {
+            count += 1;
+        }
+    }
+
+    count
 }
 
 pub fn cleanup() {

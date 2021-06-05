@@ -115,7 +115,7 @@ async fn main() -> std::io::Result<()> {
     // Spawn cache cleaner
     tokio::spawn(async move {
         loop {
-            tokio::time::delay_for(
+            tokio::time::sleep(
                 Duration::day()
                     .try_into()
                     .expect("Error converting a day to std::Duration"),
