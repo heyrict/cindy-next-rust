@@ -4,40 +4,43 @@ use diesel::{prelude::*, query_dsl::QueryDsl};
 
 use crate::context::GlobalCtx;
 use crate::schema::tag;
+use crate::schema_view::tag_aggr;
 
 use super::puzzle_tag::{PuzzleTagFilter, PuzzleTagOrder};
 use super::*;
 
 /// Available orders for tag query
 #[derive(InputObject, Clone)]
-pub struct TagOrder {
+pub struct TagAggrOrder {
     id: Option<Ordering>,
+    puzzle_tag_count: Option<Ordering>,
 }
 
 /// Helper object to apply the order to the query
-pub struct TagOrders(Vec<TagOrder>);
+pub struct TagAggrOrders(Vec<TagAggrOrder>);
 
-impl Default for TagOrders {
+impl Default for TagAggrOrders {
     fn default() -> Self {
         Self(vec![])
     }
 }
 
-impl TagOrders {
-    pub fn new(orders: Vec<TagOrder>) -> Self {
+impl TagAggrOrders {
+    pub fn new(orders: Vec<TagAggrOrder>) -> Self {
         Self(orders)
     }
 
     pub fn apply_order<'a>(
         self,
-        query_dsl: crate::schema::tag::BoxedQuery<'a, DB>,
-    ) -> crate::schema::tag::BoxedQuery<'a, DB> {
-        use crate::schema::tag::dsl::*;
+        query_dsl: crate::schema_view::tag_aggr::BoxedQuery<'a, DB>,
+    ) -> crate::schema_view::tag_aggr::BoxedQuery<'a, DB> {
+        use crate::schema_view::tag_aggr::dsl::*;
 
         let mut query = query_dsl;
 
         for obj in self.0 {
             gen_order!(obj, id, query);
+            gen_order!(obj, puzzle_tag_count, query);
         }
 
         query
@@ -46,20 +49,21 @@ impl TagOrders {
 
 /// Available filters for tag query
 #[derive(InputObject, Clone)]
-pub struct TagFilter {
+pub struct TagAggrFilter {
     id: Option<I32Filtering>,
     name: Option<StringFiltering>,
     created: Option<TimestamptzFiltering>,
 }
 
-impl CindyFilter<tag::table, DB> for TagFilter {
+impl CindyFilter<tag_aggr::table, DB> for TagAggrFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<tag::table, DB, SqlType = Bool> + Send>> {
-        use crate::schema::tag::dsl::*;
+    ) -> Option<Box<dyn BoxableExpression<tag_aggr::table, DB, SqlType = Bool> + Send>> {
+        use crate::schema_view::tag_aggr::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<tag, DB, SqlType = Bool> + Send>> = None;
-        let TagFilter {
+        let mut filter: Option<Box<dyn BoxableExpression<tag_aggr, DB, SqlType = Bool> + Send>> =
+            None;
+        let TagAggrFilter {
             id: obj_id,
             name: obj_name,
             created: obj_created,
@@ -79,6 +83,27 @@ pub struct Tag {
     pub id: ID,
     pub name: String,
     pub created: Timestamptz,
+}
+
+/// Object for tag table
+#[derive(Queryable, Identifiable, Clone, Debug)]
+#[table_name = "tag_aggr"]
+pub struct TagAggr {
+    pub id: ID,
+    pub name: String,
+    pub created: Timestamptz,
+    pub puzzle_tag_count: i64,
+}
+
+impl From<Tag> for TagAggr {
+    fn from(item: Tag) -> Self {
+        Self {
+            id: item.id,
+            name: item.name,
+            created: item.created,
+            puzzle_tag_count: -1,
+        }
+    }
 }
 
 #[Object]
@@ -130,5 +155,21 @@ impl Tag {
             .get_result::<i64>(&conn)?;
 
         Ok(result)
+    }
+}
+
+#[Object]
+impl TagAggr {
+    async fn id(&self) -> ID {
+        self.id
+    }
+    async fn name(&self) -> &str {
+        &self.name
+    }
+    async fn created(&self) -> Timestamptz {
+        self.created
+    }
+    async fn puzzle_tag_count(&self) -> i64 {
+        self.puzzle_tag_count
     }
 }

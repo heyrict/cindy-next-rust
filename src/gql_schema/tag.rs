@@ -28,16 +28,16 @@ impl TagQuery {
         ctx: &Context<'_>,
         limit: Option<i64>,
         offset: Option<i64>,
-        filter: Option<Vec<TagFilter>>,
-        order: Option<Vec<TagOrder>>,
-    ) -> async_graphql::Result<Vec<Tag>> {
-        use crate::schema::tag::dsl::*;
+        filter: Option<Vec<TagAggrFilter>>,
+        order: Option<Vec<TagAggrOrder>>,
+    ) -> async_graphql::Result<Vec<TagAggr>> {
+        use crate::schema_view::tag_aggr::dsl::*;
 
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let mut query = tag.into_boxed();
+        let mut query = tag_aggr.into_boxed();
         if let Some(order) = order {
-            query = TagOrders::new(order).apply_order(query);
+            query = TagAggrOrders::new(order).apply_order(query);
         }
         if let Some(filter) = filter {
             if let Some(filter_exp) = filter.as_expression() {
@@ -51,7 +51,7 @@ impl TagQuery {
             query = query.offset(offset);
         }
 
-        let tags = query.load::<Tag>(&conn)?;
+        let tags = query.load::<TagAggr>(&conn)?;
 
         Ok(tags)
     }

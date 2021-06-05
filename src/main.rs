@@ -27,6 +27,7 @@ pub mod context;
 pub mod db;
 pub mod gql_schema;
 mod schema;
+mod schema_view;
 
 use auth::{login, signup, Role};
 use context::{GlobalCtx, RequestCtx};
