@@ -94,13 +94,13 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            name: noeggs-x86_64-unknown-linux-gnu.tar.gz
+            name: cindy-next-rust-x86_64-unknown-linux-gnu.tar.gz
           - target: x86_64-apple-darwin
             os: macOS-latest
-            name: noeggs-x86_64-apple-darwin.tar.gz
+            name: cindy-next-rust-x86_64-apple-darwin.tar.gz
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            name: noeggs-x86_64-pc-windows-msvc.zip
+            name: cindy-next-rust-x86_64-pc-windows-msvc.zip
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v1
@@ -122,16 +122,16 @@ jobs:
       - name: Prepare build artifacts [Windows]
         if: matrix.os == 'windows-latest'
         run: |
-          strip target/${{ matrix.target }}/release/noeggs.exe
-          mv target/${{ matrix.target }}/release/noeggs.exe noeggs.exe
-          7z a ${{ matrix.name }} noeggs.exe
+          strip target/${{ matrix.target }}/release/cindy-next-rust.exe
+          mv target/${{ matrix.target }}/release/cindy-next-rust.exe cindy-next-rust.exe
+          7z a ${{ matrix.name }} cindy-next-rust.exe
 
       - name: Prepare build artifacts [-nix]
         if: matrix.os != 'windows-latest'
         run: |
-          strip target/${{ matrix.target }}/release/noeggs
-          mv target/${{ matrix.target }}/release/noeggs noeggs
-          tar czvf ${{ matrix.name }} noeggs
+          strip target/${{ matrix.target }}/release/cindy-next-rust
+          mv target/${{ matrix.target }}/release/cindy-next-rust cindy-next-rust
+          tar czvf ${{ matrix.name }} cindy-next-rust
 
       - name: Create GitHub release ${{ matrix.target }}
         uses: softprops/action-gh-release@v1
