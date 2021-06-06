@@ -11,10 +11,13 @@ dotenv = "*"
 log = "^0.4"
 env_logger = "^0.7"
 
-async-graphql = { version = "^2.8", features = ["chrono"]}
-async-graphql-actix-web = "^2.8"
+#async-graphql = { version = "^2.8", features = ["chrono"]}
+#async-graphql-actix-web = "^2.8"
+async-graphql = { git = "https://github.com/async-graphql/async-graphql", branch = "actix-web-v4-beta", features = ["chrono"]}
+async-graphql-actix-web = { git = "https://github.com/async-graphql/async-graphql", branch = "actix-web-v4-beta" }
 actix-web = "4.0.0-beta.5"
-actix-cors = "0.6.0-beta.1"
+#actix-cors = "0.6.0-beta.1"
+actix-cors = { git = "https://github.com/nhruo123/actix-extras", branch = "beta-6-patch" }
 actix-rt = "^2.2"
 #actix-web-actors = "4.0.0-beta.4"
 anyhow = "^1.0"
