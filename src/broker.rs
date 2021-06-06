@@ -141,7 +141,7 @@ pub fn online_users_count() -> i32 {
             .tx
             .downcast_ref::<watch::Sender<Option<DmType>>>()
             .unwrap();
-        if tx.is_closed() {
+        if !tx.is_closed() {
             count += 1;
         }
     }
