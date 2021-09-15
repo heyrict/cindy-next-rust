@@ -83,6 +83,7 @@ pub struct PuzzleFilter {
     pub created: Option<TimestamptzFiltering>,
     pub modified: Option<TimestamptzFiltering>,
     pub dazed_on: Option<DateFiltering>,
+    pub license_id: Option<NullableI32Filtering>,
 }
 
 impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
@@ -106,6 +107,7 @@ impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
             created: obj_created,
             modified: obj_modified,
             dazed_on: obj_dazed_on,
+            license_id: obj_license_id,
         } = self;
         gen_number_filter!(obj_id: I32Filtering, id, filter);
         gen_bool_filter!(obj_anonymous, anonymous, filter);
@@ -119,6 +121,7 @@ impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
         gen_number_filter!(obj_created: TimestamptzFiltering, created, filter);
         gen_number_filter!(obj_modified: TimestamptzFiltering, modified, filter);
         gen_number_filter!(obj_dazed_on: DateFiltering, dazed_on, filter);
+        gen_nullable_number_filter!(obj_license_id: NullableI32Filtering, license_id, filter);
         filter
     }
 }
@@ -452,6 +455,7 @@ pub struct Puzzle {
     pub anonymous: bool,
     pub dazed_on: Date,
     pub grotesque: bool,
+    pub license_id: Option<ID>,
 }
 
 #[Object]
@@ -498,6 +502,9 @@ impl Puzzle {
     async fn grotesque(&self) -> bool {
         self.grotesque
     }
+    async fn license_id(&self) -> Option<ID> {
+        self.license_id
+    }
 
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
@@ -510,6 +517,24 @@ impl Puzzle {
             .first(&conn)?;
 
         Ok(user)
+    }
+
+    async fn license(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<License>> {
+        use crate::schema::license;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let license = if let Some(id) = self.license_id {
+            license::table
+                .filter(license::id.eq(id))
+                .limit(1)
+                .first(&conn)
+                .ok()
+        } else {
+            None
+        };
+
+        Ok(license)
     }
 
     async fn bookmarks(

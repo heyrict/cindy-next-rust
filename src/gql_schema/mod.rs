@@ -15,6 +15,7 @@ mod direct_message;
 mod dm_read;
 mod favchat;
 mod hint;
+mod license;
 mod puzzle;
 mod puzzle_log;
 mod puzzle_tag;
@@ -33,6 +34,7 @@ pub use direct_message::{DirectMessageMutation, DirectMessageQuery, DirectMessag
 pub use dm_read::{DmReadMutation, DmReadQuery};
 pub use favchat::{FavchatMutation, FavchatQuery};
 pub use hint::{HintMutation, HintQuery};
+pub use license::{LicenseMutation, LicenseQuery};
 pub use puzzle::{PuzzleMutation, PuzzleQuery, PuzzleSubscription};
 pub use puzzle_log::{PuzzleLogQuery, PuzzleLogSubscription};
 pub use puzzle_tag::{PuzzleTagMutation, PuzzleTagQuery};
@@ -56,6 +58,7 @@ pub struct QueryRoot(
     DmReadQuery,
     FavchatQuery,
     HintQuery,
+    LicenseQuery,
     PuzzleLogQuery,
     PuzzleQuery,
     PuzzleTagQuery,
@@ -77,6 +80,7 @@ pub struct MutationRoot(
     DmReadMutation,
     FavchatMutation,
     HintMutation,
+    LicenseMutation,
     PuzzleMutation,
     PuzzleTagMutation,
     StarMutation,

@@ -579,6 +579,6 @@ macro_rules! gen_order {
 #[macro_export]
 macro_rules! apply_order {
     ($query:ident, $order:expr) => {
-        $query = $query.then_order_by($order);
+        $query = $query.then_order_by($order)
     };
 }

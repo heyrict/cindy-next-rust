@@ -149,6 +149,7 @@ pub struct User {
     pub current_award_id: Option<i32>,
     pub hide_bookmark: bool,
     pub icon: Option<String>,
+    pub default_license_id: Option<ID>,
 }
 
 #[Object]
@@ -219,6 +220,28 @@ impl User {
         };
 
         Ok(current_award_inst)
+    }
+
+    async fn default_license_id(&self) -> &Option<ID> {
+        &self.default_license_id
+    }
+
+    async fn default_license(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<License>> {
+        use crate::schema::license;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let license = if let Some(id) = self.default_license_id {
+            license::table
+                .filter(license::id.eq(id))
+                .limit(1)
+                .first(&conn)
+                .ok()
+        } else {
+            None
+        };
+
+        Ok(license)
     }
 
     async fn bookmarks(

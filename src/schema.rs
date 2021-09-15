@@ -230,6 +230,17 @@ table! {
 }
 
 table! {
+    license (id) {
+        id -> Int4,
+        user_id -> Nullable<Int4>,
+        name -> Varchar,
+        description -> Text,
+        url -> Nullable<Varchar>,
+        contract -> Nullable<Text>,
+    }
+}
+
+table! {
     puzzle (id) {
         id -> Int4,
         title -> Varchar,
@@ -245,6 +256,7 @@ table! {
         anonymous -> Bool,
         dazed_on -> Date,
         grotesque -> Bool,
+        license_id -> Nullable<Int4>,
     }
 }
 
@@ -352,6 +364,7 @@ table! {
         current_award_id -> Nullable<Int4>,
         hide_bookmark -> Bool,
         icon -> Nullable<Varchar>,
+        default_license_id -> Nullable<Int4>,
     }
 }
 
@@ -389,6 +402,7 @@ joinable!(hasura_direct_message_group_trigger -> user (user_id));
 joinable!(hasura_user_ranking_trigger -> user (user_id));
 joinable!(hint -> puzzle (puzzle_id));
 joinable!(hint -> user (receiver_id));
+joinable!(puzzle -> license (license_id));
 joinable!(puzzle -> user (user_id));
 joinable!(puzzle_tag -> puzzle (puzzle_id));
 joinable!(puzzle_tag -> tag (tag_id));
@@ -430,6 +444,7 @@ allow_tables_to_appear_in_same_query!(
     hasura_int_groupby_trigger,
     hasura_user_ranking_trigger,
     hint,
+    license,
     puzzle,
     puzzle_tag,
     replay,

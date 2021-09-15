@@ -2,7 +2,7 @@ use async_graphql::{
     self,
     guard::Guard,
     validators::{IntGreaterThan, IntLessThan},
-    Context, InputObject, Object, Subscription,
+    Context, InputObject, MaybeUndefined, Object, Subscription,
 };
 use chrono::{Duration, Utc};
 use diesel::{
@@ -236,6 +236,7 @@ pub struct UpdatePuzzleInput {
     pub anonymous: Option<bool>,
     pub dazed_on: Option<Date>,
     pub grotesque: Option<bool>,
+    pub license_id: MaybeUndefined<ID>,
 }
 
 #[derive(AsChangeset, Debug)]
@@ -254,6 +255,7 @@ pub struct UpdatePuzzleData {
     pub anonymous: Option<bool>,
     pub dazed_on: Option<Date>,
     pub grotesque: Option<bool>,
+    pub license_id: Option<Option<ID>>,
 }
 
 impl From<UpdatePuzzleInput> for UpdatePuzzleData {
@@ -272,6 +274,7 @@ impl From<UpdatePuzzleInput> for UpdatePuzzleData {
             anonymous: data.anonymous,
             dazed_on: data.dazed_on,
             grotesque: data.grotesque,
+            license_id: data.license_id.as_options(),
         }
     }
 }
@@ -365,6 +368,7 @@ pub struct CreatePuzzleInput {
     pub anonymous: Option<bool>,
     pub dazed_on: Option<Date>,
     pub grotesque: Option<bool>,
+    pub license_id: MaybeUndefined<ID>,
 }
 
 impl CreatePuzzleInput {
@@ -416,6 +420,7 @@ pub struct CreatePuzzleData {
     pub anonymous: Option<bool>,
     pub dazed_on: Option<Date>,
     pub grotesque: Option<bool>,
+    pub license_id: Option<Option<ID>>,
 }
 
 impl From<CreatePuzzleInput> for CreatePuzzleData {
@@ -434,6 +439,7 @@ impl From<CreatePuzzleInput> for CreatePuzzleData {
             anonymous: data.anonymous,
             dazed_on: data.dazed_on,
             grotesque: data.grotesque,
+            license_id: data.license_id.as_options(),
         }
     }
 }
