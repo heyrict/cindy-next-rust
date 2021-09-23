@@ -66,7 +66,7 @@ Basically only two binaries (`cindy-next-rust` and `diesel`) are required in the
   Make sure `DATABASE_URL` in the config file points to your postgres instance.
   If you followed the steps above, it is `postgres://cindy:cindy-password@127.0.0.1:5432/cindy-db`.
 
-- Setup the database with `diesel database setup`.
+- Setup the database with `diesel database setup && diesel migration run`.
 
 - Create an admin account with `just signup`.
 
