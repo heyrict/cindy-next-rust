@@ -257,6 +257,7 @@ table! {
         dazed_on -> Date,
         grotesque -> Bool,
         license_id -> Nullable<Int4>,
+        content_image -> Nullable<Bytea>,
     }
 }
 

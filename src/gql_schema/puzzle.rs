@@ -237,6 +237,7 @@ pub struct UpdatePuzzleInput {
     pub dazed_on: Option<Date>,
     pub grotesque: Option<bool>,
     pub license_id: MaybeUndefined<ID>,
+    pub content_image: MaybeUndefined<Vec<u8>>,
 }
 
 #[derive(AsChangeset, Debug)]
@@ -256,6 +257,7 @@ pub struct UpdatePuzzleData {
     pub dazed_on: Option<Date>,
     pub grotesque: Option<bool>,
     pub license_id: Option<Option<ID>>,
+    pub content_image: Option<Option<Vec<u8>>>,
 }
 
 impl From<UpdatePuzzleInput> for UpdatePuzzleData {
@@ -275,6 +277,7 @@ impl From<UpdatePuzzleInput> for UpdatePuzzleData {
             dazed_on: data.dazed_on,
             grotesque: data.grotesque,
             license_id: data.license_id.as_options(),
+            content_image: data.content_image.as_options(),
         }
     }
 }
@@ -369,6 +372,7 @@ pub struct CreatePuzzleInput {
     pub dazed_on: Option<Date>,
     pub grotesque: Option<bool>,
     pub license_id: MaybeUndefined<ID>,
+    pub content_image: MaybeUndefined<Vec<u8>>,
 }
 
 impl CreatePuzzleInput {
@@ -421,6 +425,7 @@ pub struct CreatePuzzleData {
     pub dazed_on: Option<Date>,
     pub grotesque: Option<bool>,
     pub license_id: Option<Option<ID>>,
+    pub content_image: Option<Option<Vec<u8>>>,
 }
 
 impl From<CreatePuzzleInput> for CreatePuzzleData {
@@ -440,6 +445,7 @@ impl From<CreatePuzzleInput> for CreatePuzzleData {
             dazed_on: data.dazed_on,
             grotesque: data.grotesque,
             license_id: data.license_id.as_options(),
+            content_image: data.content_image.as_options(),
         }
     }
 }

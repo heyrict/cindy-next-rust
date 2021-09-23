@@ -456,6 +456,7 @@ pub struct Puzzle {
     pub dazed_on: Date,
     pub grotesque: bool,
     pub license_id: Option<ID>,
+    pub content_image: Option<Vec<u8>>,
 }
 
 #[Object]
@@ -504,6 +505,9 @@ impl Puzzle {
     }
     async fn license_id(&self) -> Option<ID> {
         self.license_id
+    }
+    async fn content_image(&self) -> &Option<Vec<u8>> {
+        &self.content_image
     }
 
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
