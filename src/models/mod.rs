@@ -11,6 +11,7 @@ pub mod direct_message;
 pub mod dm_read;
 pub mod favchat;
 pub mod hint;
+pub mod image;
 pub mod license;
 pub mod puzzle;
 pub mod puzzle_log;

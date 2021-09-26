@@ -1,2 +1,4 @@
-ALTER TABLE public.puzzle
-    DROP COLUMN IF EXISTS content_image;
+DROP TABLE IF EXISTS "image";
+
+DROP EXTENSION IF EXISTS pgcrypto;
+DROP EXTENSION IF EXISTS "uuid-ossp";

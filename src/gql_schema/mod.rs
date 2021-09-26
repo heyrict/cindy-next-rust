@@ -15,6 +15,7 @@ mod direct_message;
 mod dm_read;
 mod favchat;
 mod hint;
+mod image;
 mod license;
 mod puzzle;
 mod puzzle_log;

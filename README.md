@@ -59,6 +59,8 @@ Basically only two binaries (`cindy-next-rust` and `diesel`) are required in the
     ALTER ROLE cindy SET timezone TO 'UTC';
     CREATE DATABASE cindy-db;
     GRANT ALL ON DATABASE cindy-db TO cindy;
+    CREATE EXTENSION pgcrypto;
+    CREATE EXTENSION "uuid-ossp";
     ```
 
 - Copy `.env.example` to `.env` and edit it based on your flavor.
