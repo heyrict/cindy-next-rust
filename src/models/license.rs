@@ -66,7 +66,7 @@ impl CindyFilter<license::table, DB> for LicenseFilter {
             description: obj_description,
         } = self;
         gen_number_filter!(obj_id: I32Filtering, id, filter);
-        gen_nullable_number_filter!(obj_user_id: NullableI32Filtering, id, filter);
+        gen_nullable_number_filter!(obj_user_id: NullableI32Filtering, user_id, filter);
         gen_string_filter!(obj_name, name, filter);
         gen_string_filter!(obj_description, description, filter);
         filter
