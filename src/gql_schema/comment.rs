@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use diesel::prelude::*;
 
 use crate::auth::Role;
@@ -167,7 +167,7 @@ pub struct CreateCommentInput {
 #[Object]
 impl CommentMutation {
     // Update comment
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn update_comment(
         &self,
         ctx: &Context<'_>,
@@ -201,7 +201,7 @@ impl CommentMutation {
     }
 
     // Create comment
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn create_comment(
         &self,
         ctx: &Context<'_>,
@@ -233,10 +233,7 @@ impl CommentMutation {
     }
 
     // Delete comment (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_comment(
         &self,
         ctx: &Context<'_>,

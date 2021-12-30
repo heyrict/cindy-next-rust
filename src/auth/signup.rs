@@ -115,9 +115,9 @@ pub async fn signup(
         headers
             .get(header_real_ip)
             .and_then(|ip| ip.to_str().ok())
-            .or_else(|| connection_info.remote_addr())
+            .or_else(|| connection_info.peer_addr())
     } else {
-        connection_info.remote_addr()
+        connection_info.peer_addr()
     };
     info!(
         "({}) /signup: User<{}:{}>",

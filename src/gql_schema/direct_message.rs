@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object, Subscription};
+use async_graphql::{self, Context, InputObject, Object, Subscription};
 use chrono::Utc;
 use diesel::prelude::*;
 use futures::Stream;
@@ -195,10 +195,7 @@ impl DirectMessageMutation {
     }
 
     // Delete direct_message (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_direct_message(
         &self,
         ctx: &Context<'_>,

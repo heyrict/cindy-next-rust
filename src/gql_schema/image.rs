@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 use std::env;
 
 use async_graphql::Upload;
-use async_graphql::{self, guard::Guard, Context, InputObject, MaybeUndefined, Object};
+use async_graphql::{self, Context, InputObject, MaybeUndefined, Object};
 use diesel::prelude::*;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 use uuid::Uuid;
@@ -153,7 +153,7 @@ pub struct UpdateImageInput {
 impl ImageMutation {
     // Update image
     // TODO Allow updating image files
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn update_image(
         &self,
         ctx: &Context<'_>,
@@ -194,10 +194,7 @@ impl ImageMutation {
     }
 
     // Create image metadata (only for admin use)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::Guest"),
-        DenyRoleGuard(role = "Role::User")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn create_image(
         &self,
         ctx: &Context<'_>,
@@ -235,7 +232,7 @@ impl ImageMutation {
     }
 
     // Delete image
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest"),))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn delete_image(&self, ctx: &Context<'_>, id: Uuid) -> async_graphql::Result<Image> {
         dotenv::dotenv().ok();
 
@@ -267,7 +264,7 @@ impl ImageMutation {
     }
 
     // Upload image
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn upload_image(
         &self,
         ctx: &Context<'_>,

@@ -1,8 +1,4 @@
-use async_graphql::{
-    self,
-    validators::{IntGreaterThan, IntLessThan},
-    Context, InputObject, MaybeUndefined, Object,
-};
+use async_graphql::{self, Context, InputObject, MaybeUndefined, Object};
 use diesel::{
     prelude::*,
     sql_types::{self, Integer},
@@ -86,8 +82,8 @@ impl UserQuery {
     pub async fn user_dialogue_ranking(
         &self,
         ctx: &Context<'_>,
-        #[graphql(validator(IntGreaterThan(value = "1990")))] year: i32,
-        #[graphql(validator(IntLessThan(value = "13")))] month: u32,
+        /*#[graphql(validator(IntGreaterThan(value = "1990")))]*/ year: i32,
+        /*#[graphql(validator(IntLessThan(value = "13")))]*/ month: u32,
         limit: i32,
         offset: i32,
     ) -> async_graphql::Result<Vec<UserRankingRow>> {
@@ -115,8 +111,8 @@ impl UserQuery {
     pub async fn user_puzzle_ranking(
         &self,
         ctx: &Context<'_>,
-        #[graphql(validator(IntGreaterThan(value = "1990")))] year: i32,
-        #[graphql(validator(IntLessThan(value = "13")))] month: u32,
+        /*#[graphql(validator(IntGreaterThan(value = "1990")))]*/ year: i32,
+        /*#[graphql(validator(IntLessThan(value = "13")))]*/ month: u32,
         limit: i32,
         offset: i32,
     ) -> async_graphql::Result<Vec<UserRankingRow>> {

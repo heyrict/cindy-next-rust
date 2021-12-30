@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use diesel::prelude::*;
 
 use crate::auth::Role;
@@ -163,7 +163,7 @@ impl BookmarkMutation {
     }
 
     // Delete bookmark
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn delete_bookmark(
         &self,
         ctx: &Context<'_>,

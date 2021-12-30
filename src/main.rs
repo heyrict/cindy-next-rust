@@ -13,7 +13,7 @@ extern crate log;
 use actix_cors::Cors;
 use actix_web::{guard, web, web::Data, App, HttpRequest, HttpResponse, HttpServer, Result};
 use async_graphql::Schema;
-use async_graphql_actix_web::{Request, Response, WSSubscription};
+use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse, GraphQLSubscription};
 use std::convert::TryInto;
 use std::io::Write;
 use time::Duration;
@@ -38,7 +38,11 @@ lazy_static! {
         dotenv::var("ADMIN_SECRET").expect("Invalid ADMIN_SECRET env var");
 }
 
-async fn index(schema: web::Data<CindySchema>, req: HttpRequest, gql_req: Request) -> Response {
+async fn index(
+    schema: web::Data<CindySchema>,
+    req: HttpRequest,
+    gql_req: GraphQLRequest,
+) -> GraphQLResponse {
     const DEFAULT_OP_NAME: &str = "_";
 
     let headers = req.headers();
@@ -70,9 +74,9 @@ async fn index(schema: web::Data<CindySchema>, req: HttpRequest, gql_req: Reques
         headers
             .get(header_real_ip)
             .and_then(|ip| ip.to_str().ok())
-            .or_else(|| connection_info.remote_addr())
+            .or_else(|| connection_info.peer_addr())
     } else {
-        connection_info.remote_addr()
+        connection_info.peer_addr()
     };
     let user = match ctx.get_role() {
         Role::Admin => {
@@ -107,7 +111,7 @@ async fn index_ws(
     req: HttpRequest,
     payload: web::Payload,
 ) -> Result<HttpResponse> {
-    WSSubscription::start(Schema::clone(&*schema), &req, payload)
+    GraphQLSubscription::new(Schema::clone(&*schema)).start(&req, payload)
 }
 
 #[actix_rt::main]

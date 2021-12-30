@@ -292,6 +292,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "84450d0b4a8bd1ba4144ce8ce718fbc5d071358b1e5384bace6536b3d1f2d5b3"
 
 [[package]]
+name = "ascii_utils"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71938f30533e4d95a6d17aa530939da3842c2ab6f4f84b9dae68447e4129f74a"
+
+[[package]]
 name = "async-channel"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -304,8 +310,8 @@ dependencies = [
 
 [[package]]
 name = "async-graphql"
-version = "2.11.0"
-source = "git+https://github.com/async-graphql/async-graphql?branch=actix-web-v4-beta#3c6c93395d7c85ca2e034e76d56d37757e8f930f"
+version = "3.0.19"
+source = "git+https://github.com/async-graphql/async-graphql#d6bdcfefdfa4007b9c9e73edd40a5e775c980828"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -315,12 +321,14 @@ dependencies = [
  "blocking",
  "bytes",
  "chrono",
+ "fast_chemail",
  "fnv",
  "futures-util",
  "http",
  "indexmap",
  "mime",
  "multer",
+ "num-traits",
  "once_cell",
  "pin-project-lite",
  "regex",
@@ -334,8 +342,8 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-actix-web"
-version = "2.11.0"
-source = "git+https://github.com/async-graphql/async-graphql?branch=actix-web-v4-beta#3c6c93395d7c85ca2e034e76d56d37757e8f930f"
+version = "3.0.19"
+source = "git+https://github.com/async-graphql/async-graphql#d6bdcfefdfa4007b9c9e73edd40a5e775c980828"
 dependencies = [
  "actix",
  "actix-http",
@@ -347,12 +355,13 @@ dependencies = [
  "futures-util",
  "serde_json",
  "serde_urlencoded",
+ "thiserror",
 ]
 
 [[package]]
 name = "async-graphql-derive"
-version = "2.11.0"
-source = "git+https://github.com/async-graphql/async-graphql?branch=actix-web-v4-beta#3c6c93395d7c85ca2e034e76d56d37757e8f930f"
+version = "3.0.19"
+source = "git+https://github.com/async-graphql/async-graphql#d6bdcfefdfa4007b9c9e73edd40a5e775c980828"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -366,8 +375,8 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-parser"
-version = "2.11.0"
-source = "git+https://github.com/async-graphql/async-graphql?branch=actix-web-v4-beta#3c6c93395d7c85ca2e034e76d56d37757e8f930f"
+version = "3.0.19"
+source = "git+https://github.com/async-graphql/async-graphql#d6bdcfefdfa4007b9c9e73edd40a5e775c980828"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -378,8 +387,8 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-value"
-version = "2.11.0"
-source = "git+https://github.com/async-graphql/async-graphql?branch=actix-web-v4-beta#3c6c93395d7c85ca2e034e76d56d37757e8f930f"
+version = "3.0.19"
+source = "git+https://github.com/async-graphql/async-graphql#d6bdcfefdfa4007b9c9e73edd40a5e775c980828"
 dependencies = [
  "bytes",
  "indexmap",
@@ -728,9 +737,9 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.12.4"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f2c43f534ea4b0b049015d00269734195e6d3f0f6635cb692251aca6f9f8b3c"
+checksum = "d0d720b8683f8dd83c65155f0530560cba68cd2bf395f6513a483caee57ff7f4"
 dependencies = [
  "darling_core",
  "darling_macro",
@@ -738,9 +747,9 @@ dependencies = [
 
 [[package]]
 name = "darling_core"
-version = "0.12.4"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e91455b86830a1c21799d94524df0845183fa55bafd9aa137b01c7d1065fa36"
+checksum = "7a340f241d2ceed1deb47ae36c4144b2707ec7dd0b649f894cb39bb595986324"
 dependencies = [
  "fnv",
  "ident_case",
@@ -752,9 +761,9 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
-version = "0.12.4"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29b5acf0dea37a7f66f7b25d2c5e93fd46f8f6968b1a5d7a3e02e97768afc95a"
+checksum = "72c41b3b7352feb3211a0d743dc5700a4e3b60f51bd2b368892d1e0f9a95f44b"
 dependencies = [
  "darling_core",
  "quote",
@@ -865,6 +874,15 @@ name = "fake-simd"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
+
+[[package]]
+name = "fast_chemail"
+version = "0.9.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "495a39d30d624c2caabe6312bfead73e7717692b44e0b32df168c275a2e8e9e4"
+dependencies = [
+ "ascii_utils",
+]
 
 [[package]]
 name = "fastrand"

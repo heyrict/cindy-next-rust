@@ -12,10 +12,10 @@ log = "^0.4"
 env_logger = "^0.7"
 regex = "1"
 
-#async-graphql = { version = "^2.8", features = ["chrono"]}
-#async-graphql-actix-web = "^2.8"
-async-graphql = { git = "https://github.com/async-graphql/async-graphql", branch = "actix-web-v4-beta", features = ["chrono", "uuid", "unblock"]}
-async-graphql-actix-web = { git = "https://github.com/async-graphql/async-graphql", branch = "actix-web-v4-beta" }
+#async-graphql = { version = "^3", features = ["chrono"]}
+#async-graphql-actix-web = "^3"
+async-graphql = { git = "https://github.com/async-graphql/async-graphql", features = ["chrono", "uuid", "unblock"]}
+async-graphql-actix-web = { git = "https://github.com/async-graphql/async-graphql"}
 actix-web = "4.0.0-beta.8"
 actix-cors = "0.6.0-beta.2"
 actix-rt = "^2.2"

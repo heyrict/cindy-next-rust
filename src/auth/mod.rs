@@ -1,9 +1,9 @@
+use actix_web::cookie::time::{Duration, OffsetDateTime};
 use actix_web::{cookie::Cookie, HttpResponse, Result};
 use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::path::PathBuf;
-use time::{Duration, OffsetDateTime};
 
 use crate::models::User;
 

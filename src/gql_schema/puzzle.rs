@@ -1,9 +1,4 @@
-use async_graphql::{
-    self,
-    guard::Guard,
-    validators::{IntGreaterThan, IntLessThan},
-    Context, InputObject, MaybeUndefined, Object, Subscription,
-};
+use async_graphql::{self, Context, InputObject, MaybeUndefined, Object, Subscription};
 use chrono::{Duration, Utc};
 use diesel::{
     prelude::*,
@@ -203,8 +198,8 @@ impl PuzzleQuery {
     pub async fn puzzle_star_ranking(
         &self,
         ctx: &Context<'_>,
-        #[graphql(validator(IntGreaterThan(value = "1990")))] year: i32,
-        #[graphql(validator(IntLessThan(value = "13")))] month: u32,
+        /*#[graphql(validator(IntGreaterThan(value = "1990")))]*/ year: i32,
+        /*#[graphql(validator(IntLessThan(value = "13")))]*/ month: u32,
         limit: i32,
         offset: i32,
     ) -> async_graphql::Result<Vec<Puzzle>> {
@@ -527,10 +522,7 @@ impl PuzzleMutation {
     }
 
     // Update many puzzle (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn update_many_puzzle(
         &self,
         ctx: &Context<'_>,
@@ -615,10 +607,7 @@ impl PuzzleMutation {
     }
 
     // Delete puzzle (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_puzzle(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Puzzle> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 

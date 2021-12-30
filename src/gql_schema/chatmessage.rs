@@ -1,6 +1,4 @@
-use async_graphql::{
-    self, guard::Guard, Context, InputObject, MaybeUndefined, Object, Subscription,
-};
+use async_graphql::{self, Context, InputObject, MaybeUndefined, Object, Subscription};
 use chrono::Utc;
 use diesel::prelude::*;
 use futures::{Stream, StreamExt};
@@ -218,10 +216,7 @@ impl ChatmessageMutation {
     }
 
     // Delete chatmessage (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_chatmessage(
         &self,
         ctx: &Context<'_>,

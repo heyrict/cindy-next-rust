@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use chrono::Utc;
 use diesel::prelude::*;
 
@@ -76,10 +76,7 @@ pub struct CreateTagInput {
 
 #[Object]
 impl TagMutation {
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn update_tag(
         &self,
         ctx: &Context<'_>,
@@ -97,7 +94,7 @@ impl TagMutation {
         Ok(tag)
     }
 
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn create_tag(
         &self,
         ctx: &Context<'_>,
@@ -114,10 +111,7 @@ impl TagMutation {
     }
 
     // Delete tag
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_tag(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Tag> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 

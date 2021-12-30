@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use diesel::{dsl::sum, prelude::*};
 
 use crate::auth::Role;
@@ -175,7 +175,7 @@ impl StarMutation {
     }
 
     // Delete star
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn delete_star(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Star> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;

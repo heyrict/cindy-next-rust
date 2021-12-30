@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use chrono::Utc;
 use diesel::prelude::*;
 
@@ -82,10 +82,7 @@ pub struct CreateUserAwardInput {
 #[Object]
 impl UserAwardMutation {
     // Update user_award
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn update_user_award(
         &self,
         ctx: &Context<'_>,
@@ -104,7 +101,7 @@ impl UserAwardMutation {
     }
 
     // Create user_award
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn create_user_award(
         &self,
         ctx: &Context<'_>,
@@ -137,10 +134,7 @@ impl UserAwardMutation {
     }
 
     // Delete user_award (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_user_award(
         &self,
         ctx: &Context<'_>,

@@ -1,4 +1,4 @@
-use async_graphql::{self, async_trait, guard::Guard, Context, Enum, InputObject, MaybeUndefined};
+use async_graphql::{self, async_trait, Context, Enum, Guard, InputObject, MaybeUndefined};
 use chrono::{DateTime, NaiveDate, Utc};
 use diesel::{backend::Backend, expression::BoxableExpression, prelude::*, sql_types::Bool};
 
@@ -384,6 +384,12 @@ pub fn assert_eq_guard_msg<T: PartialEq>(
 
 pub struct DenyRoleGuard {
     pub role: Role,
+}
+
+impl DenyRoleGuard {
+    pub fn new(role: Role) -> Self {
+        Self { role }
+    }
 }
 
 #[async_trait::async_trait]

@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use diesel::prelude::*;
 
 use crate::auth::Role;
@@ -81,10 +81,7 @@ pub struct CreateLicenseInput {
 #[Object]
 impl LicenseMutation {
     // Update license (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn update_license(
         &self,
         ctx: &Context<'_>,
@@ -103,10 +100,7 @@ impl LicenseMutation {
     }
 
     // Create license (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn create_license(
         &self,
         ctx: &Context<'_>,
@@ -123,10 +117,7 @@ impl LicenseMutation {
     }
 
     // Delete license (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_license(
         &self,
         ctx: &Context<'_>,

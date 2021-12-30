@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use diesel::{
     prelude::*,
     sql_types::{BigInt, Integer},
@@ -131,7 +131,7 @@ impl From<UpsertDmReadInput> for CreateDmReadInput {
 #[Object]
 impl DmReadMutation {
     // Update dm_read
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn update_dm_read(
         &self,
         ctx: &Context<'_>,
@@ -165,7 +165,7 @@ impl DmReadMutation {
     }
 
     // Create dm_read
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn create_dm_read(
         &self,
         ctx: &Context<'_>,
@@ -197,7 +197,7 @@ impl DmReadMutation {
     }
 
     // Upsert dm_read
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn upsert_dm_read(
         &self,
         ctx: &Context<'_>,
@@ -228,10 +228,7 @@ impl DmReadMutation {
     }
 
     // Delete dm_read (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_dm_read(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<DmRead> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 

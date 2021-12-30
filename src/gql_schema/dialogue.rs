@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, MaybeUndefined, Object};
+use async_graphql::{self, Context, InputObject, MaybeUndefined, Object};
 use chrono::Utc;
 use diesel::{prelude::*, sql_types::Integer};
 
@@ -291,7 +291,7 @@ impl DialogueMutation {
         Ok(dialogue)
     }
 
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn create_dialogue(
         &self,
         ctx: &Context<'_>,
@@ -330,10 +330,7 @@ impl DialogueMutation {
     }
 
     // Delete dialogue (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_dialogue(
         &self,
         ctx: &Context<'_>,

@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use diesel::prelude::*;
 
 use crate::auth::Role;
@@ -86,10 +86,7 @@ pub struct CreateAwardInput {
 #[Object]
 impl AwardMutation {
     // Update award (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn update_award(
         &self,
         ctx: &Context<'_>,
@@ -108,10 +105,7 @@ impl AwardMutation {
     }
 
     // Create award (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn create_award(
         &self,
         ctx: &Context<'_>,
@@ -128,10 +122,7 @@ impl AwardMutation {
     }
 
     // Delete award (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_award(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Award> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 

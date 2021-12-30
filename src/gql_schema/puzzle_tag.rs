@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use diesel::prelude::*;
 
 use crate::auth::Role;
@@ -215,7 +215,7 @@ impl PuzzleTagMutation {
     }
 
     // Delete puzzle_tag
-    #[graphql(guard(DenyRoleGuard(role = "Role::Guest")))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn delete_puzzle_tag(
         &self,
         ctx: &Context<'_>,

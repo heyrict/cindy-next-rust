@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, MaybeUndefined, Object};
+use async_graphql::{self, Context, InputObject, MaybeUndefined, Object};
 use chrono::Utc;
 use diesel::prelude::*;
 
@@ -232,10 +232,7 @@ impl HintMutation {
     }
 
     // Delete hint (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_hint(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Hint> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 

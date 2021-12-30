@@ -1,4 +1,4 @@
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use chrono::Utc;
 use diesel::prelude::*;
 
@@ -148,10 +148,7 @@ impl ChatroomMutation {
     }
 
     // Delete chatroom (admin only)
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_chatroom(
         &self,
         ctx: &Context<'_>,

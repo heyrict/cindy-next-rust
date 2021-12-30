@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context as _, Result};
-use async_graphql::{self, guard::Guard, Context, InputObject, Object};
+use async_graphql::{self, Context, InputObject, Object};
 use chrono::Utc;
 use diesel::{
     dsl::{max, not, sum},
@@ -160,10 +160,7 @@ impl User {
     async fn username(&self) -> &str {
         &self.username
     }
-    #[graphql(guard(and(
-        DenyRoleGuard(role = "Role::User"),
-        DenyRoleGuard(role = "Role::Guest")
-    )))]
+    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     async fn password(&self) -> &str {
         &self.password
     }
