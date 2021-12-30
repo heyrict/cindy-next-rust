@@ -10,13 +10,15 @@ use diesel::{
     sql_types::{self, Integer},
 };
 use futures::{Stream, StreamExt};
+use regex::Regex;
+use std::str::FromStr;
 
-use crate::auth::Role;
 use crate::broker::CindyBroker;
 use crate::context::{GlobalCtx, RequestCtx};
 use crate::models::puzzle::*;
 use crate::models::*;
 use crate::schema::puzzle;
+use crate::{auth::Role, models::image::Image};
 
 #[derive(Default)]
 pub struct PuzzleQuery;
@@ -24,6 +26,13 @@ pub struct PuzzleQuery;
 pub struct PuzzleMutation;
 #[derive(Default)]
 pub struct PuzzleSubscription;
+
+lazy_static! {
+    static ref UPLOAD_IMAGE_PAT: Regex = Regex::new(
+        r#"\(/images/([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})\.[^\)]*\)"#
+    )
+    .unwrap();
+}
 
 #[Object]
 impl PuzzleQuery {
@@ -486,6 +495,26 @@ impl PuzzleMutation {
         //    set.modified = Some(Utc::now());
         //};
 
+        // When a puzzle is solved, assign all referred images to that puzzle
+        if puzzle_inst.status == Status::Undergoing && set.status != Some(Status::Undergoing) {
+            use crate::schema::image;
+            for image_id in UPLOAD_IMAGE_PAT.captures_iter(&puzzle_inst.solution) {
+                let uuid_str = match uuid::Uuid::from_str(&image_id[1]) {
+                    Ok(uuid_str) => uuid_str,
+                    Err(_) => {
+                        continue;
+                    }
+                };
+                let result = diesel::update(image::table.filter(image::id.eq(uuid_str)))
+                    .set(image::puzzle_id.eq(puzzle_inst.id))
+                    .execute(&conn);
+                if let Err(e) = result {
+                    info!("{:?}", e);
+                    continue;
+                }
+            }
+        }
+
         let puzzle: Puzzle = diesel::update(puzzle::table)
             .filter(puzzle::id.eq(id))
             .set(UpdatePuzzleData::from(set))
@@ -562,6 +591,24 @@ impl PuzzleMutation {
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
+        // When a puzzle is created, assign all referred images in puzzle content
+        use crate::schema::image;
+        for image_id in UPLOAD_IMAGE_PAT.captures_iter(&puzzle.content) {
+            let uuid_str = match uuid::Uuid::from_str(&image_id[1]) {
+                Ok(uuid_str) => uuid_str,
+                Err(_) => {
+                    continue;
+                }
+            };
+            let result = diesel::update(image::table.filter(image::id.eq(uuid_str)))
+                .set(image::puzzle_id.eq(puzzle.id))
+                .execute(&conn);
+            if let Err(e) = result {
+                info!("{:?}", e);
+                continue;
+            }
+        }
+
         CindyBroker::publish(PuzzleSub::Created(puzzle.clone()));
 
         Ok(puzzle)
@@ -575,6 +622,21 @@ impl PuzzleMutation {
     pub async fn delete_puzzle(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Puzzle> {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
+        // When a puzzle is deleted, delete all referred images
+        use crate::schema::image;
+        let images: Vec<Image> = image::table
+            .filter(image::puzzle_id.eq(id))
+            .select(image::all_columns)
+            .get_results(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+        for im in images {
+            im.delete_file().await?;
+        }
+        diesel::delete(image::table.filter(image::puzzle_id.eq(id)))
+            .execute(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        // Deletes the puzzle instance
         let puzzle = diesel::delete(puzzle::table.filter(puzzle::id.eq(id)))
             .get_result(&conn)
             .map_err(|err| async_graphql::Error::from(err))?;

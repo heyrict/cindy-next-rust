@@ -1,3 +1,6 @@
+watch:
+	systemfd --no-pid -s http::7890 -- cargo watch -x run
+
 keygen:
 	ssh-keygen -t rsa -f key.pem -m PEM
 

@@ -10,10 +10,11 @@ edition = "2018"
 dotenv = "*"
 log = "^0.4"
 env_logger = "^0.7"
+regex = "1"
 
 #async-graphql = { version = "^2.8", features = ["chrono"]}
 #async-graphql-actix-web = "^2.8"
-async-graphql = { git = "https://github.com/async-graphql/async-graphql", branch = "actix-web-v4-beta", features = ["chrono"]}
+async-graphql = { git = "https://github.com/async-graphql/async-graphql", branch = "actix-web-v4-beta", features = ["chrono", "uuid", "unblock"]}
 async-graphql-actix-web = { git = "https://github.com/async-graphql/async-graphql", branch = "actix-web-v4-beta" }
 actix-web = "4.0.0-beta.8"
 actix-cors = "0.6.0-beta.2"
@@ -24,6 +25,7 @@ anyhow = "^1.0"
 ring = "^0.16"
 rand = "^0.7"
 base64 = "^0.12"
+uuid = { version = "^0.8", features = ["serde"] }
 frank_jwt = "^3.1"
 serde = "^1.0"
 serde_derive = "^1.0"
@@ -31,10 +33,11 @@ serde_json = "^1.0"
 #bitflags = "^1.2"
 
 time = "^0.2"
-tokio = { version = "^1.6", features = ["time", "sync", "rt"] }
+tokio = { version = "^1.6", features = ["time", "sync", "rt", "fs"] }
 tokio-stream = { version = "^0.1.6", features = ["sync"] }
+tokio-util = { version = "0.6.8", features = ["compat"] }
 chrono = "0.4"
 futures = "0.3.0"
-diesel = { version = "^1.4", features = ["postgres", "r2d2", "chrono"] }
-#diesel = { git = "https://github.com/diesel-rs/diesel", branch = "master", features = ["postgres", "r2d2", "chrono"] }
+diesel = { version = "^1.4", features = ["postgres", "r2d2", "chrono", "uuidv07"] }
+#diesel = { git = "https://github.com/diesel-rs/diesel", branch = "master", features = ["postgres", "r2d2", "chrono", "uuid"] }
 lazy_static = "^1.4"

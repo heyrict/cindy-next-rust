@@ -230,6 +230,16 @@ table! {
 }
 
 table! {
+    image (id) {
+        id -> Uuid,
+        user_id -> Int4,
+        puzzle_id -> Nullable<Int4>,
+        created -> Timestamptz,
+        content_type -> Varchar,
+    }
+}
+
+table! {
     license (id) {
         id -> Int4,
         user_id -> Nullable<Int4>,
@@ -402,6 +412,8 @@ joinable!(hasura_direct_message_group_trigger -> user (user_id));
 joinable!(hasura_user_ranking_trigger -> user (user_id));
 joinable!(hint -> puzzle (puzzle_id));
 joinable!(hint -> user (receiver_id));
+joinable!(image -> puzzle (puzzle_id));
+joinable!(image -> user (user_id));
 joinable!(puzzle -> license (license_id));
 joinable!(puzzle -> user (user_id));
 joinable!(puzzle_tag -> puzzle (puzzle_id));
@@ -444,6 +456,7 @@ allow_tables_to_appear_in_same_query!(
     hasura_int_groupby_trigger,
     hasura_user_ranking_trigger,
     hint,
+    image,
     license,
     puzzle,
     puzzle_tag,

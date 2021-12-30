@@ -9,3 +9,6 @@
 
 # graphql config
 .graphqlconfig
+
+# default image upload directory
+/upload_images
