@@ -7,7 +7,7 @@ jobs:
     name: Rustfmt [Formatter]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -25,7 +25,7 @@ jobs:
     name: Cargo Audit [Security]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
@@ -41,7 +41,7 @@ jobs:
     name: Compile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -65,7 +65,7 @@ jobs:
   #      rust: [nightly]
   #  steps:
   #    # Checkout the branch being tested
-  #    - uses: actions/checkout@v1
+  #    - uses: actions/checkout@v2
 
   #    # Install all the required dependencies for testing
   #    - uses: actions-rs/toolchain@v1
@@ -103,7 +103,7 @@ jobs:
             name: cindy-next-rust-x86_64-pc-windows-msvc.zip
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
