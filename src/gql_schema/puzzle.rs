@@ -24,7 +24,7 @@ pub struct PuzzleSubscription;
 
 lazy_static! {
     static ref UPLOAD_IMAGE_PAT: Regex = Regex::new(
-        r#"\(/images/([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})\.[^\)]*\)"#
+        r#"/images/([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})\."#
     )
     .unwrap();
 }

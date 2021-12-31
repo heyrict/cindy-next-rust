@@ -489,10 +489,18 @@ macro_rules! gen_nullable_number_filter {
                 eq_any,
             } = $obj;
             if let Some(is_null) = is_null {
-                $filt = Some(if is_null {
-                    Box::new($field.is_null())
+                $filt = Some(if let Some(filt_) = $filt {
+                    if is_null {
+                        Box::new(filt_.and($field.is_null()))
+                    } else {
+                        Box::new(filt_.and($field.is_not_null()))
+                    }
                 } else {
-                    Box::new($field.is_not_null())
+                    if is_null {
+                        Box::new($field.is_null())
+                    } else {
+                        Box::new($field.is_not_null())
+                    }
                 });
             };
             apply_filter!(eq, $field, $filt);
