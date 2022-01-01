@@ -14,6 +14,7 @@ use actix_cors::Cors;
 use actix_web::{guard, web, web::Data, App, HttpRequest, HttpResponse, HttpServer, Result};
 use async_graphql::Schema;
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse, GraphQLSubscription};
+use chrono::FixedOffset;
 use std::convert::TryInto;
 use std::io::Write;
 use time::Duration;
@@ -36,6 +37,11 @@ use gql_schema::{CindySchema, MutationRoot, QueryRoot, SubscriptionRoot};
 lazy_static! {
     pub static ref ADMIN_SECRET: String =
         dotenv::var("ADMIN_SECRET").expect("Invalid ADMIN_SECRET env var");
+    pub static ref SERVER_TZ: FixedOffset = {
+        let tz = dotenv::var("SERVER_TZ").unwrap_or("9".to_owned());
+        let tzn: i32 = tz.parse().expect("Invalid SERVER_TZ variable");
+        FixedOffset::east(tzn * 3600)
+    };
 }
 
 async fn index(

@@ -1,5 +1,5 @@
 use async_graphql::{self, Context, InputObject, MaybeUndefined, Object, Subscription};
-use chrono::{Duration, Utc};
+use chrono::{Duration, TimeZone, Utc};
 use diesel::{
     prelude::*,
     sql_types::{self, Integer},
@@ -13,6 +13,7 @@ use crate::context::{GlobalCtx, RequestCtx};
 use crate::models::puzzle::*;
 use crate::models::*;
 use crate::schema::puzzle;
+use crate::SERVER_TZ;
 use crate::{auth::Role, models::image::Image};
 
 #[derive(Default)]
@@ -23,10 +24,9 @@ pub struct PuzzleMutation;
 pub struct PuzzleSubscription;
 
 lazy_static! {
-    static ref UPLOAD_IMAGE_PAT: Regex = Regex::new(
-        r#"/images/([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})\."#
-    )
-    .unwrap();
+    static ref UPLOAD_IMAGE_PAT: Regex =
+        Regex::new(r#"/images/([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})\."#)
+            .unwrap();
 }
 
 #[Object]
@@ -206,17 +206,17 @@ impl PuzzleQuery {
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         // The range of the time puzzles are created
-        let start_time = Date::from_ymd(year, month, 1);
+        let start_time = SERVER_TZ.ymd(year, month, 1).and_hms(0, 0, 0);
         let end_time = if month == 12 {
-            Date::from_ymd(year + 1, 1, 1)
+            SERVER_TZ.ymd(year + 1, 1, 1).and_hms(0, 0, 0)
         } else {
-            Date::from_ymd(year, month + 1, 1)
+            SERVER_TZ.ymd(year, month + 1, 1).and_hms(0, 0, 0)
         };
 
         let results: Vec<Puzzle> =
             diesel::sql_query(include_str!("../sql/puzzle_star_ranking.sql"))
-                .bind::<sql_types::Date, _>(start_time)
-                .bind::<sql_types::Date, _>(end_time)
+                .bind::<sql_types::Timestamptz, _>(start_time)
+                .bind::<sql_types::Timestamptz, _>(end_time)
                 .bind::<Integer, _>(limit)
                 .bind::<Integer, _>(offset)
                 .get_results(&conn)?;
