@@ -2,7 +2,7 @@ use async_graphql::{MergedObject, MergedSubscription, Object, Schema, SimpleObje
 //use futures::lock::Mutex;
 use futures::{Stream, StreamExt};
 //use std::sync::Arc;
-use std::time::Duration;
+use tokio::time::Duration;
 use tokio_stream::wrappers::IntervalStream;
 
 mod award;

@@ -15,9 +15,7 @@ use actix_web::{guard, web, web::Data, App, HttpRequest, HttpResponse, HttpServe
 use async_graphql::Schema;
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse, GraphQLSubscription};
 use chrono::FixedOffset;
-use std::convert::TryInto;
 use std::io::Write;
-use time::Duration;
 
 #[macro_use]
 pub mod models;
@@ -125,12 +123,8 @@ async fn main() -> std::io::Result<()> {
     // Spawn cache cleaner
     tokio::spawn(async move {
         loop {
-            tokio::time::sleep(
-                Duration::day()
-                    .try_into()
-                    .expect("Error converting a day to std::Duration"),
-            )
-            .await;
+            use tokio::time::{sleep, Duration};
+            sleep(Duration::from_secs(60 * 60)).await;
             debug!("Cleaning up cache");
             broker::cleanup();
         }
