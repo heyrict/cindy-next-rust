@@ -26,3 +26,6 @@ login:
 	echo
 
 	curl -iH 'Content-Type: application/json' http://${ENDPOINT}/login -d '{"username": "'${username}'", "password": "'${password}'"}'
+
+local_compile:
+	docker build --rm -t cindy-next-rust --target builder .
