@@ -491,7 +491,10 @@ impl PuzzleMutation {
         //};
 
         // When a puzzle is solved, assign all referred images to that puzzle
-        if puzzle_inst.status == Status::Undergoing && set.status != Some(Status::Undergoing) {
+        if puzzle_inst.status == Status::Undergoing
+            && set.status.is_some()
+            && set.status != Some(Status::Undergoing)
+        {
             use crate::schema::image;
             for image_id in UPLOAD_IMAGE_PAT.captures_iter(&puzzle_inst.solution) {
                 let uuid_str = match uuid::Uuid::from_str(&image_id[1]) {
