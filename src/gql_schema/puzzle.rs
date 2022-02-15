@@ -588,7 +588,14 @@ impl PuzzleMutation {
 
         // When a puzzle is created, assign all referred images in puzzle content
         use crate::schema::image;
-        for image_id in UPLOAD_IMAGE_PAT.captures_iter(&puzzle.content) {
+        let concated_string;
+        let referring_text = if puzzle.yami == Yami::Longterm {
+            concated_string = puzzle.content.clone() + &puzzle.solution;
+            &concated_string
+        } else {
+            &puzzle.content
+        };
+        for image_id in UPLOAD_IMAGE_PAT.captures_iter(&referring_text) {
             let uuid_str = match uuid::Uuid::from_str(&image_id[1]) {
                 Ok(uuid_str) => uuid_str,
                 Err(_) => {
