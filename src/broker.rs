@@ -2,6 +2,7 @@ use chrono::{Date, Duration, Local};
 use futures::Stream;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::marker::{PhantomData, Unpin};
 use std::sync::Mutex;
 use tokio::sync::watch;
@@ -127,8 +128,8 @@ impl<T: Sync + Unpin + Send + Clone + 'static> CindyBroker<T> {
 }
 
 /// Number of online users
-pub fn online_users_count() -> i32 {
-    type DmType = crate::models::direct_message::DirectMessageSub;
+pub fn online_users_count() -> u64 {
+    type DmType = crate::models::chatmessage::ChatmessageSub;
 
     let mut count = 0;
     let mut map = SUBSCRIPTIONS.lock().unwrap();
@@ -142,11 +143,11 @@ pub fn online_users_count() -> i32 {
             .downcast_ref::<watch::Sender<Option<DmType>>>()
             .unwrap();
         if !tx.is_closed() {
-            count += 1;
+            count += tx.receiver_count();
         }
     }
 
-    count
+    count.try_into().unwrap()
 }
 
 pub fn cleanup() {

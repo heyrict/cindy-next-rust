@@ -107,7 +107,7 @@ struct BaseQuery;
 
 #[Object]
 impl BaseQuery {
-    async fn online_users_count(&self) -> i32 {
+    async fn online_users_count(&self) -> u64 {
         use crate::broker::online_users_count;
         online_users_count()
     }
