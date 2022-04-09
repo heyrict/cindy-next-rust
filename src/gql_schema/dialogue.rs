@@ -282,7 +282,6 @@ impl DialogueMutation {
                         };
 
                         CindyBroker::publish(sub.clone());
-                        CindyBroker::publish_to("puzzlePuzzleLogs".to_string(), sub);
                     });
                 }
             }
@@ -320,11 +319,29 @@ impl DialogueMutation {
             .map_err(|err| async_graphql::Error::from(err))?;
 
         let key_starts_with = format!("puzzleLog<{}", dialogue.puzzle_id);
-        CindyBroker::publish(PuzzleLogSub::DialogueCreated(dialogue.clone()));
-        CindyBroker::publish_to_all(
-            |key| key.starts_with(&key_starts_with),
-            PuzzleLogSub::DialogueCreated(dialogue.clone()),
-        );
+        let puzzle_id = dialogue.puzzle_id;
+        if let Ok(puzzle) = dialogue.puzzle(ctx).await {
+            let dialogue_count = puzzle.dialogue_count(&ctx, None).await.unwrap_or(0);
+            let dialogue_count_answered =
+                puzzle.dialogue_count(&ctx, Some(true)).await.unwrap_or(0);
+            let dialogue_new = dialogue.clone();
+            tokio::spawn(async move {
+                let dialogue_max_answered_time = dialogue_new.modified;
+                let sub = UnsolvedPuzzleStatsSub {
+                    puzzle_id,
+                    dialogue_count,
+                    dialogue_count_answered,
+                    dialogue_max_answered_time,
+                };
+
+                CindyBroker::publish(sub);
+                CindyBroker::publish(PuzzleLogSub::DialogueCreated(dialogue_new.clone()));
+                CindyBroker::publish_to_all(
+                    |key| key.starts_with(&key_starts_with),
+                    PuzzleLogSub::DialogueCreated(dialogue_new),
+                );
+            });
+        }
 
         Ok(dialogue)
     }
