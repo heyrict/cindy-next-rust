@@ -47,12 +47,11 @@ jobs:
         run: |
           strip target/x86_64-unknown-linux-gnu/release/cindy-next-rust
           mv target/x86_64-unknown-linux-gnu/release/cindy-next-rust cindy-next-rust
-          tar czvf cindy-next-rust.tar.gz cindy-next-rust
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
-           path: "cindy-next-rust.tar.gz"
+          path: "cindy-next-rust"
 
   # Create GitHub release with Rust build targets and release notes
   github_release:
