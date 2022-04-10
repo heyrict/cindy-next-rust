@@ -20,22 +20,6 @@ jobs:
           command: fmt
           args: --all -- --check
 
-  # Run a security audit on dependencies
-  cargo_audit:
-    name: Cargo Audit [Security]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - run: cargo install --force cargo-audit
-      - run: cargo generate-lockfile
-      - uses: actions-rs/cargo@v1
-        with:
-          command: audit
-
   # Ensure that the project could be successfully compiled
   cargo_check:
     name: Compile
@@ -47,10 +31,27 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-      - uses: actions-rs/cargo@v1
+      - name: Check
+        uses: actions-rs/cargo@v1
         with:
           command: check
           args: --all
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target x86_64-unknown-linux-gnu
+
+      - name: Post-Build
+        run: |
+          strip target/x86_64-unknown-linux-gnu/release/cindy-next-rust
+          mv target/x86_64-unknown-linux-gnu/release/cindy-next-rust cindy-next-rust
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          path: "cindy-next-rust"
 
   # Create GitHub release with Rust build targets and release notes
   github_release:
