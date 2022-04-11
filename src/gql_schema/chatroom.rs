@@ -68,7 +68,8 @@ pub struct UpdateChatroomInput {
     pub description: Option<String>,
     pub created: Option<Date>,
     pub user_id: Option<ID>,
-    pub private: Option<bool>,
+    pub official: Option<bool>,
+    pub public: Option<bool>,
 }
 
 #[derive(InputObject, Insertable)]
@@ -80,7 +81,8 @@ pub struct CreateChatroomInput {
     #[graphql(default_with = "Utc::today().naive_utc()")]
     pub created: Date,
     pub user_id: Option<ID>,
-    pub private: Option<bool>,
+    pub official: Option<bool>,
+    pub public: Option<bool>,
 }
 
 #[Object]
