@@ -2,6 +2,7 @@
 
 -- Convert private to official
 ALTER TABLE chatroom RENAME private TO official;
+ALTER TABLE chatroom ALTER COLUMN official SET DEFAULT false;
 UPDATE chatroom SET official = NOT official;
 
 -- Add new public column
