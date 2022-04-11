@@ -133,7 +133,7 @@ impl CindyFilter<chatmessage::table, DB> for ChatmessageCountFilter {
 }
 
 /// Object for chatmessage table
-#[derive(Queryable, Identifiable, Clone, Debug)]
+#[derive(Queryable, QueryableByName, PartialEq, Identifiable, Clone, Debug)]
 #[table_name = "chatmessage"]
 pub struct Chatmessage {
     pub id: ID,

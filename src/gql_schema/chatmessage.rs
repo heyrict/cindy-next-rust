@@ -87,6 +87,33 @@ impl ChatmessageQuery {
 
         Ok(result)
     }
+
+    pub async fn recent_chatmessages(
+        &self,
+        ctx: &Context<'_>,
+        user_id: ID,
+        limit: i64,
+        offset: i64,
+    ) -> async_graphql::Result<Vec<Chatmessage>> {
+        use crate::schema::chatmessage;
+        use crate::schema::favorite_chatroom;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let results: Vec<Chatmessage> = chatmessage::table
+            .inner_join(
+                favorite_chatroom::table
+                    .on(favorite_chatroom::chatroom_id.eq(chatmessage::chatroom_id)),
+            )
+            .filter(favorite_chatroom::user_id.eq(user_id))
+            .order(chatmessage::created.desc())
+            .limit(limit)
+            .offset(offset)
+            .select(chatmessage::all_columns)
+            .get_results(&conn)?;
+
+        Ok(results)
+    }
 }
 
 #[derive(InputObject, Debug)]

@@ -12,11 +12,11 @@ log = "^0.4"
 env_logger = "^0.7"
 regex = "1"
 
-async-graphql = { version = "3.0.20", features = ["chrono", "uuid", "unblock"]}
-async-graphql-actix-web = "3.0.20"
-actix-web = "4.0.0-beta.19"
-actix-cors = "0.6.0-beta.8"
-actix-rt = "^2.5"
+async-graphql = { version = "^3.0.38", features = ["chrono", "uuid", "unblock"]}
+async-graphql-actix-web = "^3.0.38"
+actix-web = "^4.0"
+actix-cors = "^0.6"
+actix-rt = "^2.7"
 #actix-web-actors = "4.0.0-beta.4"
 anyhow = "^1.0"
 
