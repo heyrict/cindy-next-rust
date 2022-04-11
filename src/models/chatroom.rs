@@ -89,6 +89,40 @@ impl CindyFilter<chatroom::table, DB> for ChatroomFilter {
     }
 }
 
+/// Available filters for chatroom_count query
+#[derive(InputObject, Clone, Default)]
+pub struct ChatroomCountFilter {
+    name: Option<StringFiltering>,
+    created: Option<DateFiltering>,
+    user_id: Option<I32Filtering>,
+    official: Option<bool>,
+    public: Option<bool>,
+}
+
+impl CindyFilter<chatroom::table, DB> for ChatroomCountFilter {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<chatroom::table, DB, SqlType = Bool> + Send>> {
+        use crate::schema::chatroom::dsl::*;
+
+        let mut filter: Option<Box<dyn BoxableExpression<chatroom, DB, SqlType = Bool> + Send>> =
+            None;
+        let ChatroomCountFilter {
+            name: obj_name,
+            created: obj_created,
+            user_id: obj_user_id,
+            official: obj_official,
+            public: obj_public,
+        } = self;
+        gen_string_filter!(obj_name, name, filter);
+        gen_number_filter!(obj_created: DateFiltering, created, filter);
+        gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
+        gen_bool_filter!(obj_official, official, filter);
+        gen_bool_filter!(obj_public, public, filter);
+        filter
+    }
+}
+
 /// Object for chatroom table
 #[derive(Queryable, Identifiable, Clone, Debug)]
 #[table_name = "chatroom"]
