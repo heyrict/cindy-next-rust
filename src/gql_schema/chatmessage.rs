@@ -106,7 +106,7 @@ impl ChatmessageQuery {
                     .on(favorite_chatroom::chatroom_id.eq(chatmessage::chatroom_id)),
             )
             .filter(favorite_chatroom::user_id.eq(user_id))
-            .order(chatmessage::created.desc())
+            .order(chatmessage::created.desc().nulls_last())
             .limit(limit)
             .offset(offset)
             .select(chatmessage::all_columns)
