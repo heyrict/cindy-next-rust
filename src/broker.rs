@@ -147,7 +147,10 @@ pub fn puzzle_online_users_count(puzzle_id: i32) -> u64 {
             .downcast_ref::<watch::Sender<Option<PuzzleLogSub>>>()
             .unwrap();
         if !tx.is_closed() {
-            count += tx.receiver_count();
+            // It is observed that rx always holds the instance itself and the receiver always gets
+            // a reference. Substract 1 from the receiver_count to get the true rx number.
+            let rc = tx.receiver_count();
+            count += if rc >= 2 { rc - 1 } else { rc };
         }
     }
 
@@ -170,7 +173,8 @@ pub fn online_users_count() -> u64 {
             .downcast_ref::<watch::Sender<Option<DmType>>>()
             .unwrap();
         if !tx.is_closed() {
-            count += tx.receiver_count();
+            let rc = tx.receiver_count();
+            count += if rc >= 2 { rc - 1 } else { rc };
         }
     }
 
