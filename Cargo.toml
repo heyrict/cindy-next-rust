@@ -30,11 +30,11 @@ serde_derive = "^1.0"
 serde_json = "^1.0"
 #bitflags = "^1.2"
 
-tokio = { version = "^1.6", features = ["time", "sync", "rt", "fs"] }
-tokio-stream = { version = "^0.1.6", features = ["sync"] }
-tokio-util = { version = "0.6.8", features = ["compat"] }
-chrono = "0.4"
-futures = "0.3.0"
+tokio = { version = "^1.17", features = ["time", "sync", "rt", "fs"] }
+tokio-stream = { version = "^0.1.8", features = ["sync"] }
+tokio-util = { version = "^0.7.1", features = ["compat"] }
+chrono = "^0.4"
+futures = "^0.3.21"
 diesel = { version = "^1.4", features = ["postgres", "r2d2", "chrono", "uuidv07"] }
 #diesel = { git = "https://github.com/diesel-rs/diesel", branch = "master", features = ["postgres", "r2d2", "chrono", "uuid"] }
 lazy_static = "^1.4"
