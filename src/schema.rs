@@ -74,7 +74,8 @@ table! {
         description -> Text,
         created -> Date,
         user_id -> Int4,
-        private -> Bool,
+        official -> Bool,
+        public -> Bool,
     }
 }
 

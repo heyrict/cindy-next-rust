@@ -12,7 +12,8 @@ use super::*;
 pub struct ChatroomOrder {
     id: Option<Ordering>,
     created: Option<Ordering>,
-    private: Option<Ordering>,
+    official: Option<Ordering>,
+    public: Option<Ordering>,
 }
 
 /// Helper object to apply the order to the query
@@ -40,7 +41,8 @@ impl ChatroomOrders {
         for obj in self.0 {
             gen_order!(obj, id, query);
             gen_order!(obj, created, query);
-            gen_order!(obj, private, query);
+            gen_order!(obj, official, query);
+            gen_order!(obj, public, query);
         }
 
         query
@@ -55,7 +57,8 @@ pub struct ChatroomFilter {
     description: Option<StringFiltering>,
     created: Option<DateFiltering>,
     user_id: Option<I32Filtering>,
-    private: Option<bool>,
+    official: Option<bool>,
+    public: Option<bool>,
 }
 
 impl CindyFilter<chatroom::table, DB> for ChatroomFilter {
@@ -72,14 +75,50 @@ impl CindyFilter<chatroom::table, DB> for ChatroomFilter {
             description: obj_description,
             created: obj_created,
             user_id: obj_user_id,
-            private: obj_private,
+            official: obj_official,
+            public: obj_public,
         } = self;
         gen_number_filter!(obj_id: I32Filtering, id, filter);
         gen_string_filter!(obj_name, name, filter);
         gen_string_filter!(obj_description, description, filter);
         gen_number_filter!(obj_created: DateFiltering, created, filter);
         gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
-        gen_bool_filter!(obj_private, private, filter);
+        gen_bool_filter!(obj_official, official, filter);
+        gen_bool_filter!(obj_public, public, filter);
+        filter
+    }
+}
+
+/// Available filters for chatroom_count query
+#[derive(InputObject, Clone, Default)]
+pub struct ChatroomCountFilter {
+    name: Option<StringFiltering>,
+    created: Option<DateFiltering>,
+    user_id: Option<I32Filtering>,
+    official: Option<bool>,
+    public: Option<bool>,
+}
+
+impl CindyFilter<chatroom::table, DB> for ChatroomCountFilter {
+    fn as_expression(
+        self,
+    ) -> Option<Box<dyn BoxableExpression<chatroom::table, DB, SqlType = Bool> + Send>> {
+        use crate::schema::chatroom::dsl::*;
+
+        let mut filter: Option<Box<dyn BoxableExpression<chatroom, DB, SqlType = Bool> + Send>> =
+            None;
+        let ChatroomCountFilter {
+            name: obj_name,
+            created: obj_created,
+            user_id: obj_user_id,
+            official: obj_official,
+            public: obj_public,
+        } = self;
+        gen_string_filter!(obj_name, name, filter);
+        gen_number_filter!(obj_created: DateFiltering, created, filter);
+        gen_number_filter!(obj_user_id: I32Filtering, user_id, filter);
+        gen_bool_filter!(obj_official, official, filter);
+        gen_bool_filter!(obj_public, public, filter);
         filter
     }
 }
@@ -93,7 +132,8 @@ pub struct Chatroom {
     pub description: String,
     pub created: Date,
     pub user_id: ID,
-    pub private: bool,
+    pub official: bool,
+    pub public: bool,
 }
 
 #[Object]
@@ -113,8 +153,11 @@ impl Chatroom {
     async fn user_id(&self) -> ID {
         self.user_id
     }
-    async fn private(&self) -> bool {
-        self.private
+    async fn official(&self) -> bool {
+        self.official
+    }
+    async fn public(&self) -> bool {
+        self.public
     }
 
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {

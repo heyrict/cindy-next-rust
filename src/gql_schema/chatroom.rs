@@ -58,6 +58,27 @@ impl ChatroomQuery {
 
         Ok(chatrooms)
     }
+
+    pub async fn chatroom_count(
+        &self,
+        ctx: &Context<'_>,
+        filter: Option<ChatroomCountFilter>,
+    ) -> async_graphql::Result<i64> {
+        use crate::schema::chatroom::dsl::*;
+
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let mut query = chatroom.into_boxed();
+        if let Some(filter) = filter {
+            if let Some(filter_exp) = filter.as_expression() {
+                query = query.filter(filter_exp)
+            }
+        }
+
+        let result = query.count().get_result::<i64>(&conn)?;
+
+        Ok(result)
+    }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
@@ -68,7 +89,8 @@ pub struct UpdateChatroomInput {
     pub description: Option<String>,
     pub created: Option<Date>,
     pub user_id: Option<ID>,
-    pub private: Option<bool>,
+    pub official: Option<bool>,
+    pub public: Option<bool>,
 }
 
 #[derive(InputObject, Insertable)]
@@ -80,7 +102,8 @@ pub struct CreateChatroomInput {
     #[graphql(default_with = "Utc::today().naive_utc()")]
     pub created: Date,
     pub user_id: Option<ID>,
-    pub private: Option<bool>,
+    pub official: Option<bool>,
+    pub public: Option<bool>,
 }
 
 #[Object]
