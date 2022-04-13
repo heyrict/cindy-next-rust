@@ -127,6 +127,33 @@ impl<T: Sync + Unpin + Send + Clone + 'static> CindyBroker<T> {
     }
 }
 
+/// Number of online users in puzzles
+pub fn puzzle_online_users_count(puzzle_id: i32) -> u64 {
+    use crate::models::puzzle_log::PuzzleLogSub;
+
+    let mut count = 0;
+    let key_starts = format!("puzzleLog<{}", puzzle_id);
+    let mut map = SUBSCRIPTIONS.lock().unwrap();
+    let submap = map
+        .entry(TypeId::of::<PuzzleLogSub>())
+        .or_insert_with(|| Default::default());
+
+    for (_, sp) in submap
+        .iter()
+        .filter(|(key, _)| key.starts_with(&key_starts))
+    {
+        let tx = sp
+            .tx
+            .downcast_ref::<watch::Sender<Option<PuzzleLogSub>>>()
+            .unwrap();
+        if !tx.is_closed() {
+            count += tx.receiver_count();
+        }
+    }
+
+    count.try_into().unwrap()
+}
+
 /// Number of online users
 pub fn online_users_count() -> u64 {
     type DmType = crate::models::chatmessage::ChatmessageSub;

@@ -111,6 +111,11 @@ impl BaseQuery {
         use crate::broker::online_users_count;
         online_users_count()
     }
+
+    async fn puzzle_online_users_count(&self, puzzle_id: i32) -> u64 {
+        use crate::broker::puzzle_online_users_count;
+        puzzle_online_users_count(puzzle_id)
+    }
 }
 
 #[derive(Clone, Default, SimpleObject)]
