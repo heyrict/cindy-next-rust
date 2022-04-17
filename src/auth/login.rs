@@ -74,7 +74,7 @@ pub async fn login(
         &user.nickname
     );
 
-    let jwt = get_jwt(&user);
+    let jwt = get_jwt(&user, None);
 
     Ok(HttpResponse::Ok()
         //.cookie(gen_cookie(&user))

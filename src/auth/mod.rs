@@ -8,9 +8,11 @@ use std::path::PathBuf;
 use crate::models::User;
 
 mod login;
+mod role_switch;
 mod signup;
 
 pub use login::login;
+pub use role_switch::role_switch;
 pub use signup::signup;
 
 pub trait AuthResponse {
@@ -26,6 +28,7 @@ const DEFAULT_SECRET: &'static str = "CINDYTHINK_HEYRICT";
 pub enum Role {
     Guest,
     User,
+    Staff,
     Admin,
 }
 
@@ -34,6 +37,7 @@ impl From<&str> for Role {
         match s.to_lowercase().as_str() {
             "user" => Role::User,
             "admin" => Role::Admin,
+            "staff" => Role::Staff,
             _ => Role::Guest,
         }
     }
@@ -47,6 +51,7 @@ impl fmt::Display for Role {
             match self {
                 Role::Guest => "Guest",
                 Role::User => "User",
+                Role::Staff => "Staff",
                 Role::Admin => "Admin",
             }
         )
@@ -65,6 +70,7 @@ pub struct JwtPayloadUser {
 pub struct JwtPayload {
     user: JwtPayloadUser,
     role: Role,
+    allowed_roles: Vec<Role>,
 }
 
 impl JwtPayload {
@@ -74,6 +80,10 @@ impl JwtPayload {
 
     pub fn get_role(&self) -> &Role {
         &self.role
+    }
+
+    pub fn get_roles(&self) -> &Vec<Role> {
+        &self.allowed_roles
     }
 
     pub fn get_user_id(&self) -> crate::models::ID {
@@ -104,10 +114,28 @@ pub fn parse_jwt(token: &str) -> Result<JwtPayload, anyhow::Error> {
         .and_then(|val| serde_json::from_value(val).map_err(anyhow::Error::from))
 }
 
-pub fn get_jwt(user: &User) -> String {
+fn get_allowed_roles(user: &User) -> Vec<Role> {
+    let mut returns = vec![Role::User];
+    if user.is_staff {
+        returns.push(Role::Staff);
+    }
+    returns
+}
+
+pub fn get_jwt(user: &User, role: Option<Role>) -> String {
     let iat = OffsetDateTime::now_utc();
     let exp: OffsetDateTime = iat + Duration::days(30);
     let header = json!({});
+    let allowed_roles = get_allowed_roles(&user);
+    let role = if let Some(role) = role {
+        if allowed_roles.contains(&role) {
+            role
+        } else {
+            Role::User
+        }
+    } else {
+        Role::User
+    };
     let payload = json!({
         "iat": iat.unix_timestamp(),
         "exp": exp.unix_timestamp(),
@@ -117,7 +145,41 @@ pub fn get_jwt(user: &User) -> String {
             "username": user.username,
             "nickname": user.nickname,
         },
-        "role": Role::User
+        "role": role,
+        "allowed_roles": allowed_roles
+    });
+
+    if let Some(keypath) = dotenv::var("PRIVATE_KEY_PATH").ok() {
+        encode(header, &PathBuf::from(keypath), &payload, Algorithm::RS256)
+            .expect("Error encoding jwt with RS256.")
+    } else {
+        let secret = dotenv::var("SECRET").unwrap_or(DEFAULT_SECRET.to_string());
+        encode(header, &secret, &payload, Algorithm::HS256).expect("Error encoding jwt with HS256.")
+    }
+}
+
+pub fn switch_jwt_role(payload: &JwtPayload, role: Role) -> String {
+    let iat = OffsetDateTime::now_utc();
+    let exp: OffsetDateTime = iat + Duration::days(30);
+    let header = json!({});
+    let user = &payload.user;
+    let allowed_roles = &payload.allowed_roles;
+    let role = if allowed_roles.contains(&role) {
+        role
+    } else {
+        Role::User
+    };
+    let payload = json!({
+        "iat": iat.unix_timestamp(),
+        "exp": exp.unix_timestamp(),
+        "user": {
+            "id": user.id,
+            "icon": user.icon,
+            "username": user.username,
+            "nickname": user.nickname,
+        },
+        "role": role,
+        "allowed_roles": allowed_roles
     });
 
     if let Some(keypath) = dotenv::var("PRIVATE_KEY_PATH").ok() {
@@ -141,7 +203,7 @@ fn gen_cookie(user: &User) -> Cookie {
     // Expires in 30 days
     let max_age = Duration::days(30);
 
-    Cookie::build("cindy-jwt-token", get_jwt(user))
+    Cookie::build("cindy-jwt-token", get_jwt(user, None))
         .expires(OffsetDateTime::now_utc() + max_age)
         .max_age(max_age)
         .http_only(true)

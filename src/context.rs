@@ -3,7 +3,7 @@ use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 
 use super::ADMIN_SECRET;
-use crate::auth::{parse_jwt, JwtPayload, JwtPayloadUser, Role};
+use crate::auth::{parse_jwt, switch_jwt_role, JwtPayload, JwtPayloadUser, Role};
 use crate::db::{establish_connection, DbPool};
 
 #[derive(Clone)]
@@ -33,7 +33,7 @@ impl GlobalCtx {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct RequestCtx {
     jwt_payload: Option<JwtPayload>,
     admin_secret: Option<String>,
@@ -41,7 +41,13 @@ pub struct RequestCtx {
 
 impl RequestCtx {
     pub fn with_token(mut self, token: Option<String>) -> Self {
-        self.jwt_payload = token.and_then(|token| parse_jwt(&token).ok());
+        self.jwt_payload = token.and_then(|token| match parse_jwt(&token) {
+            Ok(jwt) => Some(jwt),
+            Err(error) => {
+                info!("parse_jwt: {}", error);
+                None
+            }
+        });
         self
     }
 
@@ -60,11 +66,28 @@ impl RequestCtx {
         }
     }
 
+    pub fn get_roles(&self) -> Vec<Role> {
+        if let Some(jwt) = self.jwt_payload.as_ref() {
+            (*jwt.get_roles()).clone()
+        } else {
+            vec![Role::Guest]
+        }
+    }
+
     pub fn get_user(&self) -> Option<&JwtPayloadUser> {
         self.jwt_payload.as_ref().map(|jwt| jwt.get_user())
     }
 
     pub fn get_user_id(&self) -> Option<crate::models::ID> {
         self.jwt_payload.as_ref().map(|jwt| jwt.get_user_id())
+    }
+
+    pub fn switch_role(&self, role: Role) -> actix_web::Result<String> {
+        Ok(switch_jwt_role(
+            self.jwt_payload
+                .as_ref()
+                .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?,
+            role,
+        ))
     }
 }

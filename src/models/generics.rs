@@ -407,11 +407,44 @@ impl Guard for DenyRoleGuard {
     }
 }
 
+#[derive(Default)]
+pub struct AdminRoleGuard {}
+
+#[async_trait::async_trait]
+impl Guard for AdminRoleGuard {
+    async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
+        if let Some(reqctx) = ctx.data_opt::<RequestCtx>() {
+            if reqctx.get_role() == Role::Admin {
+                Ok(())
+            } else {
+                Err("Forbidden: No enough privileges".into())
+            }
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl AdminRoleGuard {
+    pub fn check_visible(ctx: &Context<'_>) -> bool {
+        if let Some(reqctx) = ctx.data_opt::<RequestCtx>() {
+            if reqctx.get_role() == Role::Admin {
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+}
+
 /// Guard guests, limit users with same user id, allow admins
 pub fn user_id_guard(ctx: &Context<'_>, user_id: ID) -> async_graphql::Result<()> {
     let role = ctx.data::<RequestCtx>()?.get_role();
     match role {
         Role::Admin => Ok(()),
+        Role::Staff => Ok(()),
         Role::User => assert_eq_guard(
             ctx.data::<RequestCtx>()?
                 .get_user_id()

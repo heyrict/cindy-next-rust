@@ -219,7 +219,7 @@ impl ImageMutation {
 
                 insert_data
             }
-            Role::Admin => CreateImageData::try_from(data)?,
+            Role::Staff | Role::Admin => CreateImageData::try_from(data)?,
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
         };
 
@@ -310,7 +310,7 @@ impl ImageMutation {
 
                 insert_data
             }
-            Role::Admin => CreateImageData::try_from(data)?,
+            Role::Staff | Role::Admin => CreateImageData::try_from(data)?,
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
         };
 

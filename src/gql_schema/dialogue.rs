@@ -245,7 +245,7 @@ impl DialogueMutation {
                 }
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
-            Role::Admin => {}
+            Role::Staff | Role::Admin => {}
         };
 
         let dialogue: Dialogue = diesel::update(dialogue::table)

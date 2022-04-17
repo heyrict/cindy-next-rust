@@ -1,3 +1,5 @@
+set dotenv-load
+
 watch:
 	systemfd --no-pid -s http::7890 -- cargo watch -x run
 

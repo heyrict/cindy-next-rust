@@ -28,7 +28,7 @@ pub mod gql_schema;
 mod schema;
 mod schema_view;
 
-use auth::{login, signup, Role};
+use auth::{login, role_switch, signup, Role};
 use context::{GlobalCtx, RequestCtx};
 use gql_schema::{CindySchema, MutationRoot, QueryRoot, SubscriptionRoot};
 
@@ -96,6 +96,13 @@ async fn index(
                 format!("User<{}:{}>", &user.id, &user.nickname)
             } else {
                 "User<?>".to_string()
+            }
+        }
+        Role::Staff => {
+            if let Some(user) = ctx.get_user() {
+                format!("Staff<{}:{}>", &user.id, &user.nickname)
+            } else {
+                "Staff<?>".to_string()
             }
         }
     };
@@ -213,6 +220,11 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/graphql").guard(guard::Post()).to(index))
             .service(web::resource("/login").guard(guard::Post()).to(login))
             .service(web::resource("/signup").guard(guard::Post()).to(signup))
+            .service(
+                web::resource("/role_switch")
+                    .guard(guard::Post())
+                    .to(role_switch),
+            )
             .service(
                 web::resource("/graphql")
                     .guard(guard::Get())

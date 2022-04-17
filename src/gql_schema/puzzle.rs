@@ -478,7 +478,7 @@ impl PuzzleMutation {
                     ));
                 };
             }
-            Role::Admin => {}
+            Role::Staff | Role::Admin => {}
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
         };
 
@@ -581,7 +581,7 @@ impl PuzzleMutation {
 
                 insert_data
             }
-            Role::Admin => CreatePuzzleData::from(data.set_default()),
+            Role::Staff | Role::Admin => CreatePuzzleData::from(data.set_default()),
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
         };
 

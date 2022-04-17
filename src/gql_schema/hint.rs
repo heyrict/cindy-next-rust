@@ -212,7 +212,7 @@ impl HintMutation {
                 // Assert the user is the owner of the puzzle.
                 user_id_guard(ctx, puzzle_inst.user_id)?;
             }
-            Role::Admin => {}
+            Role::Staff | Role::Admin => {}
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
         };
 

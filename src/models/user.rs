@@ -22,7 +22,6 @@ use super::star::{StarFilter, StarOrder};
 use super::user_award::{UserAwardFilter, UserAwardOrder};
 use super::*;
 
-use crate::auth::Role;
 use crate::context::GlobalCtx;
 use crate::schema::user;
 
@@ -160,7 +159,10 @@ impl User {
     async fn username(&self) -> &str {
         &self.username
     }
-    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
+    #[graphql(
+        guard = "AdminRoleGuard::default()",
+        visible = "AdminRoleGuard::check_visible"
+    )]
     async fn password(&self) -> &str {
         &self.password
     }

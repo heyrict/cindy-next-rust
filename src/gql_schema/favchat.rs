@@ -129,7 +129,7 @@ impl FavchatMutation {
                     data.user_id = reqctx.get_user_id();
                 };
             }
-            Role::Admin => {}
+            Role::Staff | Role::Admin => {}
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
         };
 

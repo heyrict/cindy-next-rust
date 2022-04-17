@@ -126,7 +126,7 @@ pub async fn signup(
         &usr.nickname
     );
 
-    let jwt = get_jwt(&usr);
+    let jwt = get_jwt(&usr, None);
 
     Ok(HttpResponse::Ok()
         //.cookie(gen_cookie(&usr))
