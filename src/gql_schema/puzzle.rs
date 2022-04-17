@@ -8,13 +8,13 @@ use futures::{Stream, StreamExt};
 use regex::Regex;
 use std::str::FromStr;
 
-use crate::broker::CindyBroker;
 use crate::context::{GlobalCtx, RequestCtx};
 use crate::models::puzzle::*;
 use crate::models::*;
 use crate::schema::puzzle;
 use crate::SERVER_TZ;
 use crate::{auth::Role, models::image::Image};
+use crate::{broker::CindyBroker, models::puzzle_log::PuzzleLogSub};
 
 #[derive(Default)]
 pub struct PuzzleQuery;
@@ -512,6 +512,10 @@ impl PuzzleMutation {
                 }
             }
         }
+
+        // When a puzzle is solved, close all realtime update channels
+        let key_starts_with = format!("puzzleLog<{}", puzzle_inst.id);
+        CindyBroker::<PuzzleLogSub>::cleaup_all(|key| key.starts_with(&key_starts_with));
 
         let puzzle: Puzzle = diesel::update(puzzle::table)
             .filter(puzzle::id.eq(id))

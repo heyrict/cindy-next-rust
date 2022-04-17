@@ -121,6 +121,34 @@ impl<T: Sync + Unpin + Send + Clone + 'static> CindyBroker<T> {
             });
     }
 
+    /// Cleanup all channels matching provided filter
+    pub fn cleaup_all(filter: impl Fn(&Key) -> bool) {
+        let mut map = SUBSCRIPTIONS.lock().unwrap();
+        let mut empty_entries: Vec<String> = Vec::new();
+        map.entry(TypeId::of::<T>())
+            .and_modify(|submap| {
+                submap
+                    .iter_mut()
+                    .filter(|(key, _)| filter(key))
+                    .for_each(|(key, sp)| {
+                        let tx = sp.tx.downcast_ref::<watch::Sender<Option<T>>>().unwrap();
+                        if tx.is_closed() {
+                            empty_entries.push(key.clone());
+                        } else if tx.receiver_count() == 1 {
+                            // All channels closed except the stored one
+                            let rx = sp.rx.downcast_ref::<watch::Receiver<Option<T>>>().unwrap();
+                            drop(rx);
+                            empty_entries.push(key.clone());
+                        }
+                    });
+            })
+            .and_modify(|submap| {
+                for key in empty_entries.iter() {
+                    submap.remove(key.as_str());
+                }
+            });
+    }
+
     /// Subscribe to the message of the specified type with a given key and returns a `Stream`.
     pub fn subscribe_to(key: Key) -> impl Stream<Item = Option<T>> {
         with_senders_to::<T, _, _>(key, |_, rx| WatchStream::new(rx.clone()))
@@ -150,7 +178,7 @@ pub fn puzzle_online_users_count(puzzle_id: i32) -> u64 {
             // It is observed that rx always holds the instance itself and the receiver always gets
             // a reference. Substract 1 from the receiver_count to get the true rx number.
             let rc = tx.receiver_count();
-            count += if rc >= 2 { rc - 1 } else { rc };
+            count += rc - 1;
         }
     }
 
@@ -174,7 +202,7 @@ pub fn online_users_count() -> u64 {
             .unwrap();
         if !tx.is_closed() {
             let rc = tx.receiver_count();
-            count += if rc >= 2 { rc - 1 } else { rc };
+            count += rc - 1;
         }
     }
 
