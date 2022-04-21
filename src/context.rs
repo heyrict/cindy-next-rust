@@ -44,7 +44,7 @@ impl RequestCtx {
         self.jwt_payload = token.and_then(|token| match parse_jwt(&token) {
             Ok(jwt) => Some(jwt),
             Err(error) => {
-                info!("parse_jwt: {}", error);
+                debug!("parse_jwt: {}", error);
                 None
             }
         });
