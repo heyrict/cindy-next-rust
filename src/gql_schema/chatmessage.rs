@@ -280,7 +280,7 @@ impl ChatmessageMutation {
     pub async fn delete_chatmessages(
         &self,
         ctx: &Context<'_>,
-        filter: Option<ChatmessageFilter>,
+        filter: Option<Vec<ChatmessageFilter>>,
     ) -> async_graphql::Result<ChatmessagesDeleteResult> {
         use crate::schema::chatmessage::dsl::*;
         let conn = ctx.data::<GlobalCtx>()?.get_conn()?;

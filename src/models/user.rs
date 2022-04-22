@@ -74,6 +74,7 @@ impl UserOrders {
 /// Available filters for users query
 #[derive(InputObject, Clone)]
 pub struct UserFilter {
+    id: Option<I32Filtering>,
     username: Option<StringFiltering>,
     nickname: Option<StringFiltering>,
 }
@@ -86,9 +87,11 @@ impl CindyFilter<user::table, DB> for UserFilter {
 
         let mut filter: Option<Box<dyn BoxableExpression<user, DB, SqlType = Bool> + Send>> = None;
         let UserFilter {
+            id: obj_id,
             username: obj_username,
             nickname: obj_nickname,
         } = self;
+        gen_number_filter!(obj_id: I32Filtering, id, filter);
         gen_string_filter!(obj_username, username, filter);
         gen_string_filter!(obj_nickname, nickname, filter);
         filter
