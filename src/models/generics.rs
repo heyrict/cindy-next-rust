@@ -407,6 +407,7 @@ impl Guard for DenyRoleGuard {
     }
 }
 
+/// Allow admin only
 #[derive(Default)]
 pub struct AdminRoleGuard {}
 
@@ -435,6 +436,26 @@ impl AdminRoleGuard {
             }
         } else {
             false
+        }
+    }
+}
+
+/// Allow admin/staff only
+#[derive(Default)]
+pub struct StaffRoleGuard {}
+
+#[async_trait::async_trait]
+impl Guard for StaffRoleGuard {
+    async fn check(&self, ctx: &Context<'_>) -> async_graphql::Result<()> {
+        if let Some(reqctx) = ctx.data_opt::<RequestCtx>() {
+            let role = reqctx.get_role();
+            if role == Role::Admin || role == Role::Staff {
+                Ok(())
+            } else {
+                Err("Forbidden: No enough privileges".into())
+            }
+        } else {
+            Ok(())
         }
     }
 }

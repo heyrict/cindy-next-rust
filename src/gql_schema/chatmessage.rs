@@ -1,4 +1,6 @@
-use async_graphql::{self, Context, InputObject, MaybeUndefined, Object, Subscription};
+use async_graphql::{
+    self, Context, InputObject, MaybeUndefined, Object, SimpleObject, Subscription,
+};
 use chrono::Utc;
 use diesel::prelude::*;
 use futures::{Stream, StreamExt};
@@ -171,6 +173,21 @@ pub struct CreateChatmessageInput {
     pub modified: Timestamptz,
 }
 
+#[derive(SimpleObject)]
+pub struct ChatmessagesDeleteResult {
+    pub affected_rows: usize,
+    pub data: Vec<Chatmessage>,
+}
+
+impl ChatmessagesDeleteResult {
+    fn new(data: Vec<Chatmessage>) -> Self {
+        Self {
+            affected_rows: data.len(),
+            data,
+        }
+    }
+}
+
 #[Object]
 impl ChatmessageMutation {
     pub async fn update_chatmessage(
@@ -242,8 +259,8 @@ impl ChatmessageMutation {
         Ok(chatmessage)
     }
 
-    // Delete chatmessage (admin only)
-    #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
+    // Delete chatmessage (admin/staff only)
+    #[graphql(guard = "StaffRoleGuard::default()")]
     pub async fn delete_chatmessage(
         &self,
         ctx: &Context<'_>,
@@ -256,6 +273,30 @@ impl ChatmessageMutation {
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(chatmessage)
+    }
+
+    // Delete chatmessages (admin only)
+    #[graphql(guard = "AdminRoleGuard::default()")]
+    pub async fn delete_chatmessages(
+        &self,
+        ctx: &Context<'_>,
+        filter: Option<ChatmessageFilter>,
+    ) -> async_graphql::Result<ChatmessagesDeleteResult> {
+        use crate::schema::chatmessage::dsl::*;
+        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+
+        let mut query = diesel::delete(chatmessage).into_boxed();
+        if let Some(filter) = filter {
+            if let Some(filter_exp) = filter.as_expression() {
+                query = query.filter(filter_exp)
+            }
+        }
+
+        let chatmessages: Vec<Chatmessage> = query
+            .get_results(&conn)
+            .map_err(|err| async_graphql::Error::from(err))?;
+
+        Ok(ChatmessagesDeleteResult::new(chatmessages))
     }
 }
 
