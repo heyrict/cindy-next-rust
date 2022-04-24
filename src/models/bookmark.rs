@@ -58,10 +58,10 @@ pub struct BookmarkFilter {
 impl CindyFilter<bookmark::table> for BookmarkFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<bookmark::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<bookmark::table, DB, SqlType = Bool>>> {
         use crate::schema::bookmark::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<bookmark, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<bookmark, DB, SqlType = Bool>>> =
             None;
         let BookmarkFilter {
             id: obj_id,
@@ -87,10 +87,10 @@ pub struct BookmarkCountFilter {
 impl CindyFilter<bookmark::table> for BookmarkCountFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<bookmark::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<bookmark::table, DB, SqlType = Bool>>> {
         use crate::schema::bookmark::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<bookmark, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<bookmark, DB, SqlType = Bool>>> =
             None;
         let BookmarkCountFilter {
             puzzle_id: obj_puzzle_id,

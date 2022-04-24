@@ -56,10 +56,10 @@ pub struct StarFilter {
 impl CindyFilter<star::table> for StarFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<star::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<star::table, DB, SqlType = Bool>>> {
         use crate::schema::star::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<star, DB, SqlType = Bool> + Send>> = None;
+        let mut filter: Option<Box<dyn BoxableExpression<star, DB, SqlType = Bool>>> = None;
         let StarFilter {
             id: obj_id,
             value: obj_value,
@@ -85,10 +85,10 @@ pub struct StarCountFilter {
 impl CindyFilter<star::table> for StarCountFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<star::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<star::table, DB, SqlType = Bool>>> {
         use crate::schema::star::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<star, DB, SqlType = Bool> + Send>> = None;
+        let mut filter: Option<Box<dyn BoxableExpression<star, DB, SqlType = Bool>>> = None;
         let StarCountFilter {
             puzzle_id: obj_puzzle_id,
             user_id: obj_user_id,

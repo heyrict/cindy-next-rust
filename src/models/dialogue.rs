@@ -75,10 +75,10 @@ pub struct DialogueFilter {
 impl CindyFilter<dialogue::table> for DialogueFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool>>> {
         use crate::schema::dialogue::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool>>> =
             None;
         let DialogueFilter {
             id: obj_id,

@@ -61,10 +61,10 @@ pub struct DmReadFilter {
 impl CindyFilter<dm_read::table> for DmReadFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<dm_read::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<dm_read::table, DB, SqlType = Bool>>> {
         use crate::schema::dm_read::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<dm_read, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<dm_read, DB, SqlType = Bool>>> =
             None;
         let DmReadFilter {
             id: obj_id,

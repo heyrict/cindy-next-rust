@@ -60,11 +60,11 @@ pub struct DirectMessageFilter {
 impl CindyFilter<direct_message::table> for DirectMessageFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<direct_message::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<direct_message::table, DB, SqlType = Bool>>> {
         use crate::schema::direct_message::dsl::*;
 
         let mut filter: Option<
-            Box<dyn BoxableExpression<direct_message, DB, SqlType = Bool> + Send>,
+            Box<dyn BoxableExpression<direct_message, DB, SqlType = Bool>>,
         > = None;
         let DirectMessageFilter {
             id: obj_id,

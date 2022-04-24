@@ -82,10 +82,10 @@ pub struct UserFilter {
 impl CindyFilter<user::table> for UserFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool>>> {
         use crate::schema::user::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<user, DB, SqlType = Bool> + Send>> = None;
+        let mut filter: Option<Box<dyn BoxableExpression<user, DB, SqlType = Bool>>> = None;
         let UserFilter {
             id: obj_id,
             username: obj_username,
@@ -641,7 +641,7 @@ impl User {
     pub async fn local_auth(
         username: &str,
         password: &str,
-        conn: PooledConnection<ConnectionManager<PgConnection>>,
+        mut conn: PooledConnection<ConnectionManager<PgConnection>>,
     ) -> Result<Self> {
         use crate::schema::user::last_login;
 

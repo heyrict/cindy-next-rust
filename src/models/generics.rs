@@ -332,17 +332,16 @@ impl<T> MaybeUndefinedExt<T> for MaybeUndefined<T> {
     }
 }
 
-pub trait CindyFilter<Table: Send> {
-    fn as_expression(self) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool> + Send>>;
+pub trait CindyFilter<Table> {
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool>>>;
 }
 
 impl<T: 'static, F> CindyFilter<T> for Vec<F>
 where
-    T: Send,
     F: CindyFilter<T>,
 {
-    fn as_expression(self) -> Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool> + Send>> {
-        let mut filter: Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool> + Send>> = None;
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool>>> {
+        let mut filter: Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool>>> = None;
         for item in self.into_iter() {
             if let Some(item) = item.as_expression() {
                 filter = Some(if let Some(filter_) = filter {
@@ -556,11 +555,11 @@ macro_rules! gen_nullable_number_filter {
                     }
                 });
             };
-            apply_filter!(eq, $field, $filt);
-            apply_filter!(gt, $field, $filt);
-            apply_filter!(ge, $field, $filt);
-            apply_filter!(lt, $field, $filt);
-            apply_filter!(le, $field, $filt);
+            apply_filter_nullable!(eq, $field, $filt);
+            apply_filter_nullable!(gt, $field, $filt);
+            apply_filter_nullable!(ge, $field, $filt);
+            apply_filter_nullable!(lt, $field, $filt);
+            apply_filter_nullable!(le, $field, $filt);
             apply_filter!(eq_any, $field, $filt);
         }
     };
@@ -620,6 +619,32 @@ macro_rules! apply_filter {
                 Box::new(filt_.and($field.$obj($obj as $ty)))
             } else {
                 Box::new($field.$obj($obj as $ty))
+            });
+        };
+    };
+}
+
+/// Applies the filter to the query in a loop. Field may be nullable.
+///
+/// Due to limitation of the query builder, grouping `or` is not possible.
+/// Thus only one arguments from the second element in the array will be accepted.
+#[macro_export]
+macro_rules! apply_filter_nullable {
+    ($obj:ident, $field:ident, $filt:ident) => {
+        if let Some($obj) = $obj {
+            $filt = Some(if let Some(filt_) = $filt {
+                Box::new(filt_.and($field.$obj($obj).assume_not_null()))
+            } else {
+                Box::new($field.$obj($obj).assume_not_null())
+            });
+        };
+    };
+    (($ty:ty) $obj:ident, $field:ident, $filt:ident) => {
+        if let Some($obj) = $obj {
+            $filt = Some(if let Some(filt_) = $filt {
+                Box::new(filt_.and($field.$obj($obj as $ty).assume_not_null()))
+            } else {
+                Box::new($field.$obj($obj as $ty).assume_not_null())
             });
         };
     };

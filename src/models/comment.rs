@@ -59,10 +59,10 @@ pub struct CommentFilter {
 impl CindyFilter<comment::table> for CommentFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<comment::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<comment::table, DB, SqlType = Bool>>> {
         use crate::schema::comment::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<comment, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<comment, DB, SqlType = Bool>>> =
             None;
         let CommentFilter {
             id: obj_id,
@@ -91,10 +91,10 @@ pub struct CommentCountFilter {
 impl CindyFilter<comment::table> for CommentCountFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<comment::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<comment::table, DB, SqlType = Bool>>> {
         use crate::schema::comment::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<comment, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<comment, DB, SqlType = Bool>>> =
             None;
         let CommentCountFilter {
             puzzle_id: obj_puzzle_id,

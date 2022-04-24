@@ -55,10 +55,10 @@ pub struct ImageFilter {
 impl CindyFilter<image::table> for ImageFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<image::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<image::table, DB, SqlType = Bool>>> {
         use crate::schema::image::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<image, DB, SqlType = Bool> + Send>> = None;
+        let mut filter: Option<Box<dyn BoxableExpression<image, DB, SqlType = Bool>>> = None;
         let ImageFilter {
             user_id: obj_user_id,
             puzzle_id: obj_puzzle_id,

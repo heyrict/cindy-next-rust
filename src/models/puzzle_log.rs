@@ -32,9 +32,7 @@ pub struct PuzzleLogFilter {
 }
 
 impl CindyFilter<hint::table> for PuzzleLogFilter {
-    fn as_expression(
-        self,
-    ) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool> + Send>> {
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool>>> {
         use crate::schema::hint::dsl::*;
 
         let PuzzleLogFilter {
@@ -44,13 +42,15 @@ impl CindyFilter<hint::table> for PuzzleLogFilter {
             modified: obj_modified,
         } = self;
 
-        let mut filter: Option<Box<dyn BoxableExpression<hint, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<hint, DB, SqlType = Bool>>> =
             Some(if let Some(user_id_filtering) = obj_user_id {
                 if let Some(user_id_val) = user_id_filtering.eq {
                     Box::new(
-                        puzzle_id
-                            .eq(obj_puzzle_id)
-                            .and(receiver_id.is_null().or(receiver_id.eq(user_id_val))),
+                        puzzle_id.eq(obj_puzzle_id).and(
+                            receiver_id
+                                .is_null()
+                                .or(receiver_id.eq(user_id_val).assume_not_null()),
+                        ),
                     )
                 } else if let Some(true) = user_id_filtering.is_null {
                     Box::new(puzzle_id.eq(obj_puzzle_id).and(receiver_id.is_null()))
@@ -70,7 +70,7 @@ impl CindyFilter<hint::table> for PuzzleLogFilter {
 impl CindyFilter<dialogue::table> for PuzzleLogFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool>>> {
         use crate::schema::dialogue::dsl::*;
 
         let PuzzleLogFilter {
@@ -80,7 +80,7 @@ impl CindyFilter<dialogue::table> for PuzzleLogFilter {
             modified: obj_modified,
         } = self;
 
-        let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool>>> =
             Some(if let Some(user_id_filtering) = obj_user_id {
                 if let Some(user_id_val) = user_id_filtering.eq {
                     Box::new(puzzle_id.eq(obj_puzzle_id).and(user_id.eq(user_id_val)))

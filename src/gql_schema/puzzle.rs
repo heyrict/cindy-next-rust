@@ -2,7 +2,7 @@ use async_graphql::{self, Context, InputObject, MaybeUndefined, Object, Subscrip
 use chrono::{Duration, TimeZone, Utc};
 use diesel::{
     prelude::*,
-    sql_types::{self, Integer},
+    sql_types::{self, BigInt, Integer},
 };
 use futures::{Stream, StreamExt};
 use regex::Regex;
@@ -163,19 +163,13 @@ impl PuzzleQuery {
         limit: i64,
         offset: i64,
     ) -> async_graphql::Result<Vec<Puzzle>> {
-        use crate::schema::{dialogue, puzzle};
-
         let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let results: Vec<Puzzle> = dialogue::table
-            .inner_join(puzzle::table)
-            .distinct_on(dialogue::puzzle_id)
-            .filter(dialogue::user_id.eq(user_id))
-            .order(dialogue::puzzle_id.desc())
-            .limit(limit)
-            .offset(offset)
-            .select(puzzle::all_columns)
-            .load::<Puzzle>(&mut conn)?;
+        let results: Vec<Puzzle> = diesel::sql_query(include_str!("../sql/puzzle_footprints.sql"))
+            .bind::<Integer, _>(user_id)
+            .bind::<BigInt, _>(limit)
+            .bind::<BigInt, _>(offset)
+            .get_results(&mut conn)?;
 
         Ok(results)
     }

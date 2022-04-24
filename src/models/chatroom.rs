@@ -64,10 +64,10 @@ pub struct ChatroomFilter {
 impl CindyFilter<chatroom::table> for ChatroomFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<chatroom::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<chatroom::table, DB, SqlType = Bool>>> {
         use crate::schema::chatroom::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<chatroom, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<chatroom, DB, SqlType = Bool>>> =
             None;
         let ChatroomFilter {
             id: obj_id,
@@ -102,10 +102,10 @@ pub struct ChatroomCountFilter {
 impl CindyFilter<chatroom::table> for ChatroomCountFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<chatroom::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<chatroom::table, DB, SqlType = Bool>>> {
         use crate::schema::chatroom::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<chatroom, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<chatroom, DB, SqlType = Bool>>> =
             None;
         let ChatroomCountFilter {
             name: obj_name,

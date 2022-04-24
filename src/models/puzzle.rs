@@ -1,15 +1,16 @@
 use async_graphql::{self, Context, Enum, InputObject, Object};
+use byteorder::{NetworkEndian, WriteBytesExt};
 use diesel::{
     backend::{Backend, RawValue},
     deserialize::{self, FromSql},
     dsl::{max, sum},
     expression::AsExpression,
-    helper_types::AsExprOf,
     prelude::*,
     query_dsl::QueryDsl,
-    serialize::{self, Output, ToSql},
+    serialize::{self, IsNull, Output, ToSql},
     sql_types::{BigInt, Bool, Int4, Integer, Text},
 };
+use std::error::Error;
 
 use crate::context::GlobalCtx;
 use crate::schema::puzzle;
@@ -89,11 +90,10 @@ pub struct PuzzleFilter {
 impl CindyFilter<puzzle::table> for PuzzleFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<puzzle::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<puzzle::table, DB, SqlType = Bool>>> {
         use crate::schema::puzzle::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<puzzle, DB, SqlType = Bool> + Send>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<puzzle, DB, SqlType = Bool>>> = None;
         let PuzzleFilter {
             id: obj_id,
             anonymous: obj_anonymous,
@@ -150,20 +150,23 @@ impl RawFilter<Yami> for YamiFiltering {
     }
 }
 
-#[derive(Enum, Eq, PartialEq, Clone, Copy, Debug, FromSqlRow)]
+#[repr(i32)]
+#[derive(Enum, Eq, PartialEq, Clone, Copy, Debug, FromSqlRow, AsExpression)]
+#[diesel(sql_type = Integer)]
 pub enum Yami {
     None = 0,
     Normal = 1,
     Longterm = 2,
 }
 
-impl<DB> ToSql<Integer, DB> for Yami
+impl ToSql<Integer, DB> for Yami
 where
-    DB: Backend,
     i32: ToSql<Integer, DB>,
 {
-    fn to_sql<'b>(&self, out: &mut Output<'b, '_, DB>) -> serialize::Result {
-        (*self as i32).to_sql(out)
+    fn to_sql<'a>(&'a self, out: &mut Output<'a, '_, DB>) -> serialize::Result {
+        out.write_i32::<NetworkEndian>(*self as i32)
+            .map(|_| IsNull::No)
+            .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)
     }
 }
 
@@ -172,8 +175,7 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(value: RawValue<DB>) -> deserialize::Result<Self> {
-        let bytes = value.as_bytes();
+    fn from_sql(bytes: RawValue<DB>) -> deserialize::Result<Self> {
         match i32::from_sql(bytes)? {
             0 => Ok(Yami::None),
             1 => Ok(Yami::Normal),
@@ -191,7 +193,9 @@ pub struct GenreFiltering {
     pub ne_all: Option<Vec<Genre>>,
 }
 
-#[derive(Enum, Eq, PartialEq, Copy, Clone, Debug, FromSqlRow)]
+#[repr(i32)]
+#[derive(Enum, Eq, PartialEq, Copy, Clone, Debug, FromSqlRow, AsExpression)]
+#[diesel(sql_type = Integer)]
 pub enum Genre {
     Classic = 0,
     TwentyQuestions = 1,
@@ -215,21 +219,14 @@ impl RawFilter<Genre> for GenreFiltering {
     }
 }
 
-impl<DB> ToSql<Integer, DB> for Genre
+impl ToSql<Integer, DB> for Genre
 where
-    DB: Backend,
     i32: ToSql<Integer, DB>,
 {
-    fn to_sql<'b>(&self, out: &mut Output<'b, '_, DB>) -> serialize::Result {
-        (*self as i32).to_sql(out)
-    }
-}
-
-impl AsExpression<Integer> for Genre {
-    type Expression = AsExprOf<i32, Integer>;
-
-    fn as_expression(self) -> Self::Expression {
-        <i32 as AsExpression<Integer>>::as_expression(self as i32)
+    fn to_sql(&self, out: &mut Output<DB>) -> serialize::Result {
+        out.write_i32::<NetworkEndian>(*self as i32)
+            .map(|_| IsNull::No)
+            .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)
     }
 }
 
@@ -238,8 +235,7 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(value: RawValue<DB>) -> deserialize::Result<Self> {
-        let bytes = value.as_bytes();
+    fn from_sql(bytes: RawValue<DB>) -> deserialize::Result<Self> {
         match i32::from_sql(bytes)? {
             0 => Ok(Genre::Classic),
             1 => Ok(Genre::TwentyQuestions),
@@ -250,7 +246,9 @@ where
     }
 }
 
-#[derive(Enum, Eq, PartialEq, Clone, Copy, Debug, FromSqlRow)]
+#[repr(i32)]
+#[derive(Enum, Eq, PartialEq, Clone, Copy, Debug, FromSqlRow, AsExpression)]
+#[diesel(sql_type = Integer)]
 pub enum Status {
     Undergoing = 0,
     Solved = 1,
@@ -283,21 +281,14 @@ impl RawFilter<Status> for StatusFiltering {
     }
 }
 
-impl<DB> ToSql<Integer, DB> for Status
+impl ToSql<Integer, DB> for Status
 where
-    DB: Backend,
     i32: ToSql<Integer, DB>,
 {
-    fn to_sql<'b>(&self, out: &mut Output<'b, '_, DB>) -> serialize::Result {
-        (*self as i32).to_sql(out)
-    }
-}
-
-impl AsExpression<Integer> for Status {
-    type Expression = AsExprOf<i32, Integer>;
-
-    fn as_expression(self) -> Self::Expression {
-        <i32 as AsExpression<Integer>>::as_expression(self as i32)
+    fn to_sql(&self, out: &mut Output<DB>) -> serialize::Result {
+        out.write_i32::<NetworkEndian>(*self as i32)
+            .map(|_| IsNull::No)
+            .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)
     }
 }
 
@@ -306,8 +297,7 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(value: RawValue<DB>) -> deserialize::Result<Self> {
-        let bytes = value.as_bytes();
+    fn from_sql(bytes: RawValue<DB>) -> deserialize::Result<Self> {
         match i32::from_sql(bytes)? {
             0 => Ok(Status::Undergoing),
             1 => Ok(Status::Solved),

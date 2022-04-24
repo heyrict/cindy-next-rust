@@ -54,10 +54,10 @@ pub struct LicenseFilter {
 impl CindyFilter<license::table> for LicenseFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<license::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<license::table, DB, SqlType = Bool>>> {
         use crate::schema::license::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<license, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<license, DB, SqlType = Bool>>> =
             None;
         let LicenseFilter {
             id: obj_id,

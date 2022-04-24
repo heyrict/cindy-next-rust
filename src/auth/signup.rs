@@ -70,7 +70,7 @@ pub async fn signup(
         return error_response::<SignupResponse, _>("Password must be at least 6 characters long");
     }
 
-    let conn = ctx.get_conn().expect("Error getting connection");
+    let mut conn = ctx.get_conn().expect("Error getting connection");
 
     // Sign up the user
     let credential = User::derive_credential(password);
@@ -81,7 +81,7 @@ pub async fn signup(
             user::nickname.eq(&nickname),
             user::password.eq(&credential),
         ))
-        .get_results::<User>(&conn);
+        .get_results::<User>(&mut conn);
 
     let mut usr = match user_query {
         Ok(usr) => usr,

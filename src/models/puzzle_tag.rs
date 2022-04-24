@@ -56,10 +56,10 @@ pub struct PuzzleTagFilter {
 impl CindyFilter<puzzle_tag::table> for PuzzleTagFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<puzzle_tag::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<puzzle_tag::table, DB, SqlType = Bool>>> {
         use crate::schema::puzzle_tag::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<puzzle_tag, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<puzzle_tag, DB, SqlType = Bool>>> =
             None;
         let PuzzleTagFilter {
             id: obj_id,

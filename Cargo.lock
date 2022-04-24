@@ -650,6 +650,7 @@ dependencies = [
  "async-graphql",
  "async-graphql-actix-web",
  "base64 0.12.3",
+ "byteorder",
  "chrono",
  "diesel",
  "dotenv",

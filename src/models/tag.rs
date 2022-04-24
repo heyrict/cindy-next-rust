@@ -58,10 +58,10 @@ pub struct TagAggrFilter {
 impl CindyFilter<tag_aggr::table> for TagAggrFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<tag_aggr::table, DB, SqlType = Bool> + Send>> {
+    ) -> Option<Box<dyn BoxableExpression<tag_aggr::table, DB, SqlType = Bool>>> {
         use crate::schema_view::tag_aggr::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<tag_aggr, DB, SqlType = Bool> + Send>> =
+        let mut filter: Option<Box<dyn BoxableExpression<tag_aggr, DB, SqlType = Bool>>> =
             None;
         let TagAggrFilter {
             id: obj_id,
