@@ -63,8 +63,7 @@ impl CindyFilter<chatmessage::table> for ChatmessageFilter {
     ) -> Option<Box<dyn BoxableExpression<chatmessage::table, DB, SqlType = Bool>>> {
         use crate::schema::chatmessage::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<chatmessage, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<chatmessage, DB, SqlType = Bool>>> = None;
         let ChatmessageFilter {
             id: obj_id,
             content: obj_content,
@@ -119,8 +118,7 @@ impl CindyFilter<chatmessage::table> for ChatmessageCountFilter {
     ) -> Option<Box<dyn BoxableExpression<chatmessage::table, DB, SqlType = Bool>>> {
         use crate::schema::chatmessage::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<chatmessage, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<chatmessage, DB, SqlType = Bool>>> = None;
         let ChatmessageCountFilter {
             chatroom_id: obj_chatroom_id,
             user_id: obj_user_id,

@@ -59,8 +59,7 @@ impl CindyFilter<puzzle_tag::table> for PuzzleTagFilter {
     ) -> Option<Box<dyn BoxableExpression<puzzle_tag::table, DB, SqlType = Bool>>> {
         use crate::schema::puzzle_tag::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<puzzle_tag, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<puzzle_tag, DB, SqlType = Bool>>> = None;
         let PuzzleTagFilter {
             id: obj_id,
             puzzle_id: obj_puzzle_id,

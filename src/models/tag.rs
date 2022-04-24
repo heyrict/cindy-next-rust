@@ -61,8 +61,7 @@ impl CindyFilter<tag_aggr::table> for TagAggrFilter {
     ) -> Option<Box<dyn BoxableExpression<tag_aggr::table, DB, SqlType = Bool>>> {
         use crate::schema_view::tag_aggr::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<tag_aggr, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<tag_aggr, DB, SqlType = Bool>>> = None;
         let TagAggrFilter {
             id: obj_id,
             name: obj_name,

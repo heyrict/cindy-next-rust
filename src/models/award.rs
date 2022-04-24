@@ -53,9 +53,7 @@ pub struct AwardFilter {
 }
 
 impl CindyFilter<award::table> for AwardFilter {
-    fn as_expression(
-        self,
-    ) -> Option<Box<dyn BoxableExpression<award::table, DB, SqlType = Bool>>> {
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<award::table, DB, SqlType = Bool>>> {
         use crate::schema::award::dsl::*;
 
         let mut filter: Option<Box<dyn BoxableExpression<award, DB, SqlType = Bool>>> = None;

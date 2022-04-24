@@ -18,7 +18,10 @@ impl HintQuery {
     pub async fn hint(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Hint> {
         let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let hint = hint::table.filter(hint::id.eq(id)).limit(1).first(&mut conn)?;
+        let hint = hint::table
+            .filter(hint::id.eq(id))
+            .limit(1)
+            .first(&mut conn)?;
 
         Ok(hint)
     }
@@ -153,7 +156,10 @@ impl HintMutation {
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
-        let hint_inst: Hint = hint::table.filter(hint::id.eq(id)).limit(1).first(&mut conn)?;
+        let hint_inst: Hint = hint::table
+            .filter(hint::id.eq(id))
+            .limit(1)
+            .first(&mut conn)?;
 
         match role {
             Role::User => {

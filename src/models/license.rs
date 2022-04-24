@@ -57,8 +57,7 @@ impl CindyFilter<license::table> for LicenseFilter {
     ) -> Option<Box<dyn BoxableExpression<license::table, DB, SqlType = Bool>>> {
         use crate::schema::license::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<license, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<license, DB, SqlType = Bool>>> = None;
         let LicenseFilter {
             id: obj_id,
             user_id: obj_user_id,

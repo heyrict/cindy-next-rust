@@ -80,9 +80,7 @@ pub struct UserFilter {
 }
 
 impl CindyFilter<user::table> for UserFilter {
-    fn as_expression(
-        self,
-    ) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool>>> {
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool>>> {
         use crate::schema::user::dsl::*;
 
         let mut filter: Option<Box<dyn BoxableExpression<user, DB, SqlType = Bool>>> = None;

@@ -63,9 +63,8 @@ impl CindyFilter<direct_message::table> for DirectMessageFilter {
     ) -> Option<Box<dyn BoxableExpression<direct_message::table, DB, SqlType = Bool>>> {
         use crate::schema::direct_message::dsl::*;
 
-        let mut filter: Option<
-            Box<dyn BoxableExpression<direct_message, DB, SqlType = Bool>>,
-        > = None;
+        let mut filter: Option<Box<dyn BoxableExpression<direct_message, DB, SqlType = Bool>>> =
+            None;
         let DirectMessageFilter {
             id: obj_id,
             content: obj_content,

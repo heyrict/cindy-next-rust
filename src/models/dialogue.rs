@@ -78,8 +78,7 @@ impl CindyFilter<dialogue::table> for DialogueFilter {
     ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool>>> {
         use crate::schema::dialogue::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<dialogue, DB, SqlType = Bool>>> = None;
         let DialogueFilter {
             id: obj_id,
             question: obj_question,

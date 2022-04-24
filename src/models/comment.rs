@@ -62,8 +62,7 @@ impl CindyFilter<comment::table> for CommentFilter {
     ) -> Option<Box<dyn BoxableExpression<comment::table, DB, SqlType = Bool>>> {
         use crate::schema::comment::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<comment, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<comment, DB, SqlType = Bool>>> = None;
         let CommentFilter {
             id: obj_id,
             content: obj_content,
@@ -94,8 +93,7 @@ impl CindyFilter<comment::table> for CommentCountFilter {
     ) -> Option<Box<dyn BoxableExpression<comment::table, DB, SqlType = Bool>>> {
         use crate::schema::comment::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<comment, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<comment, DB, SqlType = Bool>>> = None;
         let CommentCountFilter {
             puzzle_id: obj_puzzle_id,
             user_id: obj_user_id,

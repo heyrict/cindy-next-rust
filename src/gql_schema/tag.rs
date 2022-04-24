@@ -18,7 +18,10 @@ impl TagQuery {
     pub async fn tag(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Tag> {
         let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let tag = tag::table.filter(tag::id.eq(id)).limit(1).first(&mut conn)?;
+        let tag = tag::table
+            .filter(tag::id.eq(id))
+            .limit(1)
+            .first(&mut conn)?;
 
         Ok(tag)
     }

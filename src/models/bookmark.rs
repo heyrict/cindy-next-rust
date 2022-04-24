@@ -61,8 +61,7 @@ impl CindyFilter<bookmark::table> for BookmarkFilter {
     ) -> Option<Box<dyn BoxableExpression<bookmark::table, DB, SqlType = Bool>>> {
         use crate::schema::bookmark::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<bookmark, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<bookmark, DB, SqlType = Bool>>> = None;
         let BookmarkFilter {
             id: obj_id,
             value: obj_value,
@@ -90,8 +89,7 @@ impl CindyFilter<bookmark::table> for BookmarkCountFilter {
     ) -> Option<Box<dyn BoxableExpression<bookmark::table, DB, SqlType = Bool>>> {
         use crate::schema::bookmark::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<bookmark, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<bookmark, DB, SqlType = Bool>>> = None;
         let BookmarkCountFilter {
             puzzle_id: obj_puzzle_id,
             user_id: obj_user_id,

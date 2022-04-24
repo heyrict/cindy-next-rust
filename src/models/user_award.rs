@@ -65,8 +65,7 @@ impl CindyFilter<user_award::table> for UserAwardFilter {
     ) -> Option<Box<dyn BoxableExpression<user_award::table, DB, SqlType = Bool>>> {
         use crate::schema::user_award::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<user_award, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<user_award, DB, SqlType = Bool>>> = None;
         let UserAwardFilter {
             id: obj_id,
             created: obj_created,

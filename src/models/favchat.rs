@@ -55,13 +55,11 @@ pub struct FavchatFilter {
 impl CindyFilter<favorite_chatroom::table> for FavchatFilter {
     fn as_expression(
         self,
-    ) -> Option<Box<dyn BoxableExpression<favorite_chatroom::table, DB, SqlType = Bool>>>
-    {
+    ) -> Option<Box<dyn BoxableExpression<favorite_chatroom::table, DB, SqlType = Bool>>> {
         use crate::schema::favorite_chatroom::dsl::*;
 
-        let mut filter: Option<
-            Box<dyn BoxableExpression<favorite_chatroom, DB, SqlType = Bool>>,
-        > = None;
+        let mut filter: Option<Box<dyn BoxableExpression<favorite_chatroom, DB, SqlType = Bool>>> =
+            None;
         let FavchatFilter {
             id: obj_id,
             chatroom_id: obj_chatroom_id,

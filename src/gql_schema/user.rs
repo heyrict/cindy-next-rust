@@ -22,7 +22,10 @@ impl UserQuery {
     pub async fn user(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<User> {
         let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let user = user::table.filter(user::id.eq(id)).limit(1).first(&mut conn)?;
+        let user = user::table
+            .filter(user::id.eq(id))
+            .limit(1)
+            .first(&mut conn)?;
 
         Ok(user)
     }

@@ -64,8 +64,7 @@ impl CindyFilter<dm_read::table> for DmReadFilter {
     ) -> Option<Box<dyn BoxableExpression<dm_read::table, DB, SqlType = Bool>>> {
         use crate::schema::dm_read::dsl::*;
 
-        let mut filter: Option<Box<dyn BoxableExpression<dm_read, DB, SqlType = Bool>>> =
-            None;
+        let mut filter: Option<Box<dyn BoxableExpression<dm_read, DB, SqlType = Bool>>> = None;
         let DmReadFilter {
             id: obj_id,
             user_id: obj_user_id,

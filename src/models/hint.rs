@@ -58,9 +58,7 @@ pub struct HintFilter {
 }
 
 impl CindyFilter<hint::table> for HintFilter {
-    fn as_expression(
-        self,
-    ) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool>>> {
+    fn as_expression(self) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool>>> {
         use crate::schema::hint::dsl::*;
 
         let mut filter: Option<Box<dyn BoxableExpression<hint, DB, SqlType = Bool>>> = None;

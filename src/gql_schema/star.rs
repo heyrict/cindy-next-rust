@@ -17,7 +17,10 @@ impl StarQuery {
     pub async fn star(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Star> {
         let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let star = star::table.filter(star::id.eq(id)).limit(1).first(&mut conn)?;
+        let star = star::table
+            .filter(star::id.eq(id))
+            .limit(1)
+            .first(&mut conn)?;
 
         Ok(star)
     }
@@ -128,7 +131,10 @@ impl StarMutation {
         match role {
             Role::User => {
                 // User should be the owner on update mutation
-                let star_inst: Star = star::table.filter(star::id.eq(id)).limit(1).first(&mut conn)?;
+                let star_inst: Star = star::table
+                    .filter(star::id.eq(id))
+                    .limit(1)
+                    .first(&mut conn)?;
                 user_id_guard(ctx, star_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -184,7 +190,10 @@ impl StarMutation {
         match role {
             Role::User => {
                 // User should be the owner
-                let star_inst: Star = star::table.filter(star::id.eq(id)).limit(1).first(&mut conn)?;
+                let star_inst: Star = star::table
+                    .filter(star::id.eq(id))
+                    .limit(1)
+                    .first(&mut conn)?;
                 user_id_guard(ctx, star_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
