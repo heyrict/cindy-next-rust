@@ -26,12 +26,12 @@ impl ChatmessageQuery {
         ctx: &Context<'_>,
         id: i32,
     ) -> async_graphql::Result<Chatmessage> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let chatmessage = chatmessage::table
             .filter(chatmessage::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(chatmessage)
     }
@@ -46,7 +46,7 @@ impl ChatmessageQuery {
     ) -> async_graphql::Result<Vec<Chatmessage>> {
         use crate::schema::chatmessage::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = chatmessage.into_boxed();
         if let Some(order) = order {
@@ -64,7 +64,7 @@ impl ChatmessageQuery {
             query = query.offset(offset);
         }
 
-        let chatmessages = query.load::<Chatmessage>(&conn)?;
+        let chatmessages = query.load::<Chatmessage>(&mut conn)?;
 
         Ok(chatmessages)
     }
@@ -76,7 +76,7 @@ impl ChatmessageQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::chatmessage::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = chatmessage.into_boxed();
         if let Some(filter) = filter {
@@ -85,7 +85,7 @@ impl ChatmessageQuery {
             }
         }
 
-        let result = query.count().get_result::<i64>(&conn)?;
+        let result = query.count().get_result::<i64>(&mut conn)?;
 
         Ok(result)
     }
@@ -100,7 +100,7 @@ impl ChatmessageQuery {
         use crate::schema::chatmessage;
         use crate::schema::favorite_chatroom;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let results: Vec<Chatmessage> = chatmessage::table
             .inner_join(
@@ -112,7 +112,7 @@ impl ChatmessageQuery {
             .limit(limit)
             .offset(offset)
             .select(chatmessage::all_columns)
-            .get_results(&conn)?;
+            .get_results(&mut conn)?;
 
         Ok(results)
     }
@@ -131,12 +131,12 @@ pub struct UpdateChatmessageInput {
 }
 
 #[derive(AsChangeset)]
-#[table_name = "chatmessage"]
+#[diesel(table_name = chatmessage)]
 pub struct UpdateChatmessageData {
     pub id: Option<ID>,
     pub content: Option<String>,
     pub created: Option<Option<Timestamptz>>,
-    #[column_name = "editTimes"]
+    #[diesel(column_name = editTimes)]
     pub edit_times: Option<i32>,
     pub chatroom_id: Option<ID>,
     pub user_id: Option<ID>,
@@ -158,14 +158,14 @@ impl From<UpdateChatmessageInput> for UpdateChatmessageData {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "chatmessage"]
+#[diesel(table_name = chatmessage)]
 pub struct CreateChatmessageInput {
     pub id: Option<ID>,
     pub content: String,
     #[graphql(default_with = "Utc::now()")]
     pub created: Timestamptz,
     #[graphql(default = 0)]
-    #[column_name = "editTimes"]
+    #[diesel(column_name = editTimes)]
     pub edit_times: i32,
     pub chatroom_id: ID,
     pub user_id: Option<ID>,
@@ -196,14 +196,14 @@ impl ChatmessageMutation {
         id: ID,
         mut set: UpdateChatmessageInput,
     ) -> async_graphql::Result<Chatmessage> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
         let cm_inst: Chatmessage = chatmessage::table
             .filter(chatmessage::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         match role {
             Role::User => {
@@ -219,7 +219,7 @@ impl ChatmessageMutation {
         let chatmessage: Chatmessage = diesel::update(chatmessage::table)
             .filter(chatmessage::id.eq(id))
             .set(UpdateChatmessageData::from(set))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         CindyBroker::publish(ChatmessageSub::Updated(cm_inst, chatmessage.clone()));
@@ -232,7 +232,7 @@ impl ChatmessageMutation {
         ctx: &Context<'_>,
         mut data: CreateChatmessageInput,
     ) -> async_graphql::Result<Chatmessage> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -251,7 +251,7 @@ impl ChatmessageMutation {
 
         let chatmessage: Chatmessage = diesel::insert_into(chatmessage::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         CindyBroker::publish(ChatmessageSub::Created(chatmessage.clone()));
@@ -266,10 +266,10 @@ impl ChatmessageMutation {
         ctx: &Context<'_>,
         id: ID,
     ) -> async_graphql::Result<Chatmessage> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let chatmessage = diesel::delete(chatmessage::table.filter(chatmessage::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(chatmessage)
@@ -283,7 +283,7 @@ impl ChatmessageMutation {
         filter: Option<Vec<ChatmessageFilter>>,
     ) -> async_graphql::Result<ChatmessagesDeleteResult> {
         use crate::schema::chatmessage::dsl::*;
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = diesel::delete(chatmessage).into_boxed();
         if let Some(filter) = filter {
@@ -293,7 +293,7 @@ impl ChatmessageMutation {
         }
 
         let chatmessages: Vec<Chatmessage> = query
-            .get_results(&conn)
+            .get_results(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(ChatmessagesDeleteResult::new(chatmessages))

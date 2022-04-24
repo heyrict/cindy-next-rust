@@ -15,12 +15,12 @@ pub struct CommentMutation;
 #[Object]
 impl CommentQuery {
     pub async fn comment(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Comment> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let comment = comment::table
             .filter(comment::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(comment)
     }
@@ -35,7 +35,7 @@ impl CommentQuery {
     ) -> async_graphql::Result<Vec<Comment>> {
         use crate::schema::comment::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = comment.into_boxed();
         if let Some(order) = order {
@@ -53,7 +53,7 @@ impl CommentQuery {
             query = query.offset(offset);
         }
 
-        let comments = query.load::<Comment>(&conn)?;
+        let comments = query.load::<Comment>(&mut conn)?;
 
         Ok(comments)
     }
@@ -66,7 +66,7 @@ impl CommentQuery {
     ) -> async_graphql::Result<Vec<Comment>> {
         use crate::schema::{comment, puzzle};
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let comments = comment::table
             .inner_join(puzzle::table)
@@ -75,7 +75,7 @@ impl CommentQuery {
             .limit(limit)
             .offset(offset)
             .select(comment::all_columns)
-            .get_results::<Comment>(&conn)?;
+            .get_results::<Comment>(&mut conn)?;
 
         Ok(comments)
     }
@@ -87,7 +87,7 @@ impl CommentQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::comment::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = comment.into_boxed();
         if let Some(filter) = filter {
@@ -96,7 +96,7 @@ impl CommentQuery {
             }
         }
 
-        let result = query.count().get_result::<i64>(&conn)?;
+        let result = query.count().get_result::<i64>(&mut conn)?;
 
         Ok(result)
     }
@@ -110,7 +110,7 @@ impl CommentQuery {
     ) -> async_graphql::Result<Vec<Comment>> {
         use crate::schema::{comment, puzzle};
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let comments: Vec<Comment> = comment::table
             .inner_join(puzzle::table)
@@ -119,7 +119,7 @@ impl CommentQuery {
             .limit(limit)
             .offset(offset)
             .select(comment::all_columns)
-            .get_results::<Comment>(&conn)?;
+            .get_results::<Comment>(&mut conn)?;
 
         Ok(comments)
     }
@@ -131,20 +131,20 @@ impl CommentQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::{comment, puzzle};
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = comment::table
             .inner_join(puzzle::table)
             .filter(puzzle::user_id.eq(user_id))
             .count()
-            .get_result(&conn)?;
+            .get_result(&mut conn)?;
 
         Ok(result)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "comment"]
+#[diesel(table_name = comment)]
 pub struct UpdateCommentInput {
     pub id: Option<ID>,
     pub content: Option<String>,
@@ -154,7 +154,7 @@ pub struct UpdateCommentInput {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "comment"]
+#[diesel(table_name = comment)]
 pub struct CreateCommentInput {
     pub id: Option<ID>,
     pub content: String,
@@ -174,7 +174,7 @@ impl CommentMutation {
         id: ID,
         set: UpdateCommentInput,
     ) -> async_graphql::Result<Comment> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -184,7 +184,7 @@ impl CommentMutation {
                 let comment_inst: Comment = comment::table
                     .filter(comment::id.eq(id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 user_id_guard(ctx, comment_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -194,7 +194,7 @@ impl CommentMutation {
         let comment: Comment = diesel::update(comment::table)
             .filter(comment::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(comment)
@@ -207,7 +207,7 @@ impl CommentMutation {
         ctx: &Context<'_>,
         mut data: CreateCommentInput,
     ) -> async_graphql::Result<Comment> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -226,7 +226,7 @@ impl CommentMutation {
 
         let comment: Comment = diesel::insert_into(comment::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(comment)
@@ -239,10 +239,10 @@ impl CommentMutation {
         ctx: &Context<'_>,
         id: ID,
     ) -> async_graphql::Result<Comment> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let comment = diesel::delete(comment::table.filter(comment::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(comment)

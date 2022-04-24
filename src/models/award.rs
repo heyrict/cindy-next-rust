@@ -52,7 +52,7 @@ pub struct AwardFilter {
     requisition: Option<StringFiltering>,
 }
 
-impl CindyFilter<award::table, DB> for AwardFilter {
+impl CindyFilter<award::table> for AwardFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<award::table, DB, SqlType = Bool> + Send>> {
@@ -77,7 +77,7 @@ impl CindyFilter<award::table, DB> for AwardFilter {
 
 /// Object for award table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "award"]
+#[diesel(table_name = award)]
 pub struct Award {
     pub id: ID,
     pub name: String,

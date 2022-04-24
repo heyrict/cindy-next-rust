@@ -24,7 +24,7 @@ impl PuzzleLogQuery {
         let dialogues: Vec<Dialogue> = {
             use crate::schema::dialogue::dsl::*;
 
-            let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+            let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
             let mut query = dialogue.into_boxed();
             gen_order!(order, id, query);
@@ -41,13 +41,13 @@ impl PuzzleLogQuery {
                 query = query.offset(offset);
             }
 
-            query.load::<Dialogue>(&conn)?
+            query.load::<Dialogue>(&mut conn)?
         };
 
         let hints: Vec<Hint> = {
             use crate::schema::hint::dsl::*;
 
-            let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+            let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
             let mut query = hint.into_boxed();
             gen_order!(order, id, query);
@@ -64,7 +64,7 @@ impl PuzzleLogQuery {
                 query = query.offset(offset);
             }
 
-            query.load::<Hint>(&conn)?
+            query.load::<Hint>(&mut conn)?
         };
 
         let mut puzzle_logs: Vec<PuzzleLog> = dialogues

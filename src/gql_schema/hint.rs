@@ -16,9 +16,9 @@ pub struct HintMutation;
 #[Object]
 impl HintQuery {
     pub async fn hint(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Hint> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let hint = hint::table.filter(hint::id.eq(id)).limit(1).first(&conn)?;
+        let hint = hint::table.filter(hint::id.eq(id)).limit(1).first(&mut conn)?;
 
         Ok(hint)
     }
@@ -33,7 +33,7 @@ impl HintQuery {
     ) -> async_graphql::Result<Vec<Hint>> {
         use crate::schema::hint::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = hint.into_boxed();
         if let Some(order) = order {
@@ -51,7 +51,7 @@ impl HintQuery {
             query = query.offset(offset);
         }
 
-        let hints = query.load::<Hint>(&conn)?;
+        let hints = query.load::<Hint>(&mut conn)?;
 
         Ok(hints)
     }
@@ -70,13 +70,13 @@ pub struct UpdateHintInput {
 }
 
 #[derive(AsChangeset, Debug)]
-#[table_name = "hint"]
+#[diesel(table_name = hint)]
 pub struct UpdateHintData {
     pub id: Option<ID>,
     pub content: Option<String>,
     pub created: Option<Timestamptz>,
     pub puzzle_id: Option<ID>,
-    #[column_name = "edittimes"]
+    #[diesel(column_name = edittimes)]
     pub edit_times: Option<i32>,
     pub receiver_id: Option<Option<ID>>,
     pub modified: Timestamptz,
@@ -113,13 +113,13 @@ pub struct CreateHintInput {
 }
 
 #[derive(Insertable)]
-#[table_name = "hint"]
+#[diesel(table_name = hint)]
 pub struct CreateHintData {
     pub id: Option<ID>,
     pub content: String,
     pub created: Timestamptz,
     pub puzzle_id: ID,
-    #[column_name = "edittimes"]
+    #[diesel(column_name = edittimes)]
     pub edit_times: i32,
     pub receiver_id: Option<Option<ID>>,
     pub modified: Timestamptz,
@@ -149,11 +149,11 @@ impl HintMutation {
     ) -> async_graphql::Result<Hint> {
         use crate::schema::puzzle;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
-        let hint_inst: Hint = hint::table.filter(hint::id.eq(id)).limit(1).first(&conn)?;
+        let hint_inst: Hint = hint::table.filter(hint::id.eq(id)).limit(1).first(&mut conn)?;
 
         match role {
             Role::User => {
@@ -161,7 +161,7 @@ impl HintMutation {
                 let puzzle_inst: Puzzle = puzzle::table
                     .filter(puzzle::id.eq(hint_inst.puzzle_id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 user_id_guard(ctx, puzzle_inst.user_id)?;
 
                 // Set `modified` to the current time when edited
@@ -178,7 +178,7 @@ impl HintMutation {
         let hint: Hint = diesel::update(hint::table)
             .filter(hint::id.eq(id))
             .set(data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         let key_starts_with = format!("puzzleLog<{}", hint.puzzle_id);
@@ -198,7 +198,7 @@ impl HintMutation {
     ) -> async_graphql::Result<Hint> {
         use crate::schema::puzzle;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -208,7 +208,7 @@ impl HintMutation {
                 let puzzle_inst: Puzzle = puzzle::table
                     .filter(puzzle::id.eq(data.puzzle_id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 // Assert the user is the owner of the puzzle.
                 user_id_guard(ctx, puzzle_inst.user_id)?;
             }
@@ -218,7 +218,7 @@ impl HintMutation {
 
         let hint: Hint = diesel::insert_into(hint::table)
             .values(&CreateHintData::from(data))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         let key_starts_with = format!("puzzleLog<{}", hint.puzzle_id);
@@ -234,10 +234,10 @@ impl HintMutation {
     // Delete hint (admin only)
     #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_hint(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Hint> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let hint = diesel::delete(hint::table.filter(hint::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(hint)

@@ -57,7 +57,7 @@ pub struct DirectMessageFilter {
     pub modified: Option<TimestamptzFiltering>,
 }
 
-impl CindyFilter<direct_message::table, DB> for DirectMessageFilter {
+impl CindyFilter<direct_message::table> for DirectMessageFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<direct_message::table, DB, SqlType = Bool> + Send>> {
@@ -109,14 +109,14 @@ impl DirectMessageSub {
 
 /// Object for direct_message table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "direct_message"]
+#[diesel(table_name = direct_message)]
 pub struct DirectMessage {
     pub id: ID,
     pub content: String,
     pub created: Timestamptz,
     pub receiver_id: ID,
     pub sender_id: ID,
-    #[column_name = "editTimes"]
+    #[diesel(column_name = editTimes)]
     pub edit_times: i32,
     pub modified: Timestamptz,
 }
@@ -148,12 +148,12 @@ impl DirectMessage {
     async fn sender(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.sender_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -161,12 +161,12 @@ impl DirectMessage {
     async fn receiver(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.receiver_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }

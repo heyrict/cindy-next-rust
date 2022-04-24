@@ -51,7 +51,7 @@ pub struct LicenseFilter {
     description: Option<StringFiltering>,
 }
 
-impl CindyFilter<license::table, DB> for LicenseFilter {
+impl CindyFilter<license::table> for LicenseFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<license::table, DB, SqlType = Bool> + Send>> {
@@ -75,7 +75,7 @@ impl CindyFilter<license::table, DB> for LicenseFilter {
 
 /// Object for license table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "license"]
+#[diesel(table_name = license)]
 pub struct License {
     pub id: ID,
     pub user_id: Option<ID>,
@@ -109,14 +109,14 @@ impl License {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<User>> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         self.user_id
             .map(|user_id| {
                 user::table
                     .filter(user::id.eq(user_id))
                     .limit(1)
-                    .first(&conn)
+                    .first(&mut conn)
             })
             .transpose()
             .map_err(|err| async_graphql::ServerError::new(err.to_string(), None).into())

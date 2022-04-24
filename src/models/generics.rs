@@ -1,6 +1,6 @@
 use async_graphql::{self, async_trait, Context, Enum, Guard, InputObject, MaybeUndefined};
 use chrono::{DateTime, NaiveDate, Utc};
-use diesel::{backend::Backend, expression::BoxableExpression, prelude::*, sql_types::Bool};
+use diesel::{expression::BoxableExpression, prelude::*, sql_types::Bool};
 
 use crate::auth::Role;
 use crate::context::RequestCtx;
@@ -332,15 +332,14 @@ impl<T> MaybeUndefinedExt<T> for MaybeUndefined<T> {
     }
 }
 
-pub trait CindyFilter<Table: Send, DB> {
+pub trait CindyFilter<Table: Send> {
     fn as_expression(self) -> Option<Box<dyn BoxableExpression<Table, DB, SqlType = Bool> + Send>>;
 }
 
-impl<T: 'static, DB: 'static, F> CindyFilter<T, DB> for Vec<F>
+impl<T: 'static, F> CindyFilter<T> for Vec<F>
 where
     T: Send,
-    DB: Backend,
-    F: CindyFilter<T, DB>,
+    F: CindyFilter<T>,
 {
     fn as_expression(self) -> Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool> + Send>> {
         let mut filter: Option<Box<dyn BoxableExpression<T, DB, SqlType = Bool> + Send>> = None;
@@ -583,17 +582,17 @@ macro_rules! gen_enum_filter {
             // eq_any
             if let Some(eq_any) = eq_any {
                 $filt = Some(if let Some(filt_) = $filt {
-                    Box::new(filt_.and($field.eq(diesel::dsl::any(eq_any))))
+                    Box::new(filt_.and($field.eq_any(eq_any)))
                 } else {
-                    Box::new($field.eq(diesel::dsl::any(eq_any)))
+                    Box::new($field.eq_any(eq_any))
                 });
             };
             // ne_all
             if let Some(ne_all) = ne_all {
                 $filt = Some(if let Some(filt_) = $filt {
-                    Box::new(filt_.and($field.ne(diesel::dsl::all(ne_all))))
+                    Box::new(filt_.and($field.ne_all(ne_all)))
                 } else {
-                    Box::new($field.ne(diesel::dsl::all(ne_all)))
+                    Box::new($field.ne_all(ne_all))
                 });
             };
         }

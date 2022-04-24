@@ -15,12 +15,12 @@ pub struct AwardMutation;
 #[Object]
 impl AwardQuery {
     pub async fn award(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Award> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let award = award::table
             .filter(award::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(award)
     }
@@ -35,7 +35,7 @@ impl AwardQuery {
     ) -> async_graphql::Result<Vec<Award>> {
         use crate::schema::award::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = award.into_boxed();
         if let Some(order) = order {
@@ -53,7 +53,7 @@ impl AwardQuery {
             query = query.offset(offset);
         }
 
-        let awards = query.load::<Award>(&conn)?;
+        let awards = query.load::<Award>(&mut conn)?;
 
         Ok(awards)
     }
@@ -65,7 +65,7 @@ impl AwardQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::award::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = award.into_boxed();
         if let Some(filter) = filter {
@@ -74,31 +74,31 @@ impl AwardQuery {
             }
         }
 
-        let result = query.count().get_result(&conn)?;
+        let result = query.count().get_result(&mut conn)?;
 
         Ok(result)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "award"]
+#[diesel(table_name = award)]
 pub struct UpdateAwardInput {
     pub id: Option<ID>,
     pub name: Option<String>,
     pub description: Option<String>,
-    #[column_name = "groupName"]
+    #[diesel(column_name = groupName)]
     pub group_name: Option<String>,
     pub requisition: Option<String>,
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "award"]
+#[diesel(table_name = award)]
 pub struct CreateAwardInput {
     pub id: Option<ID>,
     pub name: String,
     pub description: String,
     #[graphql(default_with = "String::new()")]
-    #[column_name = "groupName"]
+    #[diesel(column_name = groupName)]
     pub group_name: String,
     #[graphql(default_with = "String::new()")]
     pub requisition: String,
@@ -114,12 +114,12 @@ impl AwardMutation {
         id: ID,
         set: UpdateAwardInput,
     ) -> async_graphql::Result<Award> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let award: Award = diesel::update(award::table)
             .filter(award::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(award)
@@ -132,11 +132,11 @@ impl AwardMutation {
         ctx: &Context<'_>,
         data: CreateAwardInput,
     ) -> async_graphql::Result<Award> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let award: Award = diesel::insert_into(award::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(award)
@@ -145,10 +145,10 @@ impl AwardMutation {
     // Delete award (admin only)
     #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_award(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Award> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let award = diesel::delete(award::table.filter(award::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(award)

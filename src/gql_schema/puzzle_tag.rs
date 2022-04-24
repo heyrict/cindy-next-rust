@@ -17,12 +17,12 @@ pub struct PuzzleTagMutation;
 #[Object]
 impl PuzzleTagQuery {
     pub async fn puzzle_tag(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<PuzzleTag> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzle_tag = puzzle_tag::table
             .filter(puzzle_tag::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(puzzle_tag)
     }
@@ -37,7 +37,7 @@ impl PuzzleTagQuery {
     ) -> async_graphql::Result<Vec<PuzzleTag>> {
         use crate::schema::puzzle_tag::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = puzzle_tag.into_boxed();
         if let Some(order) = order {
@@ -55,7 +55,7 @@ impl PuzzleTagQuery {
             query = query.offset(offset);
         }
 
-        let puzzle_tags = query.load::<PuzzleTag>(&conn)?;
+        let puzzle_tags = query.load::<PuzzleTag>(&mut conn)?;
 
         Ok(puzzle_tags)
     }
@@ -67,7 +67,7 @@ impl PuzzleTagQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::puzzle_tag::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = puzzle_tag.into_boxed();
         if let Some(filter) = filter {
@@ -76,14 +76,14 @@ impl PuzzleTagQuery {
             }
         }
 
-        let result = query.count().get_result(&conn)?;
+        let result = query.count().get_result(&mut conn)?;
 
         Ok(result)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "puzzle_tag"]
+#[diesel(table_name = puzzle_tag)]
 pub struct UpdatePuzzleTagInput {
     pub id: Option<ID>,
     pub puzzle_id: Option<ID>,
@@ -92,7 +92,7 @@ pub struct UpdatePuzzleTagInput {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "puzzle_tag"]
+#[diesel(table_name = puzzle_tag)]
 pub struct CreatePuzzleTagInput {
     pub id: Option<ID>,
     pub puzzle_id: ID,
@@ -117,7 +117,7 @@ impl PuzzleTagMutation {
         id: ID,
         set: UpdatePuzzleTagInput,
     ) -> async_graphql::Result<PuzzleTag> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -127,7 +127,7 @@ impl PuzzleTagMutation {
                 let puzzle_tag_inst: PuzzleTag = puzzle_tag::table
                     .filter(puzzle_tag::id.eq(id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 user_id_guard(ctx, puzzle_tag_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -137,7 +137,7 @@ impl PuzzleTagMutation {
         let puzzle_tag: PuzzleTag = diesel::update(puzzle_tag::table)
             .filter(puzzle_tag::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(puzzle_tag)
@@ -149,7 +149,7 @@ impl PuzzleTagMutation {
         ctx: &Context<'_>,
         mut data: CreatePuzzleTagInput,
     ) -> async_graphql::Result<PuzzleTag> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -168,7 +168,7 @@ impl PuzzleTagMutation {
 
         let puzzle_tag: PuzzleTag = diesel::insert_into(puzzle_tag::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(puzzle_tag)
@@ -181,7 +181,7 @@ impl PuzzleTagMutation {
         ctx: &Context<'_>,
         mut data: CreatePuzzleTagWithTagInput,
     ) -> async_graphql::Result<PuzzleTag> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -208,7 +208,7 @@ impl PuzzleTagMutation {
 
         let puzzle_tag: PuzzleTag = diesel::insert_into(puzzle_tag::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(puzzle_tag)
@@ -221,7 +221,7 @@ impl PuzzleTagMutation {
         ctx: &Context<'_>,
         id: ID,
     ) -> async_graphql::Result<PuzzleTag> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -235,11 +235,11 @@ impl PuzzleTagMutation {
                 let puzzle_tag_inst: PuzzleTag = puzzle_tag::table
                     .filter(puzzle_tag::id.eq(id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 let puzzle_inst: Puzzle = puzzle::table
                     .filter(puzzle::id.eq(puzzle_tag_inst.puzzle_id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 assert_eq_guard(puzzle_tag_inst.user_id, user_id)
                     .or_else(|_| assert_eq_guard(puzzle_inst.user_id, user_id))?;
             }
@@ -248,7 +248,7 @@ impl PuzzleTagMutation {
         };
 
         let puzzle_tag = diesel::delete(puzzle_tag::table.filter(puzzle_tag::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(puzzle_tag)

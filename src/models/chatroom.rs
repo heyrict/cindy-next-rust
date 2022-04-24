@@ -61,7 +61,7 @@ pub struct ChatroomFilter {
     public: Option<bool>,
 }
 
-impl CindyFilter<chatroom::table, DB> for ChatroomFilter {
+impl CindyFilter<chatroom::table> for ChatroomFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<chatroom::table, DB, SqlType = Bool> + Send>> {
@@ -99,7 +99,7 @@ pub struct ChatroomCountFilter {
     public: Option<bool>,
 }
 
-impl CindyFilter<chatroom::table, DB> for ChatroomCountFilter {
+impl CindyFilter<chatroom::table> for ChatroomCountFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<chatroom::table, DB, SqlType = Bool> + Send>> {
@@ -125,7 +125,7 @@ impl CindyFilter<chatroom::table, DB> for ChatroomCountFilter {
 
 /// Object for chatroom table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "chatroom"]
+#[diesel(table_name = chatroom)]
 pub struct Chatroom {
     pub id: ID,
     pub name: String,
@@ -163,12 +163,12 @@ impl Chatroom {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user_inst = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user_inst)
     }

@@ -16,12 +16,12 @@ pub struct ChatroomMutation;
 #[Object]
 impl ChatroomQuery {
     pub async fn chatroom(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Chatroom> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let chatroom = chatroom::table
             .filter(chatroom::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(chatroom)
     }
@@ -36,7 +36,7 @@ impl ChatroomQuery {
     ) -> async_graphql::Result<Vec<Chatroom>> {
         use crate::schema::chatroom::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = chatroom.into_boxed();
         if let Some(order) = order {
@@ -54,7 +54,7 @@ impl ChatroomQuery {
             query = query.offset(offset);
         }
 
-        let chatrooms = query.load::<Chatroom>(&conn)?;
+        let chatrooms = query.load::<Chatroom>(&mut conn)?;
 
         Ok(chatrooms)
     }
@@ -66,7 +66,7 @@ impl ChatroomQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::chatroom::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = chatroom.into_boxed();
         if let Some(filter) = filter {
@@ -75,14 +75,14 @@ impl ChatroomQuery {
             }
         }
 
-        let result = query.count().get_result::<i64>(&conn)?;
+        let result = query.count().get_result::<i64>(&mut conn)?;
 
         Ok(result)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "chatroom"]
+#[diesel(table_name = chatroom)]
 pub struct UpdateChatroomInput {
     pub id: Option<ID>,
     pub name: Option<String>,
@@ -94,7 +94,7 @@ pub struct UpdateChatroomInput {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "chatroom"]
+#[diesel(table_name = chatroom)]
 pub struct CreateChatroomInput {
     pub id: Option<ID>,
     pub name: Option<String>,
@@ -114,7 +114,7 @@ impl ChatroomMutation {
         id: ID,
         set: UpdateChatroomInput,
     ) -> async_graphql::Result<Chatroom> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -124,7 +124,7 @@ impl ChatroomMutation {
                 let chatroom_inst: Chatroom = chatroom::table
                     .filter(chatroom::id.eq(id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 user_id_guard(ctx, chatroom_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -134,7 +134,7 @@ impl ChatroomMutation {
         let chatroom: Chatroom = diesel::update(chatroom::table)
             .filter(chatroom::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(chatroom)
@@ -145,7 +145,7 @@ impl ChatroomMutation {
         ctx: &Context<'_>,
         mut data: CreateChatroomInput,
     ) -> async_graphql::Result<Chatroom> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -164,7 +164,7 @@ impl ChatroomMutation {
 
         let chatroom: Chatroom = diesel::insert_into(chatroom::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(chatroom)
@@ -177,10 +177,10 @@ impl ChatroomMutation {
         ctx: &Context<'_>,
         id: ID,
     ) -> async_graphql::Result<Chatroom> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let chatroom = diesel::delete(chatroom::table.filter(chatroom::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(chatroom)

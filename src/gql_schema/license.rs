@@ -15,12 +15,12 @@ pub struct LicenseMutation;
 #[Object]
 impl LicenseQuery {
     pub async fn license(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<License> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let license = license::table
             .filter(license::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(license)
     }
@@ -35,7 +35,7 @@ impl LicenseQuery {
     ) -> async_graphql::Result<Vec<License>> {
         use crate::schema::license::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = license.into_boxed();
         if let Some(order) = order {
@@ -53,14 +53,14 @@ impl LicenseQuery {
             query = query.offset(offset);
         }
 
-        let licenses = query.load::<License>(&conn)?;
+        let licenses = query.load::<License>(&mut conn)?;
 
         Ok(licenses)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "license"]
+#[diesel(table_name = license)]
 pub struct UpdateLicenseInput {
     pub id: Option<ID>,
     pub name: Option<String>,
@@ -69,7 +69,7 @@ pub struct UpdateLicenseInput {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "license"]
+#[diesel(table_name = license)]
 pub struct CreateLicenseInput {
     pub id: Option<ID>,
     pub user_id: Option<ID>,
@@ -88,12 +88,12 @@ impl LicenseMutation {
         id: ID,
         set: UpdateLicenseInput,
     ) -> async_graphql::Result<License> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let license: License = diesel::update(license::table)
             .filter(license::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(license)
@@ -106,11 +106,11 @@ impl LicenseMutation {
         ctx: &Context<'_>,
         data: CreateLicenseInput,
     ) -> async_graphql::Result<License> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let license: License = diesel::insert_into(license::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(license)
@@ -123,10 +123,10 @@ impl LicenseMutation {
         ctx: &Context<'_>,
         id: ID,
     ) -> async_graphql::Result<License> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let license = diesel::delete(license::table.filter(license::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(license)

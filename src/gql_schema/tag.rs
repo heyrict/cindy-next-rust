@@ -16,9 +16,9 @@ pub struct TagMutation;
 #[Object]
 impl TagQuery {
     pub async fn tag(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Tag> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let tag = tag::table.filter(tag::id.eq(id)).limit(1).first(&conn)?;
+        let tag = tag::table.filter(tag::id.eq(id)).limit(1).first(&mut conn)?;
 
         Ok(tag)
     }
@@ -33,7 +33,7 @@ impl TagQuery {
     ) -> async_graphql::Result<Vec<TagAggr>> {
         use crate::schema_view::tag_aggr::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = tag_aggr.into_boxed();
         if let Some(order) = order {
@@ -51,14 +51,14 @@ impl TagQuery {
             query = query.offset(offset);
         }
 
-        let tags = query.load::<TagAggr>(&conn)?;
+        let tags = query.load::<TagAggr>(&mut conn)?;
 
         Ok(tags)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "tag"]
+#[diesel(table_name = tag)]
 pub struct UpdateTagInput {
     pub id: Option<ID>,
     pub name: Option<String>,
@@ -66,7 +66,7 @@ pub struct UpdateTagInput {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "tag"]
+#[diesel(table_name = tag)]
 pub struct CreateTagInput {
     pub id: Option<ID>,
     pub name: String,
@@ -83,12 +83,12 @@ impl TagMutation {
         id: ID,
         set: UpdateTagInput,
     ) -> async_graphql::Result<Tag> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let tag: Tag = diesel::update(tag::table)
             .filter(tag::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(tag)
@@ -100,11 +100,11 @@ impl TagMutation {
         ctx: &Context<'_>,
         data: CreateTagInput,
     ) -> async_graphql::Result<Tag> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let tag: Tag = diesel::insert_into(tag::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(tag)
@@ -113,10 +113,10 @@ impl TagMutation {
     // Delete tag
     #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_tag(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Tag> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let tag = diesel::delete(tag::table.filter(tag::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(tag)

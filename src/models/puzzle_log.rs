@@ -31,7 +31,7 @@ pub struct PuzzleLogFilter {
     modified: Option<TimestamptzFiltering>,
 }
 
-impl CindyFilter<hint::table, DB> for PuzzleLogFilter {
+impl CindyFilter<hint::table> for PuzzleLogFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool> + Send>> {
@@ -67,7 +67,7 @@ impl CindyFilter<hint::table, DB> for PuzzleLogFilter {
     }
 }
 
-impl CindyFilter<dialogue::table, DB> for PuzzleLogFilter {
+impl CindyFilter<dialogue::table> for PuzzleLogFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool> + Send>> {

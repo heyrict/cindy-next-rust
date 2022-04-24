@@ -57,7 +57,7 @@ pub struct ChatmessageFilter {
     pub modified: Option<TimestamptzFiltering>,
 }
 
-impl CindyFilter<chatmessage::table, DB> for ChatmessageFilter {
+impl CindyFilter<chatmessage::table> for ChatmessageFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<chatmessage::table, DB, SqlType = Bool> + Send>> {
@@ -113,7 +113,7 @@ pub struct ChatmessageCountFilter {
     pub user_id: Option<I32Filtering>,
 }
 
-impl CindyFilter<chatmessage::table, DB> for ChatmessageCountFilter {
+impl CindyFilter<chatmessage::table> for ChatmessageCountFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<chatmessage::table, DB, SqlType = Bool> + Send>> {
@@ -134,12 +134,12 @@ impl CindyFilter<chatmessage::table, DB> for ChatmessageCountFilter {
 
 /// Object for chatmessage table
 #[derive(Queryable, QueryableByName, PartialEq, Identifiable, Clone, Debug)]
-#[table_name = "chatmessage"]
+#[diesel(table_name = chatmessage)]
 pub struct Chatmessage {
     pub id: ID,
     pub content: String,
     pub created: Option<Timestamptz>,
-    #[column_name = "editTimes"]
+    #[diesel(column_name = editTimes)]
     pub edit_times: i32,
     pub chatroom_id: ID,
     pub user_id: ID,
@@ -173,12 +173,12 @@ impl Chatmessage {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -186,12 +186,12 @@ impl Chatmessage {
     async fn chatroom(&self, ctx: &Context<'_>) -> async_graphql::Result<Chatroom> {
         use crate::schema::chatroom;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let chatroom = chatroom::table
             .filter(chatroom::id.eq(self.chatroom_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(chatroom)
     }

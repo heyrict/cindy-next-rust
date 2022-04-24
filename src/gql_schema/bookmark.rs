@@ -15,12 +15,12 @@ pub struct BookmarkMutation;
 #[Object]
 impl BookmarkQuery {
     pub async fn bookmark(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Bookmark> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let bookmark = bookmark::table
             .filter(bookmark::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(bookmark)
     }
@@ -35,7 +35,7 @@ impl BookmarkQuery {
     ) -> async_graphql::Result<Vec<Bookmark>> {
         use crate::schema::bookmark::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = bookmark.into_boxed();
         if let Some(order) = order {
@@ -53,7 +53,7 @@ impl BookmarkQuery {
             query = query.offset(offset);
         }
 
-        let bookmarks = query.load::<Bookmark>(&conn)?;
+        let bookmarks = query.load::<Bookmark>(&mut conn)?;
 
         Ok(bookmarks)
     }
@@ -65,7 +65,7 @@ impl BookmarkQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::bookmark::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = bookmark.into_boxed();
         if let Some(filter) = filter {
@@ -74,14 +74,14 @@ impl BookmarkQuery {
             }
         }
 
-        let result = query.count().get_result::<i64>(&conn)?;
+        let result = query.count().get_result::<i64>(&mut conn)?;
 
         Ok(result)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "bookmark"]
+#[diesel(table_name = bookmark)]
 pub struct UpdateBookmarkInput {
     pub id: Option<ID>,
     pub value: Option<i16>,
@@ -90,7 +90,7 @@ pub struct UpdateBookmarkInput {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "bookmark"]
+#[diesel(table_name = bookmark)]
 pub struct CreateBookmarkInput {
     pub id: Option<ID>,
     pub value: i16,
@@ -106,7 +106,7 @@ impl BookmarkMutation {
         id: ID,
         set: UpdateBookmarkInput,
     ) -> async_graphql::Result<Bookmark> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -116,7 +116,7 @@ impl BookmarkMutation {
                 let bookmark_inst: Bookmark = bookmark::table
                     .filter(bookmark::id.eq(id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 user_id_guard(ctx, bookmark_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -126,7 +126,7 @@ impl BookmarkMutation {
         let bookmark: Bookmark = diesel::update(bookmark::table)
             .filter(bookmark::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(bookmark)
@@ -137,7 +137,7 @@ impl BookmarkMutation {
         ctx: &Context<'_>,
         mut data: CreateBookmarkInput,
     ) -> async_graphql::Result<Bookmark> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -157,7 +157,7 @@ impl BookmarkMutation {
 
         let bookmark: Bookmark = diesel::insert_into(bookmark::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(bookmark)
@@ -170,7 +170,7 @@ impl BookmarkMutation {
         ctx: &Context<'_>,
         id: ID,
     ) -> async_graphql::Result<Bookmark> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -180,7 +180,7 @@ impl BookmarkMutation {
                 let bookmark_inst: Bookmark = bookmark::table
                     .filter(bookmark::id.eq(id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 user_id_guard(ctx, bookmark_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -188,7 +188,7 @@ impl BookmarkMutation {
         };
 
         let bookmark = diesel::delete(bookmark::table.filter(bookmark::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(bookmark)

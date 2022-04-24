@@ -20,9 +20,9 @@ pub struct UserMutation;
 #[Object]
 impl UserQuery {
     pub async fn user(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<User> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let user = user::table.filter(user::id.eq(id)).limit(1).first(&conn)?;
+        let user = user::table.filter(user::id.eq(id)).limit(1).first(&mut conn)?;
 
         Ok(user)
     }
@@ -37,7 +37,7 @@ impl UserQuery {
     ) -> async_graphql::Result<Vec<User>> {
         use crate::schema::user::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = user.into_boxed();
         if let Some(order) = order {
@@ -55,7 +55,7 @@ impl UserQuery {
             query = query.offset(offset);
         }
 
-        let users = query.load::<User>(&conn)?;
+        let users = query.load::<User>(&mut conn)?;
 
         Ok(users)
     }
@@ -67,7 +67,7 @@ impl UserQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::user::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = user.into_boxed();
         if let Some(filter) = filter {
@@ -76,7 +76,7 @@ impl UserQuery {
             }
         }
 
-        let result = query.count().get_result(&conn)?;
+        let result = query.count().get_result(&mut conn)?;
 
         Ok(result)
     }
@@ -89,7 +89,7 @@ impl UserQuery {
         limit: i32,
         offset: i32,
     ) -> async_graphql::Result<Vec<UserRankingRow>> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         // The range of the time puzzles are created
         let start_time = SERVER_TZ.ymd(year, month, 1).and_hms(0, 0, 0);
@@ -105,7 +105,7 @@ impl UserQuery {
                 .bind::<sql_types::Timestamptz, _>(end_time)
                 .bind::<Integer, _>(limit)
                 .bind::<Integer, _>(offset)
-                .get_results(&conn)?;
+                .get_results(&mut conn)?;
 
         Ok(results)
     }
@@ -118,7 +118,7 @@ impl UserQuery {
         limit: i32,
         offset: i32,
     ) -> async_graphql::Result<Vec<UserRankingRow>> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         // The range of the time puzzles are created
         let start_time = SERVER_TZ.ymd(year, month, 1).and_hms(0, 0, 0);
@@ -134,7 +134,7 @@ impl UserQuery {
                 .bind::<sql_types::Timestamptz, _>(end_time)
                 .bind::<Integer, _>(limit)
                 .bind::<Integer, _>(offset)
-                .get_results(&conn)?;
+                .get_results(&mut conn)?;
 
         Ok(results)
     }
@@ -162,7 +162,7 @@ pub struct UpdateUserSet {
 }
 
 #[derive(AsChangeset, Debug)]
-#[table_name = "user"]
+#[diesel(table_name = user)]
 pub struct UpdateUserData {
     pub password: Option<String>,
     pub last_login: Option<Option<Timestamptz>>,
@@ -213,7 +213,7 @@ impl UserMutation {
         id: ID,
         set: UpdateUserSet,
     ) -> async_graphql::Result<User> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -243,7 +243,7 @@ impl UserMutation {
         diesel::update(user::table)
             .filter(user::id.eq(id))
             .set(&UpdateUserData::from(set))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| err.into())
     }
 }

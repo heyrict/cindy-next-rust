@@ -32,12 +32,12 @@ lazy_static! {
 #[Object]
 impl PuzzleQuery {
     pub async fn puzzle(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Puzzle> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzle = puzzle::table
             .filter(puzzle::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(puzzle)
     }
@@ -52,7 +52,7 @@ impl PuzzleQuery {
     ) -> async_graphql::Result<Vec<Puzzle>> {
         use crate::schema::puzzle::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = puzzle.into_boxed();
         if let Some(order) = order {
@@ -70,7 +70,7 @@ impl PuzzleQuery {
             query = query.offset(offset);
         }
 
-        let puzzles = query.load::<Puzzle>(&conn)?;
+        let puzzles = query.load::<Puzzle>(&mut conn)?;
 
         Ok(puzzles)
     }
@@ -82,7 +82,7 @@ impl PuzzleQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::puzzle::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = puzzle.into_boxed();
         if let Some(filter) = filter {
@@ -91,7 +91,7 @@ impl PuzzleQuery {
             }
         }
 
-        let result = query.count().get_result(&conn)?;
+        let result = query.count().get_result(&mut conn)?;
 
         Ok(result)
     }
@@ -101,12 +101,12 @@ impl PuzzleQuery {
         ctx: &Context<'_>,
         user_id: ID,
     ) -> async_graphql::Result<Vec<PuzzleCountByGenre>> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let results: Vec<PuzzleCountByGenre> =
             diesel::sql_query(include_str!("../sql/puzzle_count_by_genre.sql"))
                 .bind::<Integer, _>(user_id)
-                .get_results(&conn)?;
+                .get_results(&mut conn)?;
 
         Ok(results)
     }
@@ -116,12 +116,12 @@ impl PuzzleQuery {
         ctx: &Context<'_>,
         user_id: ID,
     ) -> async_graphql::Result<Vec<PuzzleStarAggrGroup>> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let results: Vec<PuzzleStarAggrGroup> =
             diesel::sql_query(include_str!("../sql/puzzle_star_count_groups.sql"))
                 .bind::<Integer, _>(user_id)
-                .get_results(&conn)?;
+                .get_results(&mut conn)?;
 
         Ok(results)
     }
@@ -131,12 +131,12 @@ impl PuzzleQuery {
         ctx: &Context<'_>,
         user_id: ID,
     ) -> async_graphql::Result<Vec<PuzzleStarAggrGroup>> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let results: Vec<PuzzleStarAggrGroup> =
             diesel::sql_query(include_str!("../sql/puzzle_star_sum_groups.sql"))
                 .bind::<Integer, _>(user_id)
-                .get_results(&conn)?;
+                .get_results(&mut conn)?;
 
         Ok(results)
     }
@@ -146,12 +146,12 @@ impl PuzzleQuery {
         ctx: &Context<'_>,
         puzzle_id: ID,
     ) -> async_graphql::Result<Vec<PuzzleParticipant>> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let results: Vec<PuzzleParticipant> =
             diesel::sql_query(include_str!("../sql/puzzle_participants.sql"))
                 .bind::<Integer, _>(puzzle_id)
-                .get_results(&conn)?;
+                .get_results(&mut conn)?;
 
         Ok(results)
     }
@@ -165,7 +165,7 @@ impl PuzzleQuery {
     ) -> async_graphql::Result<Vec<Puzzle>> {
         use crate::schema::{dialogue, puzzle};
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let results: Vec<Puzzle> = dialogue::table
             .inner_join(puzzle::table)
@@ -175,7 +175,7 @@ impl PuzzleQuery {
             .limit(limit)
             .offset(offset)
             .select(puzzle::all_columns)
-            .load::<Puzzle>(&conn)?;
+            .load::<Puzzle>(&mut conn)?;
 
         Ok(results)
     }
@@ -185,12 +185,12 @@ impl PuzzleQuery {
         ctx: &Context<'_>,
         user_id: ID,
     ) -> async_graphql::Result<i64> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result: PuzzleFootprintCount =
             diesel::sql_query(include_str!("../sql/puzzle_footprint_count.sql"))
                 .bind::<Integer, _>(user_id)
-                .get_result(&conn)?;
+                .get_result(&mut conn)?;
 
         Ok(result.count)
     }
@@ -203,7 +203,7 @@ impl PuzzleQuery {
         limit: i32,
         offset: i32,
     ) -> async_graphql::Result<Vec<Puzzle>> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         // The range of the time puzzles are created
         let start_time = SERVER_TZ.ymd(year, month, 1).and_hms(0, 0, 0);
@@ -219,7 +219,7 @@ impl PuzzleQuery {
                 .bind::<sql_types::Timestamptz, _>(end_time)
                 .bind::<Integer, _>(limit)
                 .bind::<Integer, _>(offset)
-                .get_results(&conn)?;
+                .get_results(&mut conn)?;
 
         Ok(results)
     }
@@ -244,7 +244,7 @@ pub struct UpdatePuzzleInput {
 }
 
 #[derive(AsChangeset, Debug)]
-#[table_name = "puzzle"]
+#[diesel(table_name = puzzle)]
 pub struct UpdatePuzzleData {
     pub title: Option<String>,
     pub yami: Option<i32>,
@@ -409,7 +409,7 @@ impl CreatePuzzleInput {
 }
 
 #[derive(Insertable)]
-#[table_name = "puzzle"]
+#[diesel(table_name = puzzle)]
 pub struct CreatePuzzleData {
     pub title: Option<String>,
     pub yami: Option<i32>,
@@ -456,7 +456,7 @@ impl PuzzleMutation {
         id: ID,
         set: UpdatePuzzleInput,
     ) -> async_graphql::Result<Puzzle> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -464,7 +464,7 @@ impl PuzzleMutation {
         let puzzle_inst: Puzzle = puzzle::table
             .filter(puzzle::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         match role {
             Role::User => {
@@ -505,7 +505,7 @@ impl PuzzleMutation {
                 };
                 let result = diesel::update(image::table.filter(image::id.eq(uuid_str)))
                     .set(image::puzzle_id.eq(puzzle_inst.id))
-                    .execute(&conn);
+                    .execute(&mut conn);
                 if let Err(e) = result {
                     info!("{:?}", e);
                     continue;
@@ -520,7 +520,7 @@ impl PuzzleMutation {
         let puzzle: Puzzle = diesel::update(puzzle::table)
             .filter(puzzle::id.eq(id))
             .set(UpdatePuzzleData::from(set))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         CindyBroker::publish(PuzzleSub::Updated(puzzle_inst, puzzle.clone()));
@@ -536,19 +536,19 @@ impl PuzzleMutation {
         filter: Option<Vec<PuzzleFilter>>,
         set: UpdatePuzzleInput,
     ) -> async_graphql::Result<Vec<Puzzle>> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzles: Vec<Puzzle> =
             if let Some(filter_exp) = filter.and_then(|filter| filter.as_expression()) {
                 diesel::update(puzzle::table)
                     .filter(filter_exp)
                     .set(UpdatePuzzleData::from(set))
-                    .get_results(&conn)
+                    .get_results(&mut conn)
                     .map_err(|err| async_graphql::Error::from(err))?
             } else {
                 diesel::update(puzzle::table)
                     .set(UpdatePuzzleData::from(set))
-                    .get_results(&conn)
+                    .get_results(&mut conn)
                     .map_err(|err| async_graphql::Error::from(err))?
             };
 
@@ -561,7 +561,7 @@ impl PuzzleMutation {
         ctx: &Context<'_>,
         data: CreatePuzzleInput,
     ) -> async_graphql::Result<Puzzle> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let user_id = reqctx.get_user_id();
         let role = reqctx.get_role();
@@ -587,7 +587,7 @@ impl PuzzleMutation {
 
         let puzzle: Puzzle = diesel::insert_into(puzzle::table)
             .values(&insert_data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         // When a puzzle is created, assign all referred images in puzzle content
@@ -608,7 +608,7 @@ impl PuzzleMutation {
             };
             let result = diesel::update(image::table.filter(image::id.eq(uuid_str)))
                 .set(image::puzzle_id.eq(puzzle.id))
-                .execute(&conn);
+                .execute(&mut conn);
             if let Err(e) = result {
                 info!("{:?}", e);
                 continue;
@@ -623,25 +623,25 @@ impl PuzzleMutation {
     // Delete puzzle (admin only)
     #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_puzzle(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Puzzle> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         // When a puzzle is deleted, delete all referred images
         use crate::schema::image;
         let images: Vec<Image> = image::table
             .filter(image::puzzle_id.eq(id))
             .select(image::all_columns)
-            .get_results(&conn)
+            .get_results(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
         for im in images {
             im.delete_file().await?;
         }
         diesel::delete(image::table.filter(image::puzzle_id.eq(id)))
-            .execute(&conn)
+            .execute(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         // Deletes the puzzle instance
         let puzzle = diesel::delete(puzzle::table.filter(puzzle::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(puzzle)

@@ -58,7 +58,7 @@ pub struct DmReadFilter {
     user_id: Option<I32Filtering>,
 }
 
-impl CindyFilter<dm_read::table, DB> for DmReadFilter {
+impl CindyFilter<dm_read::table> for DmReadFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<dm_read::table, DB, SqlType = Bool> + Send>> {
@@ -79,15 +79,15 @@ impl CindyFilter<dm_read::table, DB> for DmReadFilter {
 #[derive(QueryableByName, Debug)]
 pub struct DmReadAllEntry {
     /// ID of the user with whom the conversation is
-    #[sql_type = "Integer"]
+    #[diesel(sql_type = Integer)]
     pub with_user_id: ID,
 
     /// ID of the last message of the conversation
-    #[sql_type = "Integer"]
+    #[diesel(sql_type = Integer)]
     pub direct_message_id: ID,
 
     /// ID of the last viewed message (short for dm_read_dm_id)
-    #[sql_type = "Nullable<Integer>"]
+    #[diesel(sql_type = Nullable<Integer>)]
     pub dm_id: Option<ID>,
 }
 
@@ -106,12 +106,12 @@ impl DmReadAllEntry {
     async fn with_user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.with_user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -119,12 +119,12 @@ impl DmReadAllEntry {
     async fn last_direct_message(&self, ctx: &Context<'_>) -> async_graphql::Result<DirectMessage> {
         use crate::schema::direct_message;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = direct_message::table
             .filter(direct_message::id.eq(self.direct_message_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -135,13 +135,13 @@ impl DmReadAllEntry {
     ) -> async_graphql::Result<Option<DirectMessage>> {
         use crate::schema::direct_message;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         if let Some(dm_id) = self.dm_id {
             let direct_message = direct_message::table
                 .filter(direct_message::id.eq(dm_id))
                 .limit(1)
-                .first(&conn)?;
+                .first(&mut conn)?;
             Ok(Some(direct_message))
         } else {
             Ok(None)
@@ -151,7 +151,7 @@ impl DmReadAllEntry {
 
 /// Object for dm_read table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "dm_read"]
+#[diesel(table_name = dm_read)]
 pub struct DmRead {
     pub id: ID,
     pub user_id: ID,
@@ -177,12 +177,12 @@ impl DmRead {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -190,12 +190,12 @@ impl DmRead {
     async fn with_user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.with_user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -203,12 +203,12 @@ impl DmRead {
     async fn dm(&self, ctx: &Context<'_>) -> async_graphql::Result<DirectMessage> {
         use crate::schema::direct_message;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let dm = direct_message::table
             .filter(direct_message::id.eq(self.dm_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(dm)
     }

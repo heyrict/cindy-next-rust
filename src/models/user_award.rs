@@ -59,7 +59,7 @@ pub struct UserAwardFilter {
     pub user_id: Option<I32Filtering>,
 }
 
-impl CindyFilter<user_award::table, DB> for UserAwardFilter {
+impl CindyFilter<user_award::table> for UserAwardFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<user_award::table, DB, SqlType = Bool> + Send>> {
@@ -84,7 +84,7 @@ impl CindyFilter<user_award::table, DB> for UserAwardFilter {
 
 /// Object for user_award table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "user_award"]
+#[diesel(table_name = user_award)]
 pub struct UserAward {
     pub id: ID,
     pub created: Date,
@@ -110,12 +110,12 @@ impl UserAward {
     async fn award(&self, ctx: &Context<'_>) -> async_graphql::Result<Award> {
         use crate::schema::award;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let award = award::table
             .filter(award::id.eq(self.award_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(award)
     }
@@ -123,12 +123,12 @@ impl UserAward {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }

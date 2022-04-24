@@ -15,9 +15,9 @@ pub struct StarMutation;
 #[Object]
 impl StarQuery {
     pub async fn star(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Star> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let star = star::table.filter(star::id.eq(id)).limit(1).first(&conn)?;
+        let star = star::table.filter(star::id.eq(id)).limit(1).first(&mut conn)?;
 
         Ok(star)
     }
@@ -32,7 +32,7 @@ impl StarQuery {
     ) -> async_graphql::Result<Vec<Star>> {
         use crate::schema::star::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = star.into_boxed();
         if let Some(order) = order {
@@ -50,7 +50,7 @@ impl StarQuery {
             query = query.offset(offset);
         }
 
-        let stars = query.load::<Star>(&conn)?;
+        let stars = query.load::<Star>(&mut conn)?;
 
         Ok(stars)
     }
@@ -62,7 +62,7 @@ impl StarQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::star::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = star.into_boxed();
         if let Some(filter) = filter {
@@ -71,7 +71,7 @@ impl StarQuery {
             }
         }
 
-        let result = query.count().get_result::<i64>(&conn)?;
+        let result = query.count().get_result::<i64>(&mut conn)?;
 
         Ok(result)
     }
@@ -83,20 +83,20 @@ impl StarQuery {
     ) -> async_graphql::Result<Option<i64>> {
         use crate::schema::{puzzle, star};
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = star::table
             .inner_join(puzzle::table)
             .filter(puzzle::id.eq(puzzle_id))
             .select(sum(star::value))
-            .get_result(&conn)?;
+            .get_result(&mut conn)?;
 
         Ok(result)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "star"]
+#[diesel(table_name = star)]
 pub struct UpdateStarInput {
     pub id: Option<ID>,
     pub value: Option<i16>,
@@ -105,7 +105,7 @@ pub struct UpdateStarInput {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "star"]
+#[diesel(table_name = star)]
 pub struct CreateStarInput {
     pub id: Option<ID>,
     pub value: i16,
@@ -121,14 +121,14 @@ impl StarMutation {
         id: ID,
         set: UpdateStarInput,
     ) -> async_graphql::Result<Star> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
         match role {
             Role::User => {
                 // User should be the owner on update mutation
-                let star_inst: Star = star::table.filter(star::id.eq(id)).limit(1).first(&conn)?;
+                let star_inst: Star = star::table.filter(star::id.eq(id)).limit(1).first(&mut conn)?;
                 user_id_guard(ctx, star_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -138,7 +138,7 @@ impl StarMutation {
         let star: Star = diesel::update(star::table)
             .filter(star::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(star)
@@ -149,7 +149,7 @@ impl StarMutation {
         ctx: &Context<'_>,
         mut data: CreateStarInput,
     ) -> async_graphql::Result<Star> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -168,7 +168,7 @@ impl StarMutation {
 
         let star: Star = diesel::insert_into(star::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(star)
@@ -177,14 +177,14 @@ impl StarMutation {
     // Delete star
     #[graphql(guard = "DenyRoleGuard::new(Role::Guest)")]
     pub async fn delete_star(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<Star> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
         match role {
             Role::User => {
                 // User should be the owner
-                let star_inst: Star = star::table.filter(star::id.eq(id)).limit(1).first(&conn)?;
+                let star_inst: Star = star::table.filter(star::id.eq(id)).limit(1).first(&mut conn)?;
                 user_id_guard(ctx, star_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -192,7 +192,7 @@ impl StarMutation {
         };
 
         let star = diesel::delete(star::table.filter(star::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(star)

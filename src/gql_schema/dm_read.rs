@@ -18,12 +18,12 @@ pub struct DmReadMutation;
 #[Object]
 impl DmReadQuery {
     pub async fn dm_read(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<DmRead> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let dm_read = dm_read::table
             .filter(dm_read::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(dm_read)
     }
@@ -38,7 +38,7 @@ impl DmReadQuery {
     ) -> async_graphql::Result<Vec<DmRead>> {
         use crate::schema::dm_read::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = dm_read.into_boxed();
         if let Some(order) = order {
@@ -56,7 +56,7 @@ impl DmReadQuery {
             query = query.offset(offset);
         }
 
-        let dm_reads = query.load::<DmRead>(&conn)?;
+        let dm_reads = query.load::<DmRead>(&mut conn)?;
 
         Ok(dm_reads)
     }
@@ -68,21 +68,21 @@ impl DmReadQuery {
         limit: i64,
         offset: i64,
     ) -> async_graphql::Result<Vec<DmReadAllEntry>> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let results: Vec<DmReadAllEntry> =
             diesel::sql_query(include_str!("../sql/dm_read_all.sql"))
                 .bind::<Integer, _>(user_id)
                 .bind::<BigInt, _>(limit)
                 .bind::<BigInt, _>(offset)
-                .get_results(&conn)?;
+                .get_results(&mut conn)?;
 
         Ok(results)
     }
 }
 
 #[derive(AsChangeset, InputObject, Debug)]
-#[table_name = "dm_read"]
+#[diesel(table_name = dm_read)]
 pub struct UpdateDmReadInput {
     pub id: Option<ID>,
     pub user_id: Option<ID>,
@@ -91,7 +91,7 @@ pub struct UpdateDmReadInput {
 }
 
 #[derive(Insertable, InputObject, Debug)]
-#[table_name = "dm_read"]
+#[diesel(table_name = dm_read)]
 pub struct CreateDmReadInput {
     pub id: Option<ID>,
     pub user_id: Option<ID>,
@@ -138,7 +138,7 @@ impl DmReadMutation {
         id: ID,
         set: UpdateDmReadInput,
     ) -> async_graphql::Result<DmRead> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -148,7 +148,7 @@ impl DmReadMutation {
                 let dm_read_inst: DmRead = dm_read::table
                     .filter(dm_read::id.eq(id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 user_id_guard(ctx, dm_read_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -158,7 +158,7 @@ impl DmReadMutation {
         let dm_read: DmRead = diesel::update(dm_read::table)
             .filter(dm_read::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(dm_read)
@@ -171,7 +171,7 @@ impl DmReadMutation {
         ctx: &Context<'_>,
         mut data: CreateDmReadInput,
     ) -> async_graphql::Result<DmRead> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -190,7 +190,7 @@ impl DmReadMutation {
 
         let dm_read: DmRead = diesel::insert_into(dm_read::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(dm_read)
@@ -203,7 +203,7 @@ impl DmReadMutation {
         ctx: &Context<'_>,
         data: UpsertDmReadInput,
     ) -> async_graphql::Result<DmRead> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = dm_read::table
             .filter(
@@ -212,7 +212,7 @@ impl DmReadMutation {
                     .and(dm_read::with_user_id.eq(data.with_user_id)),
             )
             .limit(1)
-            .first::<DmRead>(&conn);
+            .first::<DmRead>(&mut conn);
 
         if let Ok(dm_read_inst) = result {
             // Update the object
@@ -230,10 +230,10 @@ impl DmReadMutation {
     // Delete dm_read (admin only)
     #[graphql(guard = "DenyRoleGuard::new(Role::User).and(DenyRoleGuard::new(Role::Guest))")]
     pub async fn delete_dm_read(&self, ctx: &Context<'_>, id: ID) -> async_graphql::Result<DmRead> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let dm_read = diesel::delete(dm_read::table.filter(dm_read::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(dm_read)

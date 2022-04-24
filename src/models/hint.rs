@@ -57,7 +57,7 @@ pub struct HintFilter {
     pub modified: Option<TimestamptzFiltering>,
 }
 
-impl CindyFilter<hint::table, DB> for HintFilter {
+impl CindyFilter<hint::table> for HintFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<hint::table, DB, SqlType = Bool> + Send>> {
@@ -84,13 +84,13 @@ impl CindyFilter<hint::table, DB> for HintFilter {
 
 /// Object for hint table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "hint"]
+#[diesel(table_name = hint)]
 pub struct Hint {
     pub id: ID,
     pub content: String,
     pub created: Timestamptz,
     pub puzzle_id: ID,
-    #[column_name = "edittimes"]
+    #[diesel(column_name = edittimes)]
     pub edit_times: i32,
     pub receiver_id: Option<ID>,
     pub modified: Timestamptz,
@@ -124,12 +124,12 @@ impl Hint {
         if let Some(receiver_id) = self.receiver_id {
             use crate::schema::user;
 
-            let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+            let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
             let user_inst = user::table
                 .filter(user::id.eq(receiver_id))
                 .limit(1)
-                .first(&conn)?;
+                .first(&mut conn)?;
 
             Ok(Some(user_inst))
         } else {
@@ -140,12 +140,12 @@ impl Hint {
     async fn puzzle(&self, ctx: &Context<'_>) -> async_graphql::Result<Puzzle> {
         use crate::schema::puzzle;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzle_inst = puzzle::table
             .filter(puzzle::id.eq(self.puzzle_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(puzzle_inst)
     }

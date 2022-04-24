@@ -53,7 +53,7 @@ pub struct StarFilter {
     pub user_id: Option<I32Filtering>,
 }
 
-impl CindyFilter<star::table, DB> for StarFilter {
+impl CindyFilter<star::table> for StarFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<star::table, DB, SqlType = Bool> + Send>> {
@@ -82,7 +82,7 @@ pub struct StarCountFilter {
     pub user_id: Option<I32Filtering>,
 }
 
-impl CindyFilter<star::table, DB> for StarCountFilter {
+impl CindyFilter<star::table> for StarCountFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<star::table, DB, SqlType = Bool> + Send>> {
@@ -102,7 +102,7 @@ impl CindyFilter<star::table, DB> for StarCountFilter {
 
 /// Object for star table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "star"]
+#[diesel(table_name = star)]
 pub struct Star {
     pub id: ID,
     pub value: i16,
@@ -128,12 +128,12 @@ impl Star {
     async fn puzzle(&self, ctx: &Context<'_>) -> async_graphql::Result<Puzzle> {
         use crate::schema::puzzle;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzle = puzzle::table
             .filter(puzzle::id.eq(self.puzzle_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(puzzle)
     }
@@ -141,12 +141,12 @@ impl Star {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }

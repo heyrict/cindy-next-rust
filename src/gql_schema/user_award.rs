@@ -16,12 +16,12 @@ pub struct UserAwardMutation;
 #[Object]
 impl UserAwardQuery {
     pub async fn user_award(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<UserAward> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user_award = user_award::table
             .filter(user_award::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user_award)
     }
@@ -36,7 +36,7 @@ impl UserAwardQuery {
     ) -> async_graphql::Result<Vec<UserAward>> {
         use crate::schema::user_award::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = user_award.into_boxed();
         if let Some(order) = order {
@@ -54,7 +54,7 @@ impl UserAwardQuery {
             query = query.offset(offset);
         }
 
-        let user_awards = query.load::<UserAward>(&conn)?;
+        let user_awards = query.load::<UserAward>(&mut conn)?;
 
         Ok(user_awards)
     }
@@ -66,7 +66,7 @@ impl UserAwardQuery {
     ) -> async_graphql::Result<i64> {
         use crate::schema::user_award::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = user_award.into_boxed();
         if let Some(filter) = filter {
@@ -75,14 +75,14 @@ impl UserAwardQuery {
             }
         }
 
-        let result = query.count().get_result(&conn)?;
+        let result = query.count().get_result(&mut conn)?;
 
         Ok(result)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "user_award"]
+#[diesel(table_name = user_award)]
 pub struct UpdateUserAwardInput {
     pub id: Option<ID>,
     pub created: Option<Date>,
@@ -91,7 +91,7 @@ pub struct UpdateUserAwardInput {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "user_award"]
+#[diesel(table_name = user_award)]
 pub struct CreateUserAwardInput {
     pub id: Option<ID>,
     #[graphql(default_with = "Utc::today().naive_utc()")]
@@ -110,12 +110,12 @@ impl UserAwardMutation {
         id: ID,
         set: UpdateUserAwardInput,
     ) -> async_graphql::Result<UserAward> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user_award: UserAward = diesel::update(user_award::table)
             .filter(user_award::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(user_award)
@@ -128,7 +128,7 @@ impl UserAwardMutation {
         ctx: &Context<'_>,
         mut data: CreateUserAwardInput,
     ) -> async_graphql::Result<UserAward> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let user_id = reqctx.get_user_id();
         let role = reqctx.get_role();
@@ -148,7 +148,7 @@ impl UserAwardMutation {
 
         let user_award: UserAward = diesel::insert_into(user_award::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(user_award)
@@ -161,10 +161,10 @@ impl UserAwardMutation {
         ctx: &Context<'_>,
         id: ID,
     ) -> async_graphql::Result<UserAward> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user_award = diesel::delete(user_award::table.filter(user_award::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(user_award)

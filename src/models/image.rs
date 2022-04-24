@@ -52,7 +52,7 @@ pub struct ImageFilter {
     created: Option<TimestamptzFiltering>,
 }
 
-impl CindyFilter<image::table, DB> for ImageFilter {
+impl CindyFilter<image::table> for ImageFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<image::table, DB, SqlType = Bool> + Send>> {
@@ -73,7 +73,7 @@ impl CindyFilter<image::table, DB> for ImageFilter {
 
 /// Object for image table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "image"]
+#[diesel(table_name = image)]
 pub struct Image {
     pub id: Uuid,
     pub user_id: ID,
@@ -135,12 +135,12 @@ impl Image {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -148,10 +148,10 @@ impl Image {
     async fn puzzle(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<Puzzle>> {
         use crate::schema::puzzle;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         self.puzzle_id
-            .map(|puzzle_id| puzzle::table.find(puzzle_id).first(&conn))
+            .map(|puzzle_id| puzzle::table.find(puzzle_id).first(&mut conn))
             .transpose()
             .map_err(|err| async_graphql::ServerError::new(err.to_string(), None).into())
     }

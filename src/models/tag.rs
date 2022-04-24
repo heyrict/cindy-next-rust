@@ -55,7 +55,7 @@ pub struct TagAggrFilter {
     created: Option<TimestamptzFiltering>,
 }
 
-impl CindyFilter<tag_aggr::table, DB> for TagAggrFilter {
+impl CindyFilter<tag_aggr::table> for TagAggrFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<tag_aggr::table, DB, SqlType = Bool> + Send>> {
@@ -78,7 +78,7 @@ impl CindyFilter<tag_aggr::table, DB> for TagAggrFilter {
 
 /// Object for tag table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "tag"]
+#[diesel(table_name = tag)]
 pub struct Tag {
     pub id: ID,
     pub name: String,
@@ -87,7 +87,7 @@ pub struct Tag {
 
 /// Object for tag table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "tag_aggr"]
+#[diesel(table_name = tag_aggr)]
 pub struct TagAggr {
     pub id: ID,
     pub name: String,
@@ -147,12 +147,12 @@ impl Tag {
     async fn puzzle_tag_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::puzzle_tag::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = puzzle_tag
             .filter(tag_id.eq(self.id))
             .count()
-            .get_result::<i64>(&conn)?;
+            .get_result::<i64>(&mut conn)?;
 
         Ok(result)
     }

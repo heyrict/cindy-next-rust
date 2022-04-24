@@ -72,7 +72,7 @@ pub struct DialogueFilter {
     pub user_id: Option<I32Filtering>,
 }
 
-impl CindyFilter<dialogue::table, DB> for DialogueFilter {
+impl CindyFilter<dialogue::table> for DialogueFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<dialogue::table, DB, SqlType = Bool> + Send>> {
@@ -113,9 +113,9 @@ impl CindyFilter<dialogue::table, DB> for DialogueFilter {
 #[derive(QueryableByName, Clone, Debug)]
 pub struct UserMaxYamiDialogueCountResult {
     /// Puzzle ID
-    #[sql_type = "Int4"]
+    #[diesel(sql_type = Int4)]
     pub id: ID,
-    #[sql_type = "BigInt"]
+    #[diesel(sql_type = BigInt)]
     pub dialogue_count: i64,
 }
 
@@ -131,12 +131,12 @@ impl UserMaxYamiDialogueCountResult {
     async fn puzzle(&self, ctx: &Context<'_>) -> async_graphql::Result<Puzzle> {
         use crate::schema::puzzle;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzle = puzzle::table
             .filter(puzzle::id.eq(self.id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(puzzle)
     }
@@ -144,23 +144,23 @@ impl UserMaxYamiDialogueCountResult {
 
 /// Object for dialogue table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "dialogue"]
+#[diesel(table_name = dialogue)]
 pub struct Dialogue {
     pub id: ID,
     pub question: String,
     pub answer: String,
-    #[column_name = "good"]
+    #[diesel(column_name = good)]
     pub is_good: bool,
-    #[column_name = "true"]
+    #[diesel(column_name = true_)]
     pub is_true: bool,
     pub created: Timestamptz,
-    #[column_name = "answeredtime"]
+    #[diesel(column_name = answeredtime)]
     pub answered_time: Option<Timestamptz>,
     pub puzzle_id: ID,
     pub user_id: ID,
-    #[column_name = "answerEditTimes"]
+    #[diesel(column_name = answerEditTimes)]
     pub answer_edit_times: i32,
-    #[column_name = "questionEditTimes"]
+    #[diesel(column_name = questionEditTimes)]
     pub question_edit_times: i32,
     pub qno: i32,
     pub modified: Timestamptz,
@@ -213,12 +213,12 @@ impl Dialogue {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user_inst = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user_inst)
     }
@@ -226,12 +226,12 @@ impl Dialogue {
     pub async fn puzzle(&self, ctx: &Context<'_>) -> async_graphql::Result<Puzzle> {
         use crate::schema::puzzle;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzle_inst = puzzle::table
             .filter(puzzle::id.eq(self.puzzle_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(puzzle_inst)
     }

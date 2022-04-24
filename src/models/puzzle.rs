@@ -1,15 +1,15 @@
 use async_graphql::{self, Context, Enum, InputObject, Object};
 use diesel::{
-    backend::Backend,
+    backend::{Backend, RawValue},
     deserialize::{self, FromSql},
     dsl::{max, sum},
-    expression::{helper_types::AsExprOf, AsExpression},
+    expression::AsExpression,
+    helper_types::AsExprOf,
     prelude::*,
     query_dsl::QueryDsl,
     serialize::{self, Output, ToSql},
     sql_types::{BigInt, Bool, Int4, Integer, Text},
 };
-use std::io;
 
 use crate::context::GlobalCtx;
 use crate::schema::puzzle;
@@ -86,7 +86,7 @@ pub struct PuzzleFilter {
     pub license_id: Option<NullableI32Filtering>,
 }
 
-impl CindyFilter<puzzle::table, DB> for PuzzleFilter {
+impl CindyFilter<puzzle::table> for PuzzleFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<puzzle::table, DB, SqlType = Bool> + Send>> {
@@ -162,16 +162,8 @@ where
     DB: Backend,
     i32: ToSql<Integer, DB>,
 {
-    fn to_sql<W: io::Write>(&self, out: &mut Output<W, DB>) -> serialize::Result {
+    fn to_sql<'b>(&self, out: &mut Output<'b, '_, DB>) -> serialize::Result {
         (*self as i32).to_sql(out)
-    }
-}
-
-impl AsExpression<Integer> for Yami {
-    type Expression = AsExprOf<i32, Integer>;
-
-    fn as_expression(self) -> Self::Expression {
-        <i32 as AsExpression<Integer>>::as_expression(self as i32)
     }
 }
 
@@ -180,7 +172,8 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(bytes: Option<&DB::RawValue>) -> deserialize::Result<Self> {
+    fn from_sql(value: RawValue<DB>) -> deserialize::Result<Self> {
+        let bytes = value.as_bytes();
         match i32::from_sql(bytes)? {
             0 => Ok(Yami::None),
             1 => Ok(Yami::Normal),
@@ -227,7 +220,7 @@ where
     DB: Backend,
     i32: ToSql<Integer, DB>,
 {
-    fn to_sql<W: io::Write>(&self, out: &mut Output<W, DB>) -> serialize::Result {
+    fn to_sql<'b>(&self, out: &mut Output<'b, '_, DB>) -> serialize::Result {
         (*self as i32).to_sql(out)
     }
 }
@@ -245,7 +238,8 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(bytes: Option<&DB::RawValue>) -> deserialize::Result<Self> {
+    fn from_sql(value: RawValue<DB>) -> deserialize::Result<Self> {
+        let bytes = value.as_bytes();
         match i32::from_sql(bytes)? {
             0 => Ok(Genre::Classic),
             1 => Ok(Genre::TwentyQuestions),
@@ -294,7 +288,7 @@ where
     DB: Backend,
     i32: ToSql<Integer, DB>,
 {
-    fn to_sql<W: io::Write>(&self, out: &mut Output<W, DB>) -> serialize::Result {
+    fn to_sql<'b>(&self, out: &mut Output<'b, '_, DB>) -> serialize::Result {
         (*self as i32).to_sql(out)
     }
 }
@@ -312,7 +306,8 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(bytes: Option<&DB::RawValue>) -> deserialize::Result<Self> {
+    fn from_sql(value: RawValue<DB>) -> deserialize::Result<Self> {
+        let bytes = value.as_bytes();
         match i32::from_sql(bytes)? {
             0 => Ok(Status::Undergoing),
             1 => Ok(Status::Solved),
@@ -349,9 +344,9 @@ impl PuzzleSub {
 
 #[derive(QueryableByName, Clone, Debug)]
 pub struct PuzzleCountByGenre {
-    #[sql_type = "Integer"]
+    #[diesel(sql_type = Integer)]
     pub genre: Genre,
-    #[sql_type = "BigInt"]
+    #[diesel(sql_type = BigInt)]
     pub puzzle_count: i64,
 }
 
@@ -367,9 +362,9 @@ impl PuzzleCountByGenre {
 
 #[derive(QueryableByName, Clone, Debug)]
 pub struct PuzzleStarAggrGroup {
-    #[sql_type = "BigInt"]
+    #[diesel(sql_type = BigInt)]
     pub group: i64,
-    #[sql_type = "BigInt"]
+    #[diesel(sql_type = BigInt)]
     pub puzzle_count: i64,
 }
 
@@ -385,23 +380,23 @@ impl PuzzleStarAggrGroup {
 
 #[derive(QueryableByName, Clone, Debug)]
 pub struct PuzzleFootprintCount {
-    #[sql_type = "BigInt"]
+    #[diesel(sql_type = BigInt)]
     pub count: i64,
 }
 
 #[derive(QueryableByName, Clone, Debug)]
 pub struct PuzzleParticipant {
     /// User ID
-    #[sql_type = "Int4"]
+    #[diesel(sql_type = Int4)]
     pub id: ID,
-    #[sql_type = "Text"]
+    #[diesel(sql_type = Text)]
     pub nickname: String,
     /// Whether user got at least one true answer.
-    #[sql_type = "Bool"]
+    #[diesel(sql_type = Bool)]
     pub true_answer: bool,
-    #[sql_type = "BigInt"]
+    #[diesel(sql_type = BigInt)]
     pub dialogue_count: i64,
-    #[sql_type = "BigInt"]
+    #[diesel(sql_type = BigInt)]
     pub answered_dialogue_count: i64,
 }
 
@@ -426,12 +421,12 @@ impl PuzzleParticipant {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -439,7 +434,7 @@ impl PuzzleParticipant {
 
 /// Object for user table
 #[derive(Queryable, QueryableByName, Identifiable, Clone, Debug)]
-#[table_name = "puzzle"]
+#[diesel(table_name = puzzle)]
 pub struct Puzzle {
     pub id: ID,
     pub title: String,
@@ -509,12 +504,12 @@ impl Puzzle {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -522,13 +517,13 @@ impl Puzzle {
     async fn license(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<License>> {
         use crate::schema::license;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let license = if let Some(id) = self.license_id {
             license::table
                 .filter(license::id.eq(id))
                 .limit(1)
-                .first(&conn)
+                .first(&mut conn)
                 .ok()
         } else {
             None
@@ -566,12 +561,12 @@ impl Puzzle {
     async fn bookmark_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::bookmark::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = bookmark
             .filter(puzzle_id.eq(self.id))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -606,12 +601,12 @@ impl Puzzle {
     async fn comment_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::comment::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = comment
             .filter(puzzle_id.eq(self.id))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -650,7 +645,7 @@ impl Puzzle {
     ) -> async_graphql::Result<i64> {
         use crate::schema::dialogue::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = if let Some(value) = answered {
             if value {
@@ -658,21 +653,21 @@ impl Puzzle {
                     .filter(puzzle_id.eq(self.id))
                     .filter(answeredtime.is_not_null())
                     .count()
-                    .get_result(&conn)
+                    .get_result(&mut conn)
                     .map_err(|err| async_graphql::Error::from(err))?
             } else {
                 dialogue
                     .filter(puzzle_id.eq(self.id))
                     .filter(answeredtime.is_null())
                     .count()
-                    .get_result(&conn)
+                    .get_result(&mut conn)
                     .map_err(|err| async_graphql::Error::from(err))?
             }
         } else {
             dialogue
                 .filter(puzzle_id.eq(self.id))
                 .count()
-                .get_result(&conn)
+                .get_result(&mut conn)
                 .map_err(|err| async_graphql::Error::from(err))?
         };
 
@@ -685,12 +680,12 @@ impl Puzzle {
     ) -> async_graphql::Result<Option<Timestamptz>> {
         use crate::schema::dialogue::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = dialogue
             .filter(puzzle_id.eq(self.id))
             .select(max(answeredtime))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -777,12 +772,12 @@ impl Puzzle {
     async fn star_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::star::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = star
             .filter(puzzle_id.eq(self.id))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -791,12 +786,12 @@ impl Puzzle {
     async fn star_sum(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::star::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = star
             .filter(puzzle_id.eq(self.id))
             .select(sum(value))
-            .get_result::<Option<i64>>(&conn)
+            .get_result::<Option<i64>>(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?
             .unwrap_or(0i64);
 

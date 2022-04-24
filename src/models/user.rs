@@ -79,7 +79,7 @@ pub struct UserFilter {
     nickname: Option<StringFiltering>,
 }
 
-impl CindyFilter<user::table, DB> for UserFilter {
+impl CindyFilter<user::table> for UserFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<user::table, DB, SqlType = Bool> + Send>> {
@@ -101,10 +101,10 @@ impl CindyFilter<user::table, DB> for UserFilter {
 #[derive(QueryableByName, Debug)]
 pub struct UserRankingRow {
     /// User ID
-    #[sql_type = "Int4"]
+    #[diesel(sql_type = Int4)]
     pub id: ID,
     /// The aggregated value of given user
-    #[sql_type = "BigInt"]
+    #[diesel(sql_type = BigInt)]
     pub value_count: i64,
 }
 
@@ -120,12 +120,12 @@ impl UserRankingRow {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -133,7 +133,7 @@ impl UserRankingRow {
 
 /// Object for user table
 #[derive(Queryable, Identifiable, Debug)]
-#[table_name = "user"]
+#[diesel(table_name = user)]
 pub struct User {
     pub id: ID,
     pub password: String,
@@ -209,13 +209,13 @@ impl User {
     async fn current_award(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<UserAward>> {
         use crate::schema::user_award;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let current_award_inst = if let Some(id) = self.current_award_id {
             user_award::table
                 .filter(user_award::id.eq(id))
                 .limit(1)
-                .first(&conn)
+                .first(&mut conn)
                 .ok()
         } else {
             None
@@ -231,13 +231,13 @@ impl User {
     async fn default_license(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<License>> {
         use crate::schema::license;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let license = if let Some(id) = self.default_license_id {
             license::table
                 .filter(license::id.eq(id))
                 .limit(1)
-                .first(&conn)
+                .first(&mut conn)
                 .ok()
         } else {
             None
@@ -301,13 +301,13 @@ impl User {
     async fn received_comment_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::{comment, puzzle};
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = comment::table
             .inner_join(puzzle::table)
             .filter(puzzle::user_id.eq(self.id))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -316,12 +316,12 @@ impl User {
     async fn comment_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::comment::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = comment
             .filter(user_id.eq(self.id))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -356,12 +356,12 @@ impl User {
     async fn puzzle_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::puzzle::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = puzzle
             .filter(user_id.eq(self.id))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -370,13 +370,13 @@ impl User {
     async fn yami_puzzle_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::puzzle::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = puzzle
             .filter(user_id.eq(self.id))
             .filter(not(yami.eq(0)))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -388,12 +388,12 @@ impl User {
     ) -> async_graphql::Result<Option<Timestamptz>> {
         use crate::schema::puzzle::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = puzzle
             .filter(user_id.eq(self.id))
             .select(max(created))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -402,12 +402,12 @@ impl User {
     async fn dialogue_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::dialogue::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = dialogue
             .filter(user_id.eq(self.id))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -442,13 +442,13 @@ impl User {
     async fn received_star_sum(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<i64>> {
         use crate::schema::{puzzle, star};
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = star::table
             .inner_join(puzzle::table)
             .filter(puzzle::user_id.eq(self.id))
             .select(sum(star::value))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -457,12 +457,12 @@ impl User {
     async fn star_sum(&self, ctx: &Context<'_>) -> async_graphql::Result<Option<i64>> {
         use crate::schema::star::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = star
             .filter(user_id.eq(self.id))
             .select(sum(value))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -471,13 +471,13 @@ impl User {
     async fn received_star_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::{puzzle, star};
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = star::table
             .inner_join(puzzle::table)
             .filter(puzzle::user_id.eq(self.id))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -486,12 +486,12 @@ impl User {
     async fn star_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::star::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = star
             .filter(user_id.eq(self.id))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -578,13 +578,13 @@ impl User {
     async fn good_question_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::dialogue::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = dialogue
             .filter(user_id.eq(self.id))
             .filter(good.eq(true))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -593,13 +593,13 @@ impl User {
     async fn true_answer_count(&self, ctx: &Context<'_>) -> async_graphql::Result<i64> {
         use crate::schema::dialogue::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result = dialogue
             .filter(user_id.eq(self.id))
             .filter(true_.eq(true))
             .count()
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(result)
@@ -648,7 +648,7 @@ impl User {
         let usr: Self = user::table
             .filter(user::username.eq(username))
             .limit(1)
-            .first(&conn)
+            .first(&mut conn)
             .context("User does not exist. Please re-check your username and password.")?;
 
         if !usr.is_active {
@@ -668,7 +668,7 @@ impl User {
 
         diesel::update(&usr)
             .set(last_login.eq(Some(Utc::now())))
-            .execute(&conn)?;
+            .execute(&mut conn)?;
         Ok(usr)
     }
 

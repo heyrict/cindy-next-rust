@@ -21,9 +21,9 @@ pub struct ImageMutation;
 #[Object]
 impl ImageQuery {
     pub async fn image(&self, ctx: &Context<'_>, id: Uuid) -> async_graphql::Result<Image> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
-        let image = image::table.filter(image::id.eq(id)).first(&conn)?;
+        let image = image::table.filter(image::id.eq(id)).first(&mut conn)?;
 
         Ok(image)
     }
@@ -38,7 +38,7 @@ impl ImageQuery {
     ) -> async_graphql::Result<Vec<Image>> {
         use crate::schema::image::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = image.into_boxed();
         if let Some(order) = order {
@@ -56,7 +56,7 @@ impl ImageQuery {
             query = query.offset(offset);
         }
 
-        let images = query.load::<Image>(&conn)?;
+        let images = query.load::<Image>(&mut conn)?;
 
         Ok(images)
     }
@@ -115,7 +115,7 @@ impl TryFrom<UploadImageInput> for CreateImageData {
 }
 
 #[derive(Insertable)]
-#[table_name = "image"]
+#[diesel(table_name = image)]
 pub struct CreateImageData {
     pub id: Option<Uuid>,
     pub user_id: Option<ID>,
@@ -140,7 +140,7 @@ impl TryFrom<CreateImageInput> for CreateImageData {
 }
 
 #[derive(InputObject, AsChangeset)]
-#[table_name = "image"]
+#[diesel(table_name = image)]
 pub struct UpdateImageInput {
     pub id: Option<Uuid>,
     pub user_id: Option<ID>,
@@ -160,7 +160,7 @@ impl ImageMutation {
         id: Uuid,
         set: UpdateImageInput,
     ) -> async_graphql::Result<Image> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -173,10 +173,10 @@ impl ImageMutation {
                     user_id_guard(ctx, user_id)?;
                 };
                 // Assert that puzzle_id used to be unset
-                let image_inst: Image = image::table.find(id).first(&conn)?;
+                let image_inst: Image = image::table.find(id).first(&mut conn)?;
                 if let Some(puzzle_id) = image_inst.puzzle_id {
                     use crate::schema::puzzle;
-                    let puzzle_inst: Puzzle = puzzle::table.find(puzzle_id).first(&conn)?;
+                    let puzzle_inst: Puzzle = puzzle::table.find(puzzle_id).first(&mut conn)?;
                     assert_eq_guard(puzzle_inst.status, Status::Undergoing)?;
                 }
             }
@@ -187,7 +187,7 @@ impl ImageMutation {
         let image: Image = diesel::update(image::table)
             .filter(image::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(image)
@@ -200,7 +200,7 @@ impl ImageMutation {
         ctx: &Context<'_>,
         data: CreateImageInput,
     ) -> async_graphql::Result<Image> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let user_id = reqctx.get_user_id();
         let role = reqctx.get_role();
@@ -225,7 +225,7 @@ impl ImageMutation {
 
         let image: Image = diesel::insert_into(image::table)
             .values(&insert_data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(image)
@@ -236,7 +236,7 @@ impl ImageMutation {
     pub async fn delete_image(&self, ctx: &Context<'_>, id: Uuid) -> async_graphql::Result<Image> {
         dotenv::dotenv().ok();
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -246,7 +246,7 @@ impl ImageMutation {
                     .get_user_id()
                     .ok_or(async_graphql::Error::new("No user"))?;
                 // User should be the owner of the image
-                let image_inst: Image = image::table.find(id).first(&conn)?;
+                let image_inst: Image = image::table.find(id).first(&mut conn)?;
                 assert_eq_guard(image_inst.user_id, user_id)?;
                 assert_eq_guard(image_inst.puzzle_id, None)?;
             }
@@ -255,7 +255,7 @@ impl ImageMutation {
         };
 
         let image: Image = diesel::delete(image::table.filter(image::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         image.delete_file().await?;
@@ -273,7 +273,7 @@ impl ImageMutation {
         dotenv::dotenv().ok();
         let default_content_type: String = String::from("image/jpeg");
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let user_id = reqctx.get_user_id();
         let role = reqctx.get_role();
@@ -317,7 +317,7 @@ impl ImageMutation {
         // Update database
         let image: Image = diesel::insert_into(image::table)
             .values(&insert_data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         // Upload image

@@ -55,7 +55,7 @@ pub struct BookmarkFilter {
     pub user_id: Option<I32Filtering>,
 }
 
-impl CindyFilter<bookmark::table, DB> for BookmarkFilter {
+impl CindyFilter<bookmark::table> for BookmarkFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<bookmark::table, DB, SqlType = Bool> + Send>> {
@@ -84,7 +84,7 @@ pub struct BookmarkCountFilter {
     pub user_id: Option<I32Filtering>,
 }
 
-impl CindyFilter<bookmark::table, DB> for BookmarkCountFilter {
+impl CindyFilter<bookmark::table> for BookmarkCountFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<bookmark::table, DB, SqlType = Bool> + Send>> {
@@ -104,7 +104,7 @@ impl CindyFilter<bookmark::table, DB> for BookmarkCountFilter {
 
 /// Object for bookmark table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "bookmark"]
+#[diesel(table_name = bookmark)]
 pub struct Bookmark {
     pub id: ID,
     pub value: i16,
@@ -130,12 +130,12 @@ impl Bookmark {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }
@@ -143,12 +143,12 @@ impl Bookmark {
     async fn puzzle(&self, ctx: &Context<'_>) -> async_graphql::Result<Puzzle> {
         use crate::schema::puzzle;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzle = puzzle::table
             .filter(puzzle::id.eq(self.puzzle_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(puzzle)
     }

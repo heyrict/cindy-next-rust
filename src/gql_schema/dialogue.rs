@@ -20,12 +20,12 @@ pub struct DialogueMutation;
 #[Object]
 impl DialogueQuery {
     pub async fn dialogue(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Dialogue> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let dialogue = dialogue::table
             .filter(dialogue::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(dialogue)
     }
@@ -40,7 +40,7 @@ impl DialogueQuery {
     ) -> async_graphql::Result<Vec<Dialogue>> {
         use crate::schema::dialogue::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = dialogue.into_boxed();
         if let Some(order) = order {
@@ -58,7 +58,7 @@ impl DialogueQuery {
             query = query.offset(offset);
         }
 
-        let dialogues = query.load::<Dialogue>(&conn)?;
+        let dialogues = query.load::<Dialogue>(&mut conn)?;
 
         Ok(dialogues)
     }
@@ -68,12 +68,12 @@ impl DialogueQuery {
         ctx: &Context<'_>,
         user_id: ID,
     ) -> async_graphql::Result<Option<UserMaxYamiDialogueCountResult>> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let result: Option<UserMaxYamiDialogueCountResult> =
             diesel::sql_query(include_str!("../sql/user_max_yami_dialogue_count.sql"))
                 .bind::<Integer, _>(user_id)
-                .get_result(&conn)
+                .get_result(&mut conn)
                 .ok();
 
         Ok(result)
@@ -101,23 +101,23 @@ pub struct UpdateDialogueInput {
 }
 
 #[derive(AsChangeset, Debug)]
-#[table_name = "dialogue"]
+#[diesel(table_name = dialogue)]
 pub struct UpdateDialogueData {
     pub id: Option<ID>,
     pub question: Option<String>,
     pub answer: Option<String>,
-    #[column_name = "good"]
+    #[diesel(column_name = good)]
     pub is_good: Option<bool>,
-    #[column_name = "true_"]
+    #[diesel(column_name = true_)]
     pub is_true: Option<bool>,
     pub created: Option<Timestamptz>,
-    #[column_name = "answeredtime"]
+    #[diesel(column_name = answeredtime)]
     pub answered_time: Option<Option<Timestamptz>>,
     pub puzzle_id: Option<ID>,
     pub user_id: Option<ID>,
-    #[column_name = "answerEditTimes"]
+    #[diesel(column_name = answerEditTimes)]
     pub answer_edit_times: Option<i32>,
-    #[column_name = "questionEditTimes"]
+    #[diesel(column_name = questionEditTimes)]
     pub question_edit_times: Option<i32>,
     pub qno: Option<i32>,
     pub modified: Timestamptz,
@@ -168,23 +168,23 @@ pub struct CreateDialogueInput {
 }
 
 #[derive(Insertable)]
-#[table_name = "dialogue"]
+#[diesel(table_name = dialogue)]
 pub struct CreateDialogueData {
     pub id: Option<ID>,
     pub question: Option<String>,
     pub answer: String,
-    #[column_name = "good"]
+    #[diesel(column_name = good)]
     pub is_good: bool,
-    #[column_name = "true_"]
+    #[diesel(column_name = true_)]
     pub is_true: bool,
     pub created: Timestamptz,
-    #[column_name = "answeredtime"]
+    #[diesel(column_name = answeredtime)]
     pub answered_time: Option<Option<Timestamptz>>,
     pub puzzle_id: ID,
     pub user_id: Option<ID>,
-    #[column_name = "answerEditTimes"]
+    #[diesel(column_name = answerEditTimes)]
     pub answer_edit_times: i32,
-    #[column_name = "questionEditTimes"]
+    #[diesel(column_name = questionEditTimes)]
     pub question_edit_times: i32,
     pub qno: Option<i32>,
     pub modified: Timestamptz,
@@ -218,14 +218,14 @@ impl DialogueMutation {
         id: ID,
         mut set: UpdateDialogueInput,
     ) -> async_graphql::Result<Dialogue> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
         let dialogue_inst: Dialogue = dialogue::table
             .filter(dialogue::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         match role {
             Role::User => {
@@ -251,7 +251,7 @@ impl DialogueMutation {
         let dialogue: Dialogue = diesel::update(dialogue::table)
             .filter(dialogue::id.eq(id))
             .set(UpdateDialogueData::from(set))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         // Update PuzzleLogs
@@ -296,7 +296,7 @@ impl DialogueMutation {
         ctx: &Context<'_>,
         mut data: CreateDialogueInput,
     ) -> async_graphql::Result<Dialogue> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
 
         // Assert user_id is set to the user
@@ -310,12 +310,12 @@ impl DialogueMutation {
         let qno: i64 = dialogue::table
             .filter(dialogue::puzzle_id.eq(data.puzzle_id))
             .count()
-            .get_result(&conn)?;
+            .get_result(&mut conn)?;
         data.qno = Some((qno + 1) as i32);
 
         let dialogue: Dialogue = diesel::insert_into(dialogue::table)
             .values(&CreateDialogueData::from(data))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         let key_starts_with = format!("puzzleLog<{}", dialogue.puzzle_id);
@@ -353,10 +353,10 @@ impl DialogueMutation {
         ctx: &Context<'_>,
         id: ID,
     ) -> async_graphql::Result<Dialogue> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let dialogue = diesel::delete(dialogue::table.filter(dialogue::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(dialogue)

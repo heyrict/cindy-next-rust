@@ -53,7 +53,7 @@ pub struct PuzzleTagFilter {
     pub user_id: Option<I32Filtering>,
 }
 
-impl CindyFilter<puzzle_tag::table, DB> for PuzzleTagFilter {
+impl CindyFilter<puzzle_tag::table> for PuzzleTagFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<puzzle_tag::table, DB, SqlType = Bool> + Send>> {
@@ -78,7 +78,7 @@ impl CindyFilter<puzzle_tag::table, DB> for PuzzleTagFilter {
 
 /// Object for puzzle_tag table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "puzzle_tag"]
+#[diesel(table_name = puzzle_tag)]
 pub struct PuzzleTag {
     pub id: ID,
     pub puzzle_id: ID,
@@ -104,12 +104,12 @@ impl PuzzleTag {
     async fn puzzle(&self, ctx: &Context<'_>) -> async_graphql::Result<Puzzle> {
         use crate::schema::puzzle;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let puzzle = puzzle::table
             .filter(puzzle::id.eq(self.puzzle_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(puzzle)
     }
@@ -117,12 +117,12 @@ impl PuzzleTag {
     async fn tag(&self, ctx: &Context<'_>) -> async_graphql::Result<Tag> {
         use crate::schema::tag;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let tag = tag::table
             .filter(tag::id.eq(self.tag_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(tag)
     }
@@ -130,12 +130,12 @@ impl PuzzleTag {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user)
     }

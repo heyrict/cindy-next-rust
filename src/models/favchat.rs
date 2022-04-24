@@ -52,7 +52,7 @@ pub struct FavchatFilter {
     pub user_id: Option<I32Filtering>,
 }
 
-impl CindyFilter<favorite_chatroom::table, DB> for FavchatFilter {
+impl CindyFilter<favorite_chatroom::table> for FavchatFilter {
     fn as_expression(
         self,
     ) -> Option<Box<dyn BoxableExpression<favorite_chatroom::table, DB, SqlType = Bool> + Send>>
@@ -76,7 +76,7 @@ impl CindyFilter<favorite_chatroom::table, DB> for FavchatFilter {
 
 /// Object for favchat table
 #[derive(Queryable, Identifiable, Clone, Debug)]
-#[table_name = "favorite_chatroom"]
+#[diesel(table_name = favorite_chatroom)]
 pub struct Favchat {
     pub id: ID,
     pub chatroom_id: ID,
@@ -98,12 +98,12 @@ impl Favchat {
     async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         use crate::schema::user;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let user_inst = user::table
             .filter(user::id.eq(self.user_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(user_inst)
     }
@@ -111,12 +111,12 @@ impl Favchat {
     async fn chatroom(&self, ctx: &Context<'_>) -> async_graphql::Result<Chatroom> {
         use crate::schema::chatroom;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let chatroom_inst = chatroom::table
             .filter(chatroom::id.eq(self.chatroom_id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(chatroom_inst)
     }

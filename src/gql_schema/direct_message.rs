@@ -24,12 +24,12 @@ impl DirectMessageQuery {
         ctx: &Context<'_>,
         id: i32,
     ) -> async_graphql::Result<DirectMessage> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let direct_message = direct_message::table
             .filter(direct_message::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(direct_message)
     }
@@ -44,7 +44,7 @@ impl DirectMessageQuery {
     ) -> async_graphql::Result<Vec<DirectMessage>> {
         use crate::schema::direct_message::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = direct_message.into_boxed();
         if let Some(order) = order {
@@ -62,19 +62,19 @@ impl DirectMessageQuery {
             query = query.offset(offset);
         }
 
-        let direct_messages = query.load::<DirectMessage>(&conn)?;
+        let direct_messages = query.load::<DirectMessage>(&mut conn)?;
 
         Ok(direct_messages)
     }
 }
 
 #[derive(AsChangeset, InputObject, Debug)]
-#[table_name = "direct_message"]
+#[diesel(table_name = direct_message)]
 pub struct UpdateDirectMessageInput {
     pub id: Option<ID>,
     pub content: Option<String>,
     pub created: Option<Timestamptz>,
-    #[column_name = "editTimes"]
+    #[diesel(column_name = editTimes)]
     pub edit_times: Option<i32>,
     pub sender_id: Option<ID>,
     pub receiver_id: Option<ID>,
@@ -83,14 +83,14 @@ pub struct UpdateDirectMessageInput {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "direct_message"]
+#[diesel(table_name = direct_message)]
 pub struct CreateDirectMessageInput {
     pub id: Option<ID>,
     pub content: String,
     #[graphql(default_with = "Utc::now()")]
     pub created: Timestamptz,
     #[graphql(default = 0)]
-    #[column_name = "editTimes"]
+    #[diesel(column_name = editTimes)]
     pub edit_times: i32,
     pub sender_id: Option<ID>,
     pub receiver_id: ID,
@@ -106,14 +106,14 @@ impl DirectMessageMutation {
         id: ID,
         mut set: UpdateDirectMessageInput,
     ) -> async_graphql::Result<DirectMessage> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
         let cm_inst: DirectMessage = direct_message::table
             .filter(direct_message::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         match role {
             Role::User => {
@@ -129,7 +129,7 @@ impl DirectMessageMutation {
         let direct_message: DirectMessage = diesel::update(direct_message::table)
             .filter(direct_message::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         let dm = direct_message.clone();
@@ -155,7 +155,7 @@ impl DirectMessageMutation {
         ctx: &Context<'_>,
         mut data: CreateDirectMessageInput,
     ) -> async_graphql::Result<DirectMessage> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -174,7 +174,7 @@ impl DirectMessageMutation {
 
         let direct_message: DirectMessage = diesel::insert_into(direct_message::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         let dm = direct_message.clone();
@@ -201,11 +201,11 @@ impl DirectMessageMutation {
         ctx: &Context<'_>,
         id: ID,
     ) -> async_graphql::Result<DirectMessage> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let direct_message =
             diesel::delete(direct_message::table.filter(direct_message::id.eq(id)))
-                .get_result(&conn)
+                .get_result(&mut conn)
                 .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(direct_message)

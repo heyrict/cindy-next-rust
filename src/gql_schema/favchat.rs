@@ -15,12 +15,12 @@ pub struct FavchatMutation;
 #[Object]
 impl FavchatQuery {
     pub async fn favchat(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<Favchat> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let favchat = favchat::table
             .filter(favchat::id.eq(id))
             .limit(1)
-            .first(&conn)?;
+            .first(&mut conn)?;
 
         Ok(favchat)
     }
@@ -35,7 +35,7 @@ impl FavchatQuery {
     ) -> async_graphql::Result<Vec<Favchat>> {
         use crate::schema::favorite_chatroom::dsl::*;
 
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         let mut query = favorite_chatroom.into_boxed();
         if let Some(order) = order {
@@ -53,14 +53,14 @@ impl FavchatQuery {
             query = query.offset(offset);
         }
 
-        let favchats = query.load::<Favchat>(&conn)?;
+        let favchats = query.load::<Favchat>(&mut conn)?;
 
         Ok(favchats)
     }
 }
 
 #[derive(InputObject, AsChangeset, Debug)]
-#[table_name = "favchat"]
+#[diesel(table_name = favchat)]
 pub struct UpdateFavchatInput {
     pub id: Option<ID>,
     pub chatroom_id: Option<ID>,
@@ -68,7 +68,7 @@ pub struct UpdateFavchatInput {
 }
 
 #[derive(InputObject, Insertable)]
-#[table_name = "favchat"]
+#[diesel(table_name = favchat)]
 pub struct CreateFavchatInput {
     pub id: Option<ID>,
     pub chatroom_id: ID,
@@ -84,7 +84,7 @@ impl FavchatMutation {
         id: ID,
         set: UpdateFavchatInput,
     ) -> async_graphql::Result<Favchat> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -94,7 +94,7 @@ impl FavchatMutation {
                 let favchat_inst: Favchat = favchat::table
                     .filter(favchat::id.eq(id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 user_id_guard(ctx, favchat_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -104,7 +104,7 @@ impl FavchatMutation {
         let favchat: Favchat = diesel::update(favchat::table)
             .filter(favchat::id.eq(id))
             .set(set)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(favchat)
@@ -116,7 +116,7 @@ impl FavchatMutation {
         ctx: &Context<'_>,
         mut data: CreateFavchatInput,
     ) -> async_graphql::Result<Favchat> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -135,7 +135,7 @@ impl FavchatMutation {
 
         let favchat: Favchat = diesel::insert_into(favchat::table)
             .values(&data)
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(favchat)
@@ -148,7 +148,7 @@ impl FavchatMutation {
         ctx: &Context<'_>,
         id: ID,
     ) -> async_graphql::Result<Favchat> {
-        let conn = ctx.data::<GlobalCtx>()?.get_conn()?;
+        let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
         let reqctx = ctx.data::<RequestCtx>()?;
         let role = reqctx.get_role();
 
@@ -158,7 +158,7 @@ impl FavchatMutation {
                 let favchat_inst: Favchat = favchat::table
                     .filter(favchat::id.eq(id))
                     .limit(1)
-                    .first(&conn)?;
+                    .first(&mut conn)?;
                 user_id_guard(ctx, favchat_inst.user_id)?;
             }
             Role::Guest => return Err(async_graphql::Error::new("User not logged in")),
@@ -166,7 +166,7 @@ impl FavchatMutation {
         };
 
         let favchat = diesel::delete(favchat::table.filter(favchat::id.eq(id)))
-            .get_result(&conn)
+            .get_result(&mut conn)
             .map_err(|err| async_graphql::Error::from(err))?;
 
         Ok(favchat)
