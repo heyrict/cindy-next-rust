@@ -159,10 +159,7 @@ pub enum Yami {
     Longterm = 2,
 }
 
-impl ToSql<Integer, DB> for Yami
-where
-    i32: ToSql<Integer, DB>,
-{
+impl ToSql<Integer, DB> for Yami {
     fn to_sql<'a>(&'a self, out: &mut Output<'a, '_, DB>) -> serialize::Result {
         out.write_i32::<NetworkEndian>(*self as i32)
             .map(|_| IsNull::No)
@@ -219,10 +216,7 @@ impl RawFilter<Genre> for GenreFiltering {
     }
 }
 
-impl ToSql<Integer, DB> for Genre
-where
-    i32: ToSql<Integer, DB>,
-{
+impl ToSql<Integer, DB> for Genre {
     fn to_sql(&self, out: &mut Output<DB>) -> serialize::Result {
         out.write_i32::<NetworkEndian>(*self as i32)
             .map(|_| IsNull::No)
@@ -281,10 +275,7 @@ impl RawFilter<Status> for StatusFiltering {
     }
 }
 
-impl ToSql<Integer, DB> for Status
-where
-    i32: ToSql<Integer, DB>,
-{
+impl ToSql<Integer, DB> for Status {
     fn to_sql(&self, out: &mut Output<DB>) -> serialize::Result {
         out.write_i32::<NetworkEndian>(*self as i32)
             .map(|_| IsNull::No)
