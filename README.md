@@ -55,10 +55,10 @@ Basically only two binaries (`cindy-next-rust` and `diesel`) are required in the
     ```postgresql
     CREATE ROLE cindy LOGIN PASSWORD 'cindy-password';
     ALTER ROLE cindy SET client_encoding TO 'utf8';
-    ALTER ROLE cindy SET default_transaction_isolation TO 'react committed';
     ALTER ROLE cindy SET timezone TO 'UTC';
     CREATE DATABASE cindy-db;
     GRANT ALL ON DATABASE cindy-db TO cindy;
+    \c cindy-db;
     CREATE EXTENSION pgcrypto;
     CREATE EXTENSION "uuid-ossp";
     ```
