@@ -70,8 +70,8 @@ Basically only two binaries (`cindy-next-rust` and `diesel`) are required in the
 
 - Setup the database with `diesel database setup && diesel migration run`.
 
+- Run `cargo run --release` or `./path/to/cindy-next-rust` if you have a compiled binary to start the server. For the former command, once compiled, it can be found in `./target/release/cindy-next-rust`.
+
 - Create an admin account with `just signup`.
 
 - Load initial data to the database with `psql cindy < setup/jp/initdb.up.sql`.
-
-- Run `cargo run --release` to start the server. Once compiled, it can be found in `./target/release/cindy-next-rust`.
