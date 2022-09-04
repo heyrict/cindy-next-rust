@@ -123,8 +123,15 @@ fn get_allowed_roles(user: &User) -> Vec<Role> {
 }
 
 pub fn get_jwt(user: &User, role: Option<Role>) -> String {
+    let max_age = Duration::days(
+        dotenv::var("LOGIN_MAX_AGE")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(30),
+    );
+
     let iat = OffsetDateTime::now_utc();
-    let exp: OffsetDateTime = iat + Duration::days(30);
+    let exp: OffsetDateTime = iat + Duration::days(max_age);
     let header = json!({});
     let allowed_roles = get_allowed_roles(&user);
     let role = if let Some(role) = role {
@@ -159,8 +166,15 @@ pub fn get_jwt(user: &User, role: Option<Role>) -> String {
 }
 
 pub fn switch_jwt_role(payload: &JwtPayload, role: Role) -> String {
+    let max_age = Duration::days(
+        dotenv::var("LOGIN_MAX_AGE")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(30),
+    );
+
     let iat = OffsetDateTime::now_utc();
-    let exp: OffsetDateTime = iat + Duration::days(30);
+    let exp: OffsetDateTime = iat + Duration::days(max_age);
     let header = json!({});
     let user = &payload.user;
     let allowed_roles = &payload.allowed_roles;
@@ -200,8 +214,12 @@ where
 }
 
 fn gen_cookie(user: &User) -> Cookie {
-    // Expires in 30 days
-    let max_age = Duration::days(30);
+    let max_age = Duration::days(
+        dotenv::var("SUBSCRIPTION_MAX_CACHE_TIME")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(30),
+    );
 
     Cookie::build("cindy-jwt-token", get_jwt(user, None))
         .expires(OffsetDateTime::now_utc() + max_age)
