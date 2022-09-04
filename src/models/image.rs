@@ -100,7 +100,7 @@ impl Image {
         let upload_file = upload_dir.join(format!(
             "{}.{}",
             self.id
-                .to_hyphenated_ref()
+                .hyphenated()
                 .encode_lower(&mut Uuid::encode_buffer()),
             &self.ext()
         ));

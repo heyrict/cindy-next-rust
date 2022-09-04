@@ -328,7 +328,7 @@ impl ImageMutation {
             "{}.{}",
             image
                 .id
-                .to_hyphenated_ref()
+                .hyphenated()
                 .encode_lower(&mut Uuid::encode_buffer()),
             &image.ext()
         ));
