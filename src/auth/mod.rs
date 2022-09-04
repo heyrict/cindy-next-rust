@@ -131,7 +131,7 @@ pub fn get_jwt(user: &User, role: Option<Role>) -> String {
     );
 
     let iat = OffsetDateTime::now_utc();
-    let exp: OffsetDateTime = iat + Duration::days(max_age);
+    let exp: OffsetDateTime = iat + max_age;
     let header = json!({});
     let allowed_roles = get_allowed_roles(&user);
     let role = if let Some(role) = role {
@@ -174,7 +174,7 @@ pub fn switch_jwt_role(payload: &JwtPayload, role: Role) -> String {
     );
 
     let iat = OffsetDateTime::now_utc();
-    let exp: OffsetDateTime = iat + Duration::days(max_age);
+    let exp: OffsetDateTime = iat + max_age;
     let header = json!({});
     let user = &payload.user;
     let allowed_roles = &payload.allowed_roles;
