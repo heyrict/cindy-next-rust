@@ -270,7 +270,7 @@ impl DialogueMutation {
                 let dialogue_count = puzzle.dialogue_count(&ctx, None).await.unwrap_or(0);
                 let dialogue_count_answered =
                     puzzle.dialogue_count(&ctx, Some(true)).await.unwrap_or(0);
-                let dialogue_max_answered_time = dialogue.modified;
+                let dialogue_max_answered_time = dialogue.answered_time;
 
                 if dialogue_count > 0 {
                     tokio::spawn(async move {
@@ -326,7 +326,7 @@ impl DialogueMutation {
                 puzzle.dialogue_count(&ctx, Some(true)).await.unwrap_or(0);
             let dialogue_new = dialogue.clone();
             tokio::spawn(async move {
-                let dialogue_max_answered_time = dialogue_new.modified;
+                let dialogue_max_answered_time = dialogue_new.answered_time;
                 let sub = UnsolvedPuzzleStatsSub {
                     puzzle_id,
                     dialogue_count,

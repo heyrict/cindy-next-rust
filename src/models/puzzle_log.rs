@@ -141,7 +141,7 @@ pub struct UnsolvedPuzzleStatsSub {
     pub puzzle_id: i32,
     pub dialogue_count: i64,
     pub dialogue_count_answered: i64,
-    pub dialogue_max_answered_time: Timestamptz,
+    pub dialogue_max_answered_time: Option<Timestamptz>,
 }
 
 #[Object]
@@ -155,7 +155,7 @@ impl UnsolvedPuzzleStatsSub {
     async fn dialogue_count_answered(&self) -> i64 {
         self.dialogue_count_answered
     }
-    async fn dialogue_max_answered_time(&self) -> Timestamptz {
+    async fn dialogue_max_answered_time(&self) -> Option<Timestamptz> {
         self.dialogue_max_answered_time
     }
 }
