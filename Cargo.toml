@@ -2,7 +2,7 @@
 name = "cindy-next-rust"
 version = "1.2.4"
 authors = ["heyrict <xiezh0831@yahoo.co.jp>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
