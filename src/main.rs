@@ -38,7 +38,7 @@ lazy_static! {
     pub static ref SERVER_TZ: FixedOffset = {
         let tz = dotenv::var("SERVER_TZ").unwrap_or("9".to_owned());
         let tzn: i32 = tz.parse().expect("Invalid SERVER_TZ variable");
-        FixedOffset::east(tzn * 3600)
+        FixedOffset::east_opt(tzn * 3600).expect("SERVER_TZ out of bounds")
     };
 }
 

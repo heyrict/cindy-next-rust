@@ -28,6 +28,7 @@ lazy_static! {
         Regex::new(r#"/images/([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})\."#)
             .unwrap();
 }
+const INVALID_DATETIME: &'static str = "Invalid Datetime";
 
 #[Object]
 impl PuzzleQuery {
@@ -200,12 +201,21 @@ impl PuzzleQuery {
         let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         // The range of the time puzzles are created
-        let start_time = SERVER_TZ.ymd(year, month, 1).and_hms(0, 0, 0);
+        let start_time = SERVER_TZ
+            .with_ymd_and_hms(year, month, 1, 0, 0, 0)
+            .latest()
+            .ok_or(INVALID_DATETIME)?;
         let end_time = if month == 12 {
-            SERVER_TZ.ymd(year + 1, 1, 1).and_hms(0, 0, 0)
+            SERVER_TZ
+                .with_ymd_and_hms(year + 1, 1, 1, 0, 0, 0)
+                .latest()
+                .ok_or(INVALID_DATETIME)
         } else {
-            SERVER_TZ.ymd(year, month + 1, 1).and_hms(0, 0, 0)
-        };
+            SERVER_TZ
+                .with_ymd_and_hms(year, month + 1, 1, 0, 0, 0)
+                .latest()
+                .ok_or(INVALID_DATETIME)
+        }?;
 
         let results: Vec<Puzzle> =
             diesel::sql_query(include_str!("../sql/puzzle_star_ranking.sql"))
@@ -380,7 +390,7 @@ impl CreatePuzzleInput {
         // Set field `dazed_on`
         if self.dazed_on.is_none() {
             self.dazed_on = Some(
-                now.date().naive_utc()
+                now.date_naive()
                     + DazedTimeCalc::default()
                         .yami(self.yami.clone())
                         .genre(self.genre.clone())

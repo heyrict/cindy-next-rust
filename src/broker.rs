@@ -1,4 +1,4 @@
-use chrono::{Date, Duration, Local};
+use chrono::{DateTime, Duration, Local};
 use futures::Stream;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
@@ -11,7 +11,7 @@ use tokio_stream::wrappers::WatchStream;
 pub struct SubscribePair {
     pub tx: Box<dyn Any + Send>,
     pub rx: Box<dyn Any + Send>,
-    pub updated: Date<Local>,
+    pub updated: DateTime<Local>,
 }
 
 impl SubscribePair {
@@ -19,7 +19,7 @@ impl SubscribePair {
         SubscribePair {
             tx,
             rx,
-            updated: Local::today(),
+            updated: Local::now(),
         }
     }
 }
@@ -44,9 +44,9 @@ where
         let (tx, rx) = watch::channel::<Option<T>>(None);
         SubscribePair::new(Box::new(tx), Box::new(rx))
     });
-    let today = Local::today();
-    if sp.updated != today {
-        sp.updated = today;
+    let now = Local::now();
+    if sp.updated != now {
+        sp.updated = now;
     };
     let tx = sp.tx.downcast_ref::<watch::Sender<Option<T>>>().unwrap();
     let rx = sp.rx.downcast_ref::<watch::Receiver<Option<T>>>().unwrap();
@@ -64,9 +64,9 @@ where
         let submap = map.get_mut(&type_id).unwrap();
         if submap.contains_key(&key) {
             let sp = submap.get_mut(&key).unwrap();
-            let today = Local::today();
-            if sp.updated != today {
-                sp.updated = today;
+            let now = Local::now();
+            if sp.updated != now {
+                sp.updated = now;
             };
             let tx = sp.tx.downcast_ref::<watch::Sender<Option<T>>>().unwrap();
             let rx = sp.rx.downcast_ref::<watch::Receiver<Option<T>>>().unwrap();
@@ -112,9 +112,9 @@ impl<T: Sync + Unpin + Send + Clone + 'static> CindyBroker<T> {
             .iter_mut()
             .filter(|(key, _)| filter(key))
             .for_each(|(_, sp)| {
-                let today = Local::today();
-                if sp.updated != today {
-                    sp.updated = today;
+                let now = Local::now();
+                if sp.updated != now {
+                    sp.updated = now;
                 };
                 let tx = sp.tx.downcast_ref::<watch::Sender<Option<T>>>().unwrap();
                 tx.send(Some(msg.clone())).ok();
@@ -211,7 +211,7 @@ pub fn online_users_count() -> u64 {
 
 pub fn cleanup() {
     let mut map = SUBSCRIPTIONS.lock().unwrap();
-    let today = Local::today();
+    let now = Local::now();
     let env_max_cache_days = dotenv::var("SUBSCRIPTION_MAX_CACHE_TIME")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -225,7 +225,7 @@ pub fn cleanup() {
             .map(|key| key.to_owned())
             .collect();
         for key in keys {
-            if submap[&key].updated - today > max_cache_time {
+            if submap[&key].updated - now > max_cache_time {
                 submap.remove(&key);
             }
         }

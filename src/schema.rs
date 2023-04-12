@@ -1,11 +1,13 @@
-table! {
+// @generated automatically by Diesel CLI.
+
+diesel::table! {
     auth_group (id) {
         id -> Int4,
         name -> Varchar,
     }
 }
 
-table! {
+diesel::table! {
     auth_group_permissions (id) {
         id -> Int4,
         group_id -> Int4,
@@ -13,7 +15,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     auth_permission (id) {
         id -> Int4,
         name -> Varchar,
@@ -22,7 +24,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     award (id) {
         id -> Int4,
         name -> Varchar,
@@ -32,7 +34,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     award_application (id) {
         id -> Int4,
         status -> Int4,
@@ -46,7 +48,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     bookmark (id) {
         id -> Int4,
         value -> Int2,
@@ -55,7 +57,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     chatmessage (id) {
         id -> Int4,
         content -> Text,
@@ -67,7 +69,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     chatroom (id) {
         id -> Int4,
         name -> Varchar,
@@ -79,7 +81,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     comment (id) {
         id -> Int4,
         content -> Text,
@@ -89,7 +91,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     dialogue (id) {
         id -> Int4,
         question -> Text,
@@ -108,7 +110,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     direct_message (id) {
         id -> Int4,
         content -> Text,
@@ -120,7 +122,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     django_admin_log (id) {
         id -> Int4,
         action_time -> Timestamptz,
@@ -133,7 +135,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     django_content_type (id) {
         id -> Int4,
         app_label -> Varchar,
@@ -141,7 +143,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     django_migrations (id) {
         id -> Int4,
         app -> Varchar,
@@ -150,7 +152,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     django_session (session_key) {
         session_key -> Varchar,
         session_data -> Text,
@@ -158,7 +160,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     dm_read (id) {
         id -> Int4,
         user_id -> Int4,
@@ -167,7 +169,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     event (id) {
         id -> Int4,
         title -> Varchar,
@@ -181,7 +183,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     event_award (id) {
         id -> Int4,
         award_id -> Int4,
@@ -189,7 +191,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     favorite_chatroom (id) {
         id -> Int4,
         chatroom_id -> Int4,
@@ -197,28 +199,28 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     hasura_direct_message_group_trigger (user_id) {
         user_id -> Int4,
         last_dm_id -> Int4,
     }
 }
 
-table! {
+diesel::table! {
     hasura_int_groupby_trigger (group) {
         group -> Int4,
         value -> Int8,
     }
 }
 
-table! {
+diesel::table! {
     hasura_user_ranking_trigger (user_id) {
         user_id -> Int4,
         value -> Int8,
     }
 }
 
-table! {
+diesel::table! {
     hint (id) {
         id -> Int4,
         content -> Text,
@@ -230,7 +232,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     image (id) {
         id -> Uuid,
         user_id -> Int4,
@@ -240,7 +242,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     license (id) {
         id -> Int4,
         user_id -> Nullable<Int4>,
@@ -251,7 +253,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     puzzle (id) {
         id -> Int4,
         title -> Varchar,
@@ -271,7 +273,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     puzzle_tag (id) {
         id -> Int4,
         puzzle_id -> Int4,
@@ -280,7 +282,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     replay (id) {
         id -> Int4,
         title -> Varchar,
@@ -291,7 +293,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     replay_dialogue (id) {
         id -> Int4,
         replay_id -> Int4,
@@ -306,7 +308,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     schedule (id) {
         id -> Int4,
         content -> Text,
@@ -316,7 +318,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     star (id) {
         id -> Int4,
         value -> Int2,
@@ -325,7 +327,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     sui_hei_puzzle_tokenize_cache (id) {
         id -> Int4,
         puzzle_id -> Int4,
@@ -333,7 +335,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     sui_hei_user_groups (id) {
         id -> Int4,
         user_id -> Int4,
@@ -341,7 +343,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     sui_hei_user_user_permissions (id) {
         id -> Int4,
         user_id -> Int4,
@@ -349,7 +351,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     tag (id) {
         id -> Int4,
         name -> Varchar,
@@ -357,7 +359,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     user (id) {
         id -> Int4,
         password -> Varchar,
@@ -379,7 +381,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     user_award (id) {
         id -> Int4,
         created -> Date,
@@ -388,52 +390,52 @@ table! {
     }
 }
 
-joinable!(auth_group_permissions -> auth_group (group_id));
-joinable!(auth_group_permissions -> auth_permission (permission_id));
-joinable!(auth_permission -> django_content_type (content_type_id));
-joinable!(award_application -> award (award_id));
-joinable!(bookmark -> puzzle (puzzle_id));
-joinable!(bookmark -> user (user_id));
-joinable!(chatmessage -> chatroom (chatroom_id));
-joinable!(chatmessage -> user (user_id));
-joinable!(chatroom -> user (user_id));
-joinable!(comment -> puzzle (puzzle_id));
-joinable!(comment -> user (user_id));
-joinable!(dialogue -> puzzle (puzzle_id));
-joinable!(dialogue -> user (user_id));
-joinable!(django_admin_log -> django_content_type (content_type_id));
-joinable!(django_admin_log -> user (user_id));
-joinable!(dm_read -> direct_message (dm_id));
-joinable!(event -> user (user_id));
-joinable!(event_award -> award (award_id));
-joinable!(event_award -> event (event_id));
-joinable!(favorite_chatroom -> chatroom (chatroom_id));
-joinable!(favorite_chatroom -> user (user_id));
-joinable!(hasura_direct_message_group_trigger -> user (user_id));
-joinable!(hasura_user_ranking_trigger -> user (user_id));
-joinable!(hint -> puzzle (puzzle_id));
-joinable!(hint -> user (receiver_id));
-joinable!(image -> puzzle (puzzle_id));
-joinable!(image -> user (user_id));
-joinable!(puzzle -> license (license_id));
-joinable!(puzzle -> user (user_id));
-joinable!(puzzle_tag -> puzzle (puzzle_id));
-joinable!(puzzle_tag -> tag (tag_id));
-joinable!(puzzle_tag -> user (user_id));
-joinable!(replay -> puzzle (puzzle_id));
-joinable!(replay -> user (user_id));
-joinable!(replay_dialogue -> replay (replay_id));
-joinable!(schedule -> user (user_id));
-joinable!(star -> puzzle (puzzle_id));
-joinable!(star -> user (user_id));
-joinable!(sui_hei_puzzle_tokenize_cache -> puzzle (puzzle_id));
-joinable!(sui_hei_user_groups -> auth_group (group_id));
-joinable!(sui_hei_user_groups -> user (user_id));
-joinable!(sui_hei_user_user_permissions -> auth_permission (permission_id));
-joinable!(sui_hei_user_user_permissions -> user (user_id));
-joinable!(user_award -> award (award_id));
+diesel::joinable!(auth_group_permissions -> auth_group (group_id));
+diesel::joinable!(auth_group_permissions -> auth_permission (permission_id));
+diesel::joinable!(auth_permission -> django_content_type (content_type_id));
+diesel::joinable!(award_application -> award (award_id));
+diesel::joinable!(bookmark -> puzzle (puzzle_id));
+diesel::joinable!(bookmark -> user (user_id));
+diesel::joinable!(chatmessage -> chatroom (chatroom_id));
+diesel::joinable!(chatmessage -> user (user_id));
+diesel::joinable!(chatroom -> user (user_id));
+diesel::joinable!(comment -> puzzle (puzzle_id));
+diesel::joinable!(comment -> user (user_id));
+diesel::joinable!(dialogue -> puzzle (puzzle_id));
+diesel::joinable!(dialogue -> user (user_id));
+diesel::joinable!(django_admin_log -> django_content_type (content_type_id));
+diesel::joinable!(django_admin_log -> user (user_id));
+diesel::joinable!(dm_read -> direct_message (dm_id));
+diesel::joinable!(event -> user (user_id));
+diesel::joinable!(event_award -> award (award_id));
+diesel::joinable!(event_award -> event (event_id));
+diesel::joinable!(favorite_chatroom -> chatroom (chatroom_id));
+diesel::joinable!(favorite_chatroom -> user (user_id));
+diesel::joinable!(hasura_direct_message_group_trigger -> user (user_id));
+diesel::joinable!(hasura_user_ranking_trigger -> user (user_id));
+diesel::joinable!(hint -> puzzle (puzzle_id));
+diesel::joinable!(hint -> user (receiver_id));
+diesel::joinable!(image -> puzzle (puzzle_id));
+diesel::joinable!(image -> user (user_id));
+diesel::joinable!(puzzle -> license (license_id));
+diesel::joinable!(puzzle -> user (user_id));
+diesel::joinable!(puzzle_tag -> puzzle (puzzle_id));
+diesel::joinable!(puzzle_tag -> tag (tag_id));
+diesel::joinable!(puzzle_tag -> user (user_id));
+diesel::joinable!(replay -> puzzle (puzzle_id));
+diesel::joinable!(replay -> user (user_id));
+diesel::joinable!(replay_dialogue -> replay (replay_id));
+diesel::joinable!(schedule -> user (user_id));
+diesel::joinable!(star -> puzzle (puzzle_id));
+diesel::joinable!(star -> user (user_id));
+diesel::joinable!(sui_hei_puzzle_tokenize_cache -> puzzle (puzzle_id));
+diesel::joinable!(sui_hei_user_groups -> auth_group (group_id));
+diesel::joinable!(sui_hei_user_groups -> user (user_id));
+diesel::joinable!(sui_hei_user_user_permissions -> auth_permission (permission_id));
+diesel::joinable!(sui_hei_user_user_permissions -> user (user_id));
+diesel::joinable!(user_award -> award (award_id));
 
-allow_tables_to_appear_in_same_query!(
+diesel::allow_tables_to_appear_in_same_query!(
     auth_group,
     auth_group_permissions,
     auth_permission,

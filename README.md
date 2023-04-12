@@ -59,6 +59,7 @@ Basically only two binaries (`cindy-next-rust` and `diesel`) are required in the
     CREATE DATABASE cindy-db;
     GRANT ALL ON DATABASE cindy-db TO cindy;
     \c cindy-db;
+    GRANT ALL ON schema public to cindy;
     CREATE EXTENSION pgcrypto;
     CREATE EXTENSION "uuid-ossp";
     ```
@@ -74,4 +75,4 @@ Basically only two binaries (`cindy-next-rust` and `diesel`) are required in the
 
 - Create an admin account with `just signup`.
 
-- Load initial data to the database with `psql cindy < setup/jp/initdb.up.sql`.
+- Load initial data to the database with `psql cindy-db < setup/jp/initdb.up.sql`.

@@ -17,6 +17,8 @@ pub struct UserQuery;
 #[derive(Default)]
 pub struct UserMutation;
 
+const INVALID_DATETIME: &'static str = "Invalid Datetime";
+
 #[Object]
 impl UserQuery {
     pub async fn user(&self, ctx: &Context<'_>, id: i32) -> async_graphql::Result<User> {
@@ -95,12 +97,21 @@ impl UserQuery {
         let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         // The range of the time puzzles are created
-        let start_time = SERVER_TZ.ymd(year, month, 1).and_hms(0, 0, 0);
+        let start_time = SERVER_TZ
+            .with_ymd_and_hms(year, month, 1, 0, 0, 0)
+            .latest()
+            .ok_or(INVALID_DATETIME)?;
         let end_time = if month == 12 {
-            SERVER_TZ.ymd(year + 1, 1, 1).and_hms(0, 0, 0)
+            SERVER_TZ
+                .with_ymd_and_hms(year + 1, 1, 1, 0, 0, 0)
+                .latest()
+                .ok_or(INVALID_DATETIME)
         } else {
-            SERVER_TZ.ymd(year, month + 1, 1).and_hms(0, 0, 0)
-        };
+            SERVER_TZ
+                .with_ymd_and_hms(year, month + 1, 1, 0, 0, 0)
+                .latest()
+                .ok_or(INVALID_DATETIME)
+        }?;
 
         let results: Vec<UserRankingRow> =
             diesel::sql_query(include_str!("../sql/user_dialogue_ranking.sql"))
@@ -124,12 +135,21 @@ impl UserQuery {
         let mut conn = ctx.data::<GlobalCtx>()?.get_conn()?;
 
         // The range of the time puzzles are created
-        let start_time = SERVER_TZ.ymd(year, month, 1).and_hms(0, 0, 0);
+        let start_time = SERVER_TZ
+            .with_ymd_and_hms(year, month, 1, 0, 0, 0)
+            .latest()
+            .ok_or(INVALID_DATETIME)?;
         let end_time = if month == 12 {
-            SERVER_TZ.ymd(year + 1, 1, 1).and_hms(0, 0, 0)
+            SERVER_TZ
+                .with_ymd_and_hms(year + 1, 1, 1, 0, 0, 0)
+                .latest()
+                .ok_or(INVALID_DATETIME)
         } else {
-            SERVER_TZ.ymd(year, month + 1, 1).and_hms(0, 0, 0)
-        };
+            SERVER_TZ
+                .with_ymd_and_hms(year, month + 1, 1, 0, 0, 0)
+                .latest()
+                .ok_or(INVALID_DATETIME)
+        }?;
 
         let results: Vec<UserRankingRow> =
             diesel::sql_query(include_str!("../sql/user_puzzle_ranking.sql"))
