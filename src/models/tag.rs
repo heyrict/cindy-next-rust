@@ -13,6 +13,7 @@ use super::*;
 #[derive(InputObject, Clone)]
 pub struct TagAggrOrder {
     id: Option<Ordering>,
+    name: Option<Ordering>,
     puzzle_tag_count: Option<Ordering>,
 }
 
@@ -40,6 +41,7 @@ impl TagAggrOrders {
 
         for obj in self.0 {
             gen_order!(obj, id, query);
+            gen_order!(obj, name, query);
             gen_order!(obj, puzzle_tag_count, query);
         }
 
