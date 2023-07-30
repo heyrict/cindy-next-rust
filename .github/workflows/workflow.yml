@@ -1,41 +1,50 @@
 name: Main workflow
-on: push
-
+on:
+  push: {}
+  pull_request: {}
 jobs:
   # Run the `rustfmt` code formatter
   rustfmt:
     name: Rustfmt [Formatter]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - name: Setup | Rust
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: nightly
-          components: rustfmt
-          override: true
+          target: ${{ matrix.target }}
       - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      - run: cargo fmt --all -- --check
+
+  # Run a security audit on dependencies
+  #cargo_audit:
+  #  name: Cargo Audit [Security]
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - uses: actions/checkout@v3
+  #    - name: Setup | Rust
+  #      uses: dtolnay/rust-toolchain@master
+  #      with:
+  #        toolchain: nightly
+  #        target: ${{ matrix.target }}
+  #    - run: cargo install --force cargo-audit
+  #    - run: cargo generate-lockfile
+  #    - run: cargo audit
 
   # Ensure that the project could be successfully compiled
   cargo_check:
-    name: Compile
+    name: Cargo Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - name: Setup | Rust
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: nightly
-          override: true
-      - name: Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all
+          target: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --all
 
       - name: Build
         uses: actions-rs/cargo@v1
@@ -54,9 +63,8 @@ jobs:
           path: "cindy-next-rust"
 
   # Create GitHub release with Rust build targets and release notes
-  github_release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    name: Create GitHub Release
+  build:
+    name: Compile & Release
     strategy:
       fail-fast: false
       matrix:
@@ -76,21 +84,18 @@ jobs:
           #  name: cindy-next-rust-x86_64-pc-windows-msvc.zip
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Setup | Rust
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: nightly
-          override: true
           target: ${{ matrix.target }}
 
+      - uses: Swatinem/rust-cache@v2
+
       - name: Build target
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Prepare build artifacts [Windows]
         if: matrix.os == 'windows-latest'
@@ -106,7 +111,14 @@ jobs:
           mv target/${{ matrix.target }}/release/cindy-next-rust cindy-next-rust
           tar czvf ${{ matrix.name }} cindy-next-rust
 
+      - name: Release | Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+
       - name: Create GitHub release ${{ matrix.target }}
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
           files: ${{ matrix.name }}
