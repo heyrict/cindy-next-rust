@@ -46,22 +46,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --all
 
-      - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target x86_64-unknown-linux-gnu
-
-      - name: Post-Build
-        run: |
-          strip target/x86_64-unknown-linux-gnu/release/cindy-next-rust
-          mv target/x86_64-unknown-linux-gnu/release/cindy-next-rust cindy-next-rust
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          path: "cindy-next-rust"
-
   # Create GitHub release with Rust build targets and release notes
   build:
     name: Compile & Release
