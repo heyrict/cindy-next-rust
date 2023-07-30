@@ -1,7 +1,7 @@
 use async_graphql::{self, Context, Enum, InputObject, Object};
 use byteorder::{NetworkEndian, WriteBytesExt};
 use diesel::{
-    backend::{Backend, RawValue},
+    backend::Backend,
     deserialize::{self, FromSql},
     dsl::{max, sum},
     expression::AsExpression,
@@ -172,7 +172,7 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(bytes: RawValue<DB>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: DB::RawValue<'_>) -> deserialize::Result<Self> {
         match i32::from_sql(bytes)? {
             0 => Ok(Yami::None),
             1 => Ok(Yami::Normal),
@@ -229,7 +229,7 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(bytes: RawValue<DB>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: DB::RawValue<'_>) -> deserialize::Result<Self> {
         match i32::from_sql(bytes)? {
             0 => Ok(Genre::Classic),
             1 => Ok(Genre::TwentyQuestions),
@@ -288,7 +288,7 @@ where
     DB: Backend,
     i32: FromSql<Integer, DB>,
 {
-    fn from_sql(bytes: RawValue<DB>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: DB::RawValue<'_>) -> deserialize::Result<Self> {
         match i32::from_sql(bytes)? {
             0 => Ok(Status::Undergoing),
             1 => Ok(Status::Solved),
