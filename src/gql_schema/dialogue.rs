@@ -307,11 +307,11 @@ impl DialogueMutation {
         };
 
         // Set qno
-        let qno: i64 = dialogue::table
+        let qno: Option<i32> = dialogue::table
             .filter(dialogue::puzzle_id.eq(data.puzzle_id))
-            .count()
+            .select(diesel::dsl::max(dialogue::qno))
             .get_result(&mut conn)?;
-        data.qno = Some((qno + 1) as i32);
+        data.qno = Some(qno.unwrap_or(0) + 1);
 
         let dialogue: Dialogue = diesel::insert_into(dialogue::table)
             .values(&CreateDialogueData::from(data))
