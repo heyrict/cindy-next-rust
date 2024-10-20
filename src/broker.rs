@@ -132,19 +132,20 @@ impl<T: Sync + Unpin + Send + Clone + 'static> CindyBroker<T> {
                     .filter(|(key, _)| filter(key))
                     .for_each(|(key, sp)| {
                         let tx = sp.tx.downcast_ref::<watch::Sender<Option<T>>>().unwrap();
-                        if tx.is_closed() {
-                            empty_entries.push(key.clone());
-                        } else if tx.receiver_count() == 1 {
-                            // All channels closed except the stored one
-                            let rx = sp.rx.downcast_ref::<watch::Receiver<Option<T>>>().unwrap();
-                            drop(rx);
+                        if tx.is_closed() || tx.receiver_count() == 1 {
+                            // All channels closed or except the stored one
                             empty_entries.push(key.clone());
                         }
                     });
             })
             .and_modify(|submap| {
                 for key in empty_entries.iter() {
-                    submap.remove(key.as_str());
+                    let sp = submap.remove(key.as_str());
+                    if let Some(sp) = sp {
+                        let SubscribePair { tx, rx, updated: _ } = sp;
+                        drop(tx);
+                        drop(rx);
+                    }
                 }
             });
     }
